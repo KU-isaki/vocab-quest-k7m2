@@ -764,7 +764,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.16-i";
+const VERSION = "2026.08.16-j";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -4462,6 +4462,7 @@ document.querySelectorAll("[data-theme-set]").forEach(b=>
 if("serviceWorker" in navigator){
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("sw.js").then(reg => {
+      reg.update().catch(() => {});          // 每次開啟都主動問一次有沒有新版
       // 已經有一個等待中的新版本
       if(reg.waiting) showUpdate(reg.waiting);
       reg.addEventListener("updatefound", () => {
