@@ -36,27 +36,35 @@ function answer(){ const t=$('qKind').textContent;
   click($('btnNext')); }
 function play(n){ click($('btnDaily')); for(let i=0;i<n;i++) answer(); click($('btnQuit')); click($('btnBackHome')); }
 
-console.log('  級距:', JSON.stringify(TIERS));
+console.log('  級距:', TIERS.map(t=>`${t.n}題=${t.m}分`).join(' · '));
 ok(w.eval('tierMinutes(0)')===0,'0 題 = 0 分');
-ok(w.eval('tierMinutes(9)')===0,'9 題 = 0 分');
-ok(w.eval('tierMinutes(10)')===2,'10 題 = 2 分, 實得 '+w.eval('tierMinutes(10)'));
-ok(w.eval('tierMinutes(19)')===2,'19 題仍是 2 分');
-ok(w.eval('tierMinutes(20)')===4,'20 題 = 4 分, 實得 '+w.eval('tierMinutes(20)'));
-ok(w.eval('tierMinutes(29)')===4,'29 題仍是 4 分');
-ok(w.eval('tierMinutes(30)')===15,'30 題 = 15 分, 實得 '+w.eval('tierMinutes(30)'));
-ok(w.eval('tierMinutes(100)')===15,'超過 30 題不再增加（上限 15）');
+ok(w.eval('tierMinutes('+(TIERS[0].n-1)+')')===0,`未達第一階 = 0 分`);
+TIERS.forEach((t,i)=>{
+  ok(w.eval('tierMinutes('+t.n+')')===t.m, `${t.n} 題 = ${t.m} 分, 實得 `+w.eval('tierMinutes('+t.n+')'));
+  const next=TIERS[i+1];
+  if(next) ok(w.eval('tierMinutes('+(next.n-1)+')')===t.m, `${next.n-1} 題仍停在 ${t.m} 分`);
+});
+ok(w.eval('tierMinutes(9999)')===REWARD,`超過最後一階不再增加（上限 ${REWARD}）`);
+// 級距必須遞增，否則多練反而變少
+ok(TIERS.every((t,i)=>i===0||(t.n>TIERS[i-1].n&&t.m>TIERS[i-1].m)),'題數與分鐘都必須遞增');
 
 // 分次累積：10 → 20 → 30，總額必須等於一次做 30 題
-play(10); ok(bank()===2,`做 10 題應入帳 2 分, 實得 ${bank()}`);
-play(10); ok(bank()===4,`累積 20 題應共 4 分, 實得 ${bank()}`);
-play(10); ok(bank()===15,`累積 30 題應共 15 分, 實得 ${bank()}`);
-play(10); ok(bank()===15,`超過 30 題不再加, 實得 ${bank()}`);
-console.log('  分三次做 10 題 → 總共', bank(), '分鐘（與一次做 30 題相同）');
+const step=TIERS[0].n;
+for(const t of TIERS){
+  while(true){
+    const done=Object.values(JSON.parse(w.localStorage.getItem('cq-vocab-v1:summer')||'{}').days||{}).reduce((a,d)=>a+d.n,0);
+    if(done>=t.n) break;
+    play(step);
+  }
+  ok(bank()===t.m, `分次累積到 ${t.n} 題應共 ${t.m} 分, 實得 ${bank()}`);
+}
+console.log('  分次累積到', TIERS[TIERS.length-1].n, '題 → 總共', bank(), '分鐘');
 
 // 一次做滿 30 題
 w.eval('S=blank(); save();');
-click($('btnStart')); for(let i=0;i<30;i++) answer(); click($('btnBackHome'));
-ok(bank()===15,`一次做 30 題應得 15 分, 實得 ${bank()}`);
+const R3=w.eval('ROUND');
+click($('btnStart')); for(let i=0;i<R3;i++) answer(); click($('btnBackHome'));
+ok(bank()===w.eval('tierMinutes('+R3+')'),`一次做 ${R3} 題應得 ${w.eval('tierMinutes('+R3+')')} 分, 實得 ${bank()}`);
 
 // 兌換：密碼、申請訊息、倒數
 stats();

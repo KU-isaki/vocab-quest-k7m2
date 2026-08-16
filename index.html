@@ -764,7 +764,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.16-j";
+const VERSION = "2026.08.16-k";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -3552,7 +3552,7 @@ try{ listenOn = localStorage.getItem("cq-listen") !== "0"; }catch(e){}
 /* ---- 每日目標與遊戲時間存摺 ----
    當日累積到幾題就給幾分鐘（給的是「累計到這一階」的總額，不是每階相加）。
    所以一次做 30 題和分三次做 10 題，拿到的一樣多。 */
-const TIERS = [{n:10, m:2}, {n:20, m:4}, {n:30, m:15}];
+const TIERS = [{n:10, m:2}, {n:20, m:5}, {n:30, m:15}, {n:50, m:30}, {n:80, m:60}];
 const DAILY = TIERS[0].n;              // 最低目標題數
 const REWARD = TIERS[TIERS.length-1].m; // 一天最多能賺的分鐘
 const FULLGOAL = TIERS[TIERS.length-1].n;
