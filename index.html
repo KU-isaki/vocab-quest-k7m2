@@ -717,7 +717,8 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
     <button class="btn ghost" id="btnExport">📋 複製備份碼</button>
     <button class="btn ghost" id="btnImport" style="margin-top:8px">📥 貼上備份碼還原</button>
 
-    <button class="btn quiet" id="btnReset" style="margin-top:20px">清除這個題庫的紀錄</button>
+    <button class="btn quiet" id="btnReset" style="margin-top:20px">清除這個題庫的答題紀錄</button>
+    <button class="btn quiet" id="btnResetShared">清除練習日曆與遊戲時間</button>
     <p class="foot">紀錄存在這台手機的這個瀏覽器裡<br>換瀏覽器開會從頭開始，請固定用同一個</p>
   </section>
 
@@ -769,7 +770,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.16-p";
+const VERSION = "2026.08.17-c";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -3548,6 +3549,48 @@ const DECKS = {
   full:  {key:"full",   label:"總整理版", sub:"國中必備 1200",  cats:FULL_CATS,   words:FULL_WORDS}
 };
 
+/* ================= 跨題庫共用的紀錄 =================
+   練習日曆和遊戲時間存摺是「習慣」與「獎勵」，不該分題庫各記各的 ——
+   同一天在兩個題庫練的題數要合計，才算得出正確的每日進度。 */
+const SHARED_KEY = "cq-shared-v1";
+let SHARED = {days:{}, bank:{earned:0, used:0, bonus:0}};
+
+function loadShared(){
+  try{
+    const r = JSON.parse(localStorage.getItem(SHARED_KEY));
+    if(r && r.days){
+      SHARED = {days:r.days, bank:Object.assign({earned:0, used:0, bonus:0}, r.bank || {})};
+      return;
+    }
+  }catch(e){}
+  migrateShared();
+}
+function migrateShared(){        // 舊版把日曆與存摺存在各題庫裡，合併過來
+  const days = {}, bank = {earned:0, used:0, bonus:0};
+  ["summer", "full"].forEach(k=>{
+    let o = null;
+    try{ o = JSON.parse(localStorage.getItem("cq-vocab-v1:" + k)); }catch(e){}
+    if(!o) return;
+    Object.keys(o.days || {}).forEach(dk=>{
+      const s = o.days[dk], t = days[dk] || (days[dk] = {n:0, r:0});
+      t.n += s.n || 0; t.r += s.r || 0;
+      const p = s.paid === true ? 15 : (+s.paid || 0);
+      if(p) t.paid = (+t.paid || 0) + p;          // 兩邊都發過就先加總，之後會自動修正
+    });
+    if(o.bank){
+      bank.earned += o.bank.earned || 0;
+      bank.used   += o.bank.used   || 0;
+      bank.bonus  += o.bank.bonus  || 0;
+      if(o.bank.until && o.bank.until > (bank.until || 0)) bank.until = o.bank.until;
+    }
+  });
+  SHARED = {days, bank};
+  saveShared();
+}
+function saveShared(){
+  try{ localStorage.setItem(SHARED_KEY, JSON.stringify(SHARED)); }catch(e){}
+}
+
 /* ================= 狀態 ================= */
 const DECK_KEY = "cq-deck-v1";
 let DECK, CATS, WORDS, KEY, S, SYNONYMS = {}, pickedCats = new Set();
@@ -3574,13 +3617,11 @@ function netOf(day){                   // 答對算 +1，答錯算 -1，最低�
   const d = day || {n:0, r:0};
   return Math.max(0, (d.r || 0) - ((d.n || 0) - (d.r || 0)));
 }
-const blank = () => ({done:0, right:0, stats:{}, days:{}, bank:{earned:0, used:0, bonus:0}});
+const blank = () => ({done:0, right:0, stats:{}});
 function load(){
   try{
     const r = JSON.parse(localStorage.getItem(KEY));
     if(!r || !r.stats) return blank();
-    if(!r.days) r.days = {};          // 改版前存的進度沒有日曆資料
-    if(!r.bank) r.bank = {earned:0, used:0, bonus:0};
     return r;
   }catch(e){ return blank(); }
 }
@@ -3609,10 +3650,11 @@ function alsoCorrect(word, typed){   // 同義字一律算對，不然小孩會�
 }
 function save(){                       // 只存真的考過的字，避免塞滿空紀錄
   try{
-    const out = {done:S.done, right:S.right, stats:{}, days:S.days, bank:S.bank};
+    const out = {done:S.done, right:S.right, stats:{}};
     for(const k in S.stats){ const v = S.stats[k]; if(v.r || v.x) out.stats[k] = v; }
     localStorage.setItem(KEY, JSON.stringify(out));
   }catch(e){}
+  saveShared();
 }
 function stat(w){ return S.stats[w] || (S.stats[w] = {r:0, x:0, streak:0}); }
 
@@ -3685,7 +3727,7 @@ function renderDecks(){
       if(b.dataset.deck === DECK.key) return;
       useDeck(b.dataset.deck);
       listCat = "all";
-      renderDecks(); renderChips(); refreshHeader(); renderListCats(); renderList();
+      renderDecks(); renderChips(); refreshHeader(); renderListCats(); renderList(); renderStats();
       $("qCard").hidden = true; $("sumCard").hidden = true; $("startCard").hidden = false;
     };
   });
@@ -3905,7 +3947,7 @@ function grade(ok){
     s.x++; s.streak = 0; s.due = dayKey(); missed.push(w);            // 答錯就立刻排回來
   }
   S.done++;
-  const dk = dayKey(), day = S.days[dk] || (S.days[dk] = {n:0, r:0});
+  const dk = dayKey(), day = SHARED.days[dk] || (SHARED.days[dk] = {n:0, r:0});
   day.n++; if(ok) day.r++;
   checkGoal(day);
   save(); refreshHeader();
@@ -3968,7 +4010,7 @@ function refreshHeader(){
   $("hBar").style.width = Math.min(100, S.done) + "%";
   $("wrongCount").textContent = WORDS.filter(w=>stat(w.w).x > 0 && stat(w.w).streak < 2).length;
 
-  const today = S.days[dayKey()] || {n:0, r:0};
+  const today = SHARED.days[dayKey()] || {n:0, r:0};
   const net = netOf(today), got = paidOf(today), next = TIERS.find(t=>net < t.n);
   $("heroGoal").textContent = `今天答對 ${today.r || 0}　答錯 ${(today.n || 0) - (today.r || 0)}　已賺 ${got} 分鐘`;
   $("heroReward").textContent = next ? `再答對 ${next.n - net} 題 → ${next.m} 分鐘` : "今日上限已滿 ✓";
@@ -4065,7 +4107,7 @@ function reportText(roundOnly){
   }
   L.push(`累積：${S.done} 題，答對率 ${pct}%`);
   L.push(`已熟練 ${WORDS.filter(w=>mastered(w.w)).length} 字`);
-  const today = S.days[dayKey()] || {n:0};
+  const today = SHARED.days[dayKey()] || {n:0};
   L.push(`今天 ${today.n} 題（對 ${today.r || 0}、錯 ${(today.n || 0) - (today.r || 0)}）　🎮 存摺 ${bankLeft()} 分鐘`);
   L.push(weak.length                            // 每次都列出還沒學會的字，不是只給數字
     ? `還要加強 ${weak.length} 字：` + weak.slice(0,12).map(w=>w.w).join("、") + (weak.length > 12 ? " 等" : "")
@@ -4112,15 +4154,15 @@ $("sheetCopy").onclick = async () => {
 };
 
 /* ================= 每日目標 · 遊戲時間存摺 ================= */
-function bankLeft(){ return Math.max(0, S.bank.earned + S.bank.bonus - S.bank.used); }
+function bankLeft(){ return Math.max(0, SHARED.bank.earned + SHARED.bank.bonus - SHARED.bank.used); }
 function paidOf(day){                  // 舊版存的是 true，換算成分鐘
   const p = (day || {}).paid;
   return p === true ? REWARD : (+p || 0);
 }
 function goalStreak(){                 // 連續達標幾天（今天還沒達標不算中斷）
   let n = 0, t = new Date();
-  if(!paidOf(S.days[dayKey(t)])) t.setDate(t.getDate() - 1);
-  while(paidOf(S.days[dayKey(t)])){ n++; t.setDate(t.getDate() - 1); }
+  if(!paidOf(SHARED.days[dayKey(t)])) t.setDate(t.getDate() - 1);
+  while(paidOf(SHARED.days[dayKey(t)])){ n++; t.setDate(t.getDate() - 1); }
   return n;
 }
 function checkGoal(day){
@@ -4130,10 +4172,10 @@ function checkGoal(day){
   const first = got === 0 && target > 0;
   const down = target < got;                    // 答錯把淨題數拉低 → 倒扣
   day.paid = target;
-  S.bank.earned += target - got;
+  SHARED.bank.earned += target - got;
   const st = first ? goalStreak() : 0;
   const bonus = first && st > 0 && st % BONUS_EVERY === 0;
-  if(bonus) S.bank.bonus += STREAK_BONUS;
+  if(bonus) SHARED.bank.bonus += STREAK_BONUS;
   save();
   const nextTier = TIERS.find(t=>net < t.n);
   setTimeout(()=>{
@@ -4150,10 +4192,10 @@ function checkGoal(day){
 }
 function renderBank(){
   const left = bankLeft(), st = goalStreak();
-  const today = S.days[dayKey()] || {n:0};
+  const today = SHARED.days[dayKey()] || {n:0};
   const net = netOf(today), got = paidOf(today), next = TIERS.find(t=>net < t.n);
   $("bankLeft").textContent = left;
-  $("bankDetail").textContent = `賺到 ${S.bank.earned + S.bank.bonus} 分鐘　已用 ${S.bank.used} 分鐘`
+  $("bankDetail").textContent = `賺到 ${SHARED.bank.earned + SHARED.bank.bonus} 分鐘　已用 ${SHARED.bank.used} 分鐘`
     + (st > 0 ? `　連續 ${st} 天` : "");
   $("bankStreak").textContent = next
     ? `再答對 ${next.n - net} 題 → ${next.m} 分鐘`
@@ -4174,8 +4216,8 @@ const CAL_WEEKS = 26;                  // 顯示最近半年
 function level(n){ return n >= 40 ? 4 : n >= 20 ? 3 : n >= DAILY ? 2 : 1; }
 function streakDays(){                 // 從今天往回數，連續練習幾天
   let n = 0, t = new Date();
-  if(!S.days[dayKey(t)]) t.setDate(t.getDate() - 1);   // 今天還沒練不算中斷
-  while(S.days[dayKey(t)]){ n++; t.setDate(t.getDate() - 1); }
+  if(!SHARED.days[dayKey(t)]) t.setDate(t.getDate() - 1);   // 今天還沒練不算中斷
+  while(SHARED.days[dayKey(t)]){ n++; t.setDate(t.getDate() - 1); }
   return n;
 }
 function renderCal(){
@@ -4198,7 +4240,7 @@ function renderCal(){
       const k = dayKey(cur);
       if(cur > now){ cells += `<span class="cell pad"></span>`; }
       else{
-        const rec = S.days[k];
+        const rec = SHARED.days[k];
         cells += `<button class="cell ${rec ? "l" + level(rec.n) : ""} ${rec && paidOf(rec) ? "goal" : ""} ${k === todayK ? "today" : ""}"
                   data-day="${k}" aria-label="${k}"></button>`;
       }
@@ -4210,7 +4252,7 @@ function renderCal(){
   $("calGrid").innerHTML = cells;
   $("calGrid").querySelectorAll("[data-day]").forEach(b=>{
     b.onclick = () => {
-      const rec = S.days[b.dataset.day];
+      const rec = SHARED.days[b.dataset.day];
       const [, mm, dd] = b.dataset.day.split("-");
       toast(rec ? `${+mm}/${+dd} 練了 ${rec.n} 題，答對 ${rec.r} 題${rec.paid ? "　🎮 達標" : ""}`
                 : `${+mm}/${+dd} 沒有練習紀錄`);
@@ -4265,6 +4307,7 @@ function exportCode(){
       return raw ? k + "=" + packDeck(JSON.parse(raw)) : "";
     }catch(e){ return ""; }
   }).filter(Boolean);
+  parts.push("~shared=" + packDeck(SHARED));      // 日曆與存摺是共用的，另外存一份
   return BK_PREFIX + btoa(parts.join("~"));
 }
 function importCode(code){
@@ -4272,11 +4315,15 @@ function importCode(code){
   if(!t.startsWith(BK_PREFIX)) return "這段文字不是備份碼";
   let restored = 0;
   try{
-    atob(t.slice(BK_PREFIX.length)).split("~").forEach(chunk=>{
+    atob(t.slice(BK_PREFIX.length)).split("~").filter(Boolean).forEach(chunk=>{
       const i = chunk.indexOf("=");
       const k = chunk.slice(0, i);
-      if(!DECKS[k]) return;
       const o = unpackDeck(chunk.slice(i+1));
+      if(k === "shared"){
+        SHARED = {days:o.days, bank:o.bank};
+        saveShared(); restored++; return;
+      }
+      if(!DECKS[k]) return;
       localStorage.setItem("cq-vocab-v1:" + k, JSON.stringify(o));
       restored++;
     });
@@ -4327,7 +4374,7 @@ $("btnPin").onclick = () => {
 /* ---- 倒數計時：關掉網頁再回來也算得準（存的是結束時間） ---- */
 let tick = null;
 function timerLeft(){
-  const end = S.bank.until || 0;
+  const end = SHARED.bank.until || 0;
   return Math.max(0, Math.ceil((end - Date.now()) / 1000));
 }
 function renderTimer(){
@@ -4349,11 +4396,11 @@ $("btnSpend").onclick = async () => {
   if(bankLeft() < SPEND) return;
   if(!checkPin()) return;
   if(!confirm(`要用掉 ${SPEND} 分鐘遊戲時間嗎？\n用完剩下 ${bankLeft() - SPEND} 分鐘。`)) return;
-  S.bank.used += SPEND;
-  S.bank.until = Date.now() + SPEND * 60000;
+  SHARED.bank.used += SPEND;
+  SHARED.bank.until = Date.now() + SPEND * 60000;
   save(); renderBank(); renderTimer();
 
-  const today = S.days[dayKey()] || {n:0};
+  const today = SHARED.days[dayKey()] || {n:0};
   const now = new Date();
   const msg = ["🎮 遊戲時間申請",
     `今天練了 ${today.n} 題，拿到 ${paidOf(today)} 分鐘`,
@@ -4437,7 +4484,7 @@ function renderStats(){
   $("stRate").textContent = tot ? Math.round(right/tot*100) + "%" : "—";
   $("stMastered").textContent = WORDS.filter(w=>mastered(w.w)).length;
   $("stDue").textContent = reviewCount();
-  $("stDays").textContent = Object.keys(S.days).length;
+  $("stDays").textContent = Object.keys(SHARED.days).length;
   const weak = WORDS.filter(w=>stat(w.w).x > 0 && stat(w.w).streak < 2)
                     .sort((a,b)=>stat(b.w).x - stat(a.w).x);
   $("stWeak").textContent = weak.length;
@@ -4451,9 +4498,18 @@ function renderStats(){
     </li>`).join("");
   $("weakList").querySelectorAll("[data-say]").forEach(b=>b.onclick = ()=>say(b.dataset.say));
 }
+$("btnResetShared").onclick = () => {
+  if(!confirm("確定要清除練習日曆和遊戲時間存摺嗎？\n（兩個題庫共用，單字的答題紀錄會保留）")) return;
+  if(!checkPin()) return;
+  SHARED = {days:{}, bank:{earned:0, used:0, bonus:0}};
+  saveShared(); refreshHeader(); renderStats(); renderDecks();
+  toast("練習日曆與存摺已清除");
+};
 $("btnReset").onclick = () => {
-  if(!confirm(`確定要清除「${DECK.label}」的所有答題紀錄嗎？`)) return;
+  if(!confirm(`確定要清除「${DECK.label}」的答題紀錄嗎？\n（練習日曆和遊戲時間存摺是兩個題庫共用的，會保留）`)) return;
+  if(!checkPin()) return;
   S = blank(); save(); refreshHeader(); renderStats(); renderList(); renderDecks();
+  toast(`「${DECK.label}」的答題紀錄已清除`);
 };
 
 /* ================= 顯示設定：字級與配色 ================= */
@@ -4516,6 +4572,7 @@ function showUpdate(worker){
 }
 
 /* ================= 啟動 ================= */
+loadShared();
 let startDeck = "summer";
 try{ startDeck = localStorage.getItem(DECK_KEY) || "summer"; }catch(e){}
 useDeck(startDeck);

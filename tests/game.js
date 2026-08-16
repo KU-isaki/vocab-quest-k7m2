@@ -55,7 +55,7 @@ ok($('heroGoal').textContent.includes('答對 0'),'主畫面應顯示今日進�
 click($('btnDaily'));
 ok($('qCount').textContent.includes(`/ ${DAILY}`),`今日模式一輪應為 ${DAILY} 題, 實得 `+$('qCount').textContent);
 for(let i=0;i<DAILY;i++) answer(true);
-const S1=JSON.parse(w.localStorage.getItem('cq-vocab-v1:summer'));
+const S1={bank:w.eval('SHARED.bank'),days:w.eval('SHARED.days')};
 ok(S1.bank.earned===T1,`做滿 ${DAILY} 題應入帳 ${T1} 分鐘, 實得 `+S1.bank.earned);
 ok(S1.days[w.eval('dayKey()')].paid===T1,'當天應記錄已發放的分鐘數');
 click($('btnBackHome'));
@@ -63,7 +63,7 @@ ok($('heroGoal').textContent.includes(`已賺 ${T1} 分鐘`),'主畫面應顯示
 
 // 同一天再練是「升級」不是重複發放：20 題該拿第二階，不是兩次第一階
 click($('btnDaily')); for(let i=0;i<DAILY;i++) answer(true); click($('btnBackHome'));
-const S2=JSON.parse(w.localStorage.getItem('cq-vocab-v1:summer'));
+const S2={bank:w.eval('SHARED.bank'),days:w.eval('SHARED.days')};
 ok(S2.bank.earned===TIERS[1].m,`累積 ${TIERS[1].n} 題應為 ${TIERS[1].m} 分（非 ${T1*2}），實得 `+S2.bank.earned);
 
 // ③ 存摺畫面與兌換
@@ -71,7 +71,7 @@ stats();
 ok($('bankLeft').textContent===String(TIERS[1].m),`存摺應有 ${TIERS[1].m} 分鐘, 實得 `+$('bankLeft').textContent);
 ok($('btnSpend').disabled,`只有 ${TIERS[1].m} 分鐘不足 ${SPEND} 分，應停用`);
 ok($('btnSpend').textContent.includes('還差'),'應提示還差多少, 實得 '+$('btnSpend').textContent);
-w.eval('S.bank.earned=60; save(); renderBank();');
+w.eval('SHARED.bank.earned=60; save(); renderBank();');
 ok(!$('btnSpend').disabled,'足夠時應可兌換');
 
 // ④ GitHub 風格日曆

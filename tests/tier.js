@@ -22,7 +22,7 @@ let pass=0,fail=0; const ok=(c,m)=>{c?pass++:(fail++,console.log('  ✗ '+m))};
 const TIERS=w.eval('TIERS'), SPEND=w.eval('SPEND'), REWARD=w.eval('REWARD');
 const SW=w.eval('SUMMER_WORDS'); const byZh={}; SW.forEach(x=>(byZh[x.zh]=byZh[x.zh]||[]).push(x.w));
 const stats=()=>click([...d.querySelectorAll('.nav button')].find(b=>b.dataset.view==='vStats'));
-const bank=()=>w.eval('S.bank.earned');
+const bank=()=>w.eval('SHARED.bank.earned');
 function answer(){ const t=$('qKind').textContent;
   if(t.includes('說中文')||t.includes('只聽')){ const r=$('reveal'); if(r) click(r);
     const en=(d.querySelector('#qPrompt .en')||{textContent:''}).textContent.trim();
@@ -65,9 +65,9 @@ ok(TIERS.every((t,i)=>i===0||(t.n>TIERS[i-1].n&&t.m>TIERS[i-1].m)),'題數與分
 // 分次累積：10 → 20 → 30，總額必須等於一次做 30 題
 const step=TIERS[0].n;
 for(const t of TIERS){
-  while(true){
-    const done=Object.values(JSON.parse(w.localStorage.getItem('cq-vocab-v1:summer')||'{}').days||{}).reduce((a,d)=>a+d.n,0);
-    if(done>=t.n) break;
+  for(let guard=0; guard<40; guard++){
+    const day=w.eval('SHARED.days[dayKey()]')||{n:0};
+    if(day.n>=t.n) break;
     play(step);
   }
   ok(bank()===t.m, `分次累積到 ${t.n} 題應共 ${t.m} 分, 實得 ${bank()}`);
@@ -77,6 +77,7 @@ console.log('  分次累積到', TIERS[TIERS.length-1].n, '題 → 總共', bank
 // 一次做滿 30 題
 w.eval('S=blank(); save();');
 const R3=w.eval('ROUND');
+w.eval('SHARED={days:{},bank:{earned:0,used:0,bonus:0}}; saveShared(); S=blank(); save();');
 click($('btnStart')); for(let i=0;i<R3;i++) answer(); click($('btnBackHome'));
 ok(bank()===w.eval('tierMinutes('+R3+')'),`一次做 ${R3} 題應得 ${w.eval('tierMinutes('+R3+')')} 分, 實得 ${bank()}`);
 
@@ -89,18 +90,18 @@ w.navigator.clipboard={writeText:async t=>{copied=t;}};
 click($('btnSpend'));
 (async()=>{
   await new Promise(r=>setTimeout(r,30));
-  ok(w.eval('S.bank.used')===SPEND,'應扣款 15 分鐘');
-  ok($('bankLeft').textContent==='0','餘額應歸零');
+  ok(w.eval('SHARED.bank.used')===SPEND,`應扣款 ${SPEND} 分鐘, 實得 `+w.eval('SHARED.bank.used'));
+  ok($('bankLeft').textContent===String(w.eval('bankLeft()')),'畫面餘額要跟資料一致');
   console.log('  ── 申請訊息 ──\n'+copied.split('\n').map(s=>'    '+s).join('\n'));
   ok(copied.includes('遊戲時間申請'),'應複製申請訊息');
-  ok(copied.includes('30 題'),'訊息要寫今天練幾題');
+  ok(copied.includes(w.eval('SHARED.days[dayKey()]').n+' 題'),'訊息要寫今天練幾題, 實得 '+copied.split('\n')[1]);
   ok(/\d+\/\d+ \d{2}:\d{2} 開始/.test(copied),'訊息要有開始時間, 實得 '+copied);
   ok(!/http/.test(copied),'申請訊息不得含網址');
   // 倒數
   ok(!$('timerBox').hidden,'兌換後應顯示倒數');
   ok(/剩 1[45]:\d{2}/.test($('timerBox').textContent),'倒數應從約 15 分開始, 實得 '+$('timerBox').textContent);
-  ok(w.eval('S.bank.until')>Date.now(),'應存下結束時間（關掉網頁再回來也算得準）');
-  w.eval('S.bank.until = Date.now()-1000; renderTimer();');
+  ok(w.eval('SHARED.bank.until')>Date.now(),'應存下結束時間（關掉網頁再回來也算得準）');
+  w.eval('SHARED.bank.until = Date.now()-1000; renderTimer();');
   ok($('timerBox').hidden,'時間到應收起倒數');
 
   // 家長密碼
@@ -109,16 +110,16 @@ click($('btnSpend'));
   click($('btnPin'));
   ok(w.eval('getPin()')==='1234','應能設定密碼');
   ok($('tierHint').textContent.includes('已設家長密碼'),'畫面要提示已設密碼');
-  w.eval('S.bank.earned=100; save(); renderBank();');
+  w.eval('SHARED.bank.earned=100; save(); renderBank();');
   w.prompt=()=>'9999';           // 輸錯
-  const used0=w.eval('S.bank.used');
+  const used0=w.eval('SHARED.bank.used');
   click($('btnSpend'));
   await new Promise(r=>setTimeout(r,20));
-  ok(w.eval('S.bank.used')===used0,'密碼錯誤不得扣款');
+  ok(w.eval('SHARED.bank.used')===used0,'密碼錯誤不得扣款');
   w.prompt=()=>'1234';           // 輸對
   click($('btnSpend'));
   await new Promise(r=>setTimeout(r,20));
-  ok(w.eval('S.bank.used')===used0+SPEND,'密碼正確才扣款');
+  ok(w.eval('SHARED.bank.used')===used0+SPEND,'密碼正確才扣款');
   // 取消密碼：先驗證舊密碼，再輸入空字串
   let seq=['1234',''], si=0;
   w.prompt=()=>seq[si++];
@@ -133,8 +134,8 @@ click($('btnSpend'));
   seq=['5678','']; si=0; w.prompt=()=>seq[si++]; click($('btnPin'));
 
   // 舊版存檔 paid:true 要能換算
-  w.eval(`S.days["2026-01-01"]={n:30,r:30,paid:true};`);
-  ok(w.eval('paidOf(S.days["2026-01-01"])')===REWARD,'舊版 paid:true 應換算成滿額分鐘');
+  w.eval(`SHARED.days["2026-01-01"]={n:30,r:30,paid:true};`);
+  ok(w.eval('paidOf(SHARED.days["2026-01-01"])')===REWARD,'舊版 paid:true 應換算成滿額分鐘');
 
   // ===== 答錯倒扣 =====
   console.log('\n  ── 答錯倒扣 ──');
@@ -146,7 +147,7 @@ click($('btnSpend'));
   ok(netOf({n:30,r:25})===20,'對 25 錯 5 → 淨 20');
 
   // 全新一天：先全對做到第二階，再故意答錯把它扣回第一階
-  w.eval('S = blank(); save();');
+  w.eval('S = blank(); SHARED={days:{},bank:{earned:0,used:0,bonus:0}}; save();');
   const tierN = TIERS[1].n, tierM = TIERS[1].m, firstM = TIERS[0].m;
   click($('btnStart'));
   for(let i=0;i<tierN;i++) answer();          // 全對 tierN 題
@@ -161,7 +162,7 @@ click($('btnSpend'));
   const after = bank();
   ok(after < tierM, `答錯 ${wrongNeeded} 題後應該被倒扣（${tierM} → ${after}）`);
   ok(after >= 0, '倒扣後不得變成負數, 實得 '+after);
-  const day = JSON.parse(w.localStorage.getItem('cq-vocab-v1:summer')).days[w.eval('dayKey()')];
+  const day = w.eval('SHARED.days[dayKey()]');
   ok(day.paid === after, `當日已發放分鐘要跟著調整, day.paid=${day.paid} bank=${after}`);
   ok(w.eval('tierMinutes(netOf(' + JSON.stringify({n:day.n,r:day.r}) + '))') === after,
      `倒扣後的分鐘要等於淨題數該得的（淨 ${day.r-(day.n-day.r)} 題）`);

@@ -34,9 +34,10 @@ click($('btnStart')); for(let i=0;i<R;i++) answer();
 click($('btnBackHome'));
 const todayK=w.eval('dayKey()');
 const S=JSON.parse(w.localStorage.getItem('cq-vocab-v1:summer'));
-ok(S.days && S.days[todayK],'今天應留下日曆紀錄');
-ok(S.days[todayK].n===R,`今天題數應為 ${R}, 實得 `+(S.days[todayK]||{}).n);
-ok(S.days[todayK].r===R,`今天答對數應為 ${R}`);
+const shared=w.eval('SHARED');
+ok(shared.days && shared.days[todayK],'今天應留下日曆紀錄');
+ok(shared.days[todayK].n===R,`今天題數應為 ${R}, 實得 `+(shared.days[todayK]||{}).n);
+ok(shared.days[todayK].r===R,`今天答對數應為 ${R}`);
 
 stats();
 // 日曆格子（GitHub 風格）
@@ -55,7 +56,7 @@ ok(future.every(c=>c.tagName!=='BUTTON'),'未來日期不該做成可點按鈕')
 
 // 手動塞歷史紀錄測試連續天數與深淺
 const mk=off=>{const t=new Date(); t.setDate(t.getDate()-off); return w.eval(`dayKey(new Date(${t.getFullYear()},${t.getMonth()},${t.getDate()}))`);};
-w.eval(`S.days["${mk(1)}"]={n:45,r:40}; S.days["${mk(2)}"]={n:25,r:20}; S.days["${mk(3)}"]={n:12,r:10}; S.days["${mk(5)}"]={n:3,r:3};`);
+w.eval(`SHARED.days["${mk(1)}"]={n:45,r:40}; SHARED.days["${mk(2)}"]={n:25,r:20}; SHARED.days["${mk(3)}"]={n:12,r:10}; SHARED.days["${mk(5)}"]={n:3,r:3};`);
 w.eval('renderCal()');
 ok($('calStreak').textContent.includes('連續 4 天'),'連續天數應為 4（今天+前3天）, 實得 '+$('calStreak').textContent);
 const cls=k=>{const el=d.querySelector(`#calGrid [data-day="${k}"]`); return el?el.className:'(不在範圍)';};
@@ -69,8 +70,15 @@ ok(/l1/.test(cls(mk(5))),'3 題應為 l1');
 click(d.querySelector(`#calGrid [data-day="${todayK}"]`));
 ok($('toast').textContent.includes(R+' 題'),'點今天要顯示當天紀錄, 實得 '+$('toast').textContent);
 
-// 清除紀錄要一併清掉日曆與存摺
+// 清除「題庫紀錄」不該動到共用的日曆與存摺
 click($('btnReset'));
+ok(!!d.querySelector('#calGrid .cell.l1, #calGrid .cell.l2, #calGrid .cell.l3, #calGrid .cell.l4'),
+   '清除題庫紀錄後，共用的日曆應該保留');
+ok($('stDone').textContent==='0','但該題庫的答題統計要歸零');
+
+// 要有獨立的方式清除共用紀錄
+ok(!!$('btnResetShared'),'應有「清除日曆與遊戲時間」的按鈕');
+click($('btnResetShared'));
 ok(!d.querySelector('#calGrid .cell.l1, #calGrid .cell.l2, #calGrid .cell.l3, #calGrid .cell.l4'),'清除後日曆應全空');
 ok($('calStreak').textContent==='','清除後不該還顯示連續天數');
 ok($('bankLeft').textContent==='0','清除後存摺應歸零');

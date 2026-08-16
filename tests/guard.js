@@ -99,5 +99,38 @@ const disabledRule=/\.btn:disabled\{[^}]*\}/.exec(css);
 ok(!!disabledRule,'應有 .btn:disabled 樣式，否則停用時看起來仍可按');
 ok(disabledRule && /background/.test(disabledRule[0]),'停用樣式要改變背景色, 實得 '+(disabledRule?disabledRule[0]:''));
 
+// ⑩ 破壞性操作要有家長密碼把關，避免誤觸
+click([...d.querySelectorAll('.nav button')].find(b=>b.dataset.view==='vStats'));
+w.eval('S.done=42; S.stats={happy:{r:1,x:0,streak:1}}; save();');
+w.eval('SHARED.days["2026-08-01"]={n:30,r:28,paid:15}; SHARED.bank={earned:15,used:0,bonus:0}; saveShared();');
+w.prompt=()=>'1234';
+click($('btnPin'));                       // 設定家長密碼
+ok(w.eval('getPin()')==='1234','先設好家長密碼');
+
+// 密碼錯 → 兩種清除都不得執行
+w.prompt=()=>'0000';
+click($('btnReset'));
+ok(w.eval('S.done')===42,'密碼錯不得清除題庫紀錄, 實得 '+w.eval('S.done'));
+click($('btnResetShared'));
+ok(!!w.eval('SHARED.days["2026-08-01"]'),'密碼錯不得清除日曆');
+ok(w.eval('SHARED.bank.earned')===15,'密碼錯不得清除存摺');
+
+// 取消輸入（按 Esc）也不得執行
+w.prompt=()=>null;
+click($('btnReset'));
+ok(w.eval('S.done')===42,'取消輸入密碼不得清除');
+click($('btnResetShared'));
+ok(!!w.eval('SHARED.days["2026-08-01"]'),'取消輸入密碼不得清除日曆');
+
+// 密碼對才清除，而且各清各的
+w.prompt=()=>'1234';
+click($('btnReset'));
+ok(w.eval('S.done')===0,'密碼正確才清除題庫紀錄');
+ok(!!w.eval('SHARED.days["2026-08-01"]'),'清題庫紀錄不該動到共用日曆');
+ok(w.eval('SHARED.bank.earned')===15,'清題庫紀錄不該動到存摺');
+click($('btnResetShared'));
+ok(!w.eval('SHARED.days["2026-08-01"]'),'密碼正確才清除日曆');
+ok(w.eval('SHARED.bank.earned')===0,'存摺也要清掉');
+
 console.log(`\n通過 ${pass} / 失敗 ${fail}`);
 process.exit(fail?1:0);
