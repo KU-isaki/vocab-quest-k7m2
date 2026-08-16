@@ -8,12 +8,14 @@
 
 ## 快速開始
 
-**用網頁版**：打開網址就能用，不用註冊、不用安裝。建議「加入主畫面」當 App 用。
+**用網頁版**：<https://ku-isaki.github.io/vocab-quest-k7m2/>
+
+打開就能用，不用註冊、不用安裝。建議「加入主畫面」當 App 用（iOS：分享 → 加入主畫面；Android：選單 → 加到主畫面）。
 
 **自己架一份**：
 
 ```bash
-git clone https://github.com/<your-account>/<this-repo>.git
+git clone https://github.com/KU-isaki/vocab-quest-k7m2.git
 ```
 
 `index.html` 就是全部。用瀏覽器打開它即可，或推到任何靜態空間（GitHub Pages、Netlify、自己的伺服器都行）。
@@ -104,7 +106,7 @@ git clone https://github.com/<your-account>/<this-repo>.git
 
 ## 改成自己的單字
 
-整份工具就是 `index.html` 一個檔案，用任何編輯器打開，找到對應區塊改就好。改完存檔、重開網頁即可。
+整份工具就是 `index.html` 一個檔案，用任何編輯器打開，找到對應區塊改就好。改完存檔、重開網頁即可。若是用 GitHub Pages 發布，`git push` 後最多 10 分鐘生效（網址不變）。
 
 ### 一輪幾題、獎勵多少
 
