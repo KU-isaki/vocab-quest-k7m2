@@ -49,7 +49,7 @@ function answer(correct=true){
 ok(!!$('btnDaily'),'應有今日 N 題按鈕');
 ok($('btnDaily').textContent.includes(String(DAILY)),`今日按鈕應顯示 ${DAILY}`);
 ok($('btnStart').textContent.includes(String(ROUND)),`完整練習按鈕應顯示 ${ROUND}`);
-ok($('heroGoal').textContent.includes('今天 0 題'),'主畫面應顯示今日進度, 實得 '+$('heroGoal').textContent);
+ok($('heroGoal').textContent.includes('答對 0'),'主畫面應顯示今日進度, 實得 '+$('heroGoal').textContent);
 
 // ② 做滿每日目標 → 拿到遊戲時間
 click($('btnDaily'));
@@ -153,7 +153,7 @@ ok(code.length<4000,'備份碼應壓到 4000 字元以內, 實得 '+code.length)
 // ⑧ 成績訊息含遊戲時間
 const rep=w.eval('reportText(false)');
 console.log('  ── 訊息 ──\n'+rep.split('\n').map(s=>'    '+s).join('\n'));
-ok(/遊戲時間存摺 \d+ 分鐘/.test(rep),'訊息應包含遊戲時間');
+ok(/存摺 \d+ 分鐘/.test(rep),'訊息應包含遊戲時間, 實得 '+rep.split('\n').pop());
 ok(!/http/.test(rep),'訊息仍不得含網址');
 
 console.log(`\n通過 ${pass} / 失敗 ${fail}`);

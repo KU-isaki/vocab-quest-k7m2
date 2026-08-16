@@ -19,7 +19,8 @@ const spec=sel=>{ // 粗略特異性：id, class/attr/pseudo-class, type
   const cls=(sel.match(/\.[\w-]+|\[[^\]]+\]|:(?!:)[\w-]+/g)||[]).length;
   return ids*100+cls*10;
 };
-const generic=rules.filter(r=>!/\.ghost|\.quiet|\.done/.test(r.sel));
+// 狀態選擇器（:disabled/:hover/:active/:focus）本來就該覆蓋基礎樣式，不算「通用規則」
+const generic=rules.filter(r=>!/\.ghost|\.quiet|\.done|:disabled|:hover|:active|:focus/.test(r.sel));
 const ghost=rules.find(r=>/\.ghost/.test(r.sel));
 const quiet=rules.find(r=>/\.quiet/.test(r.sel));
 ok(!!ghost && !!quiet,'ghost / quiet 都要自己設定文字色');
@@ -30,6 +31,14 @@ generic.forEach(g=>{
 ok(generic.every(g=>!/#fff|#FFF|white/i.test(g.body)) || generic.every(g=>/var\(/.test(g.body)),
    '主按鈕文字色應走 token，不要硬寫白色（深淺色模式會相反）');
 ok(/--btn-fg/.test(css),'應該有 --btn-fg token');
+const dis=/\.btn:disabled\{([^}]*)\}/.exec(css);
+ok(!!dis,'應有 .btn:disabled 樣式，否則停用時看起來仍可按');
+if(dis){
+  const fg=/(?:^|[;\s])color\s*:\s*var\(([^)]+)\)/.exec(dis[1]);
+  const bg=/background\s*:\s*var\(([^)]+)\)/.exec(dis[1]);
+  ok(!!bg,'停用按鈕要換背景色，才看得出不能按');
+  ok(!(fg&&bg&&fg[1]===bg[1]),'停用按鈕的文字與背景不得用同一個顏色 token');
+}
 const darkBlocks=css.split('prefers-color-scheme:dark')[1]||'';
 ok(/--btn-fg/.test(darkBlocks) || /data-theme="dark"[\s\S]*--btn-fg/.test(css),'深色模式要重新定義 --btn-fg');
 

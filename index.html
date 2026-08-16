@@ -117,6 +117,11 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 .btn.ghost{background:var(--surface); color:var(--ink); border-color:var(--line); font-weight:500}
 .btn.quiet{background:transparent; color:var(--ink-soft); border-color:transparent; font-size:14.5px; padding:10px}
 .btn.done{background:var(--ok); color:var(--btn-fg); border-color:var(--ok); font-weight:600}
+.btn:disabled{
+  background:var(--surface-2); color:var(--ink-faint); border-color:var(--line);
+  font-weight:500; cursor:default;
+}
+.btn:disabled:active{transform:none; filter:none}
 
 /* ---------- deck picker ---------- */
 .decks{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px}
@@ -230,7 +235,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 }
 .tile:active{background:var(--brand-soft)}
 .tile.used{opacity:.22; pointer-events:none}
-.spellbar{display:flex; gap:8px; margin-top:14px}
+.spellbar{display:flex; gap:8px; margin-top:30px}   /* 離字母遠一點，避免誤按 */
 .spellbar .btn{padding:12px}
 
 /* typed input */
@@ -473,13 +478,13 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 .bank-icon{font-size:30px; line-height:1; opacity:.9}
 .goal{margin:16px 0 14px}
 .goal-head{
-  display:flex; justify-content:space-between; gap:10px; margin-bottom:7px;
-  font-size:12px; color:var(--ink-soft);
+  display:flex; justify-content:space-between; flex-wrap:wrap; gap:2px 10px;
+  margin-bottom:7px; font-size:12px; color:var(--ink-soft);
 }
+.goal-head span{white-space:nowrap}   /* 寧可各自一行，也不要把「分鐘」斷開 */
 .goal-head span:first-child{font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums}
 .goal .bar{height:8px}
 .goal .bar>i{background:linear-gradient(90deg, var(--brand), color-mix(in srgb, var(--ok) 70%, var(--brand)))}
-.bank .btn:disabled{opacity:.45}
 .bank .privacy{text-align:left; margin-top:10px}
 .bank .privacy b{color:var(--ink-soft)}
 .timerbox{
@@ -764,7 +769,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.16-k";
+const VERSION = "2026.08.16-p";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -3560,10 +3565,14 @@ const SPEND = 15;                      // 一次兌換幾分鐘
 const STREAK_BONUS = 30;               // 連續 7 天的紅利（分鐘）
 const BONUS_EVERY = 7;
 
-function tierMinutes(n){               // 當日 n 題 → 應得幾分鐘
+function tierMinutes(n){               // 當日淨題數 → 應得幾分鐘
   let m = 0;
   for(const t of TIERS) if(n >= t.n) m = t.m;
   return m;
+}
+function netOf(day){                   // 答對算 +1，答錯算 -1，最低算到 0
+  const d = day || {n:0, r:0};
+  return Math.max(0, (d.r || 0) - ((d.n || 0) - (d.r || 0)));
 }
 const blank = () => ({done:0, right:0, stats:{}, days:{}, bank:{earned:0, used:0, bonus:0}});
 function load(){
@@ -3847,13 +3856,20 @@ function showQ(){
     const paint = () => {
       slots.forEach((s,i)=>{ s.textContent = cur[i] ? cur[i].c : ""; s.classList.toggle("filled", !!cur[i]); });
       B.querySelectorAll(".tile").forEach(t=>t.classList.toggle("used", cur.some(x=>x.i === +t.dataset.i)));
+      // 沒拼滿不給按，免得手指滑到就送出半個答案
+      const left = letters.length - cur.length;
+      const btn = $("btnCheck");
+      btn.disabled = left > 0;
+      btn.textContent = left > 0 ? `還差 ${left} 個字母` : "檢查";
+      $("btnBack").disabled = cur.length === 0;
     };
     B.querySelectorAll(".tile").forEach(t=>{
       t.onclick = () => { if(answered || cur.length >= letters.length) return; cur.push({c:t.textContent, i:+t.dataset.i}); paint(); };
     });
-    $("btnBack").onclick = () => { if(answered) return; cur.pop(); paint(); };
+    paint();
+    $("btnBack").onclick = () => { if(answered || !cur.length) return; cur.pop(); paint(); };
     $("btnCheck").onclick = () => {
-      if(answered) return;
+      if(answered || cur.length < letters.length) return;   // 沒拼滿一律不受理
       const ok = alsoCorrect(w, cur.map(x=>x.c).join(""));
       $("slots").classList.add(ok ? "right" : "wrong");
       if(!ok) slots.forEach((s,i)=>{ s.textContent = w.w[i]; });
@@ -3866,10 +3882,11 @@ function showQ(){
     B.innerHTML =
       `<input class="typed" id="typed" type="text" inputmode="latin" placeholder="打出英文"
               autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off">
-       <div class="spellbar"><button class="btn" id="btnCheck">檢查</button></div>`;
+       <div class="spellbar"><button class="btn" id="btnCheck" disabled>檢查</button></div>`;
     const inp = $("typed");
+    inp.addEventListener("input", () => { $("btnCheck").disabled = !inp.value.trim(); });
     const check = () => {
-      if(answered) return;
+      if(answered || !inp.value.trim()) return;             // 沒輸入一律不受理
       grade(alsoCorrect(w, inp.value));
       inp.blur();
     };
@@ -3951,11 +3968,11 @@ function refreshHeader(){
   $("hBar").style.width = Math.min(100, S.done) + "%";
   $("wrongCount").textContent = WORDS.filter(w=>stat(w.w).x > 0 && stat(w.w).streak < 2).length;
 
-  const today = S.days[dayKey()] || {n:0};
-  const got = paidOf(today), next = TIERS.find(t=>today.n < t.n);
-  $("heroGoal").textContent = `今天 ${today.n} 題　已賺 ${got} 分鐘`;
-  $("heroReward").textContent = next ? `再 ${next.n - today.n} 題 → ${next.m} 分鐘` : "今日上限已滿 ✓";
-  $("heroBar").style.width = Math.min(100, today.n / FULLGOAL * 100) + "%";
+  const today = S.days[dayKey()] || {n:0, r:0};
+  const net = netOf(today), got = paidOf(today), next = TIERS.find(t=>net < t.n);
+  $("heroGoal").textContent = `今天答對 ${today.r || 0}　答錯 ${(today.n || 0) - (today.r || 0)}　已賺 ${got} 分鐘`;
+  $("heroReward").textContent = next ? `再答對 ${next.n - net} 題 → ${next.m} 分鐘` : "今日上限已滿 ✓";
+  $("heroBar").style.width = Math.min(100, net / FULLGOAL * 100) + "%";
 }
 
 /* ================= 單字表 ================= */
@@ -4049,8 +4066,7 @@ function reportText(roundOnly){
   L.push(`累積：${S.done} 題，答對率 ${pct}%`);
   L.push(`已熟練 ${WORDS.filter(w=>mastered(w.w)).length} 字`);
   const today = S.days[dayKey()] || {n:0};
-  L.push(`今天 ${today.n} 題` + (today.paid ? " · 目標達成 ✓" : ` / ${DAILY} 題`)
-    + `　🎮 遊戲時間存摺 ${bankLeft()} 分鐘`);
+  L.push(`今天 ${today.n} 題（對 ${today.r || 0}、錯 ${(today.n || 0) - (today.r || 0)}）　🎮 存摺 ${bankLeft()} 分鐘`);
   L.push(weak.length                            // 每次都列出還沒學會的字，不是只給數字
     ? `還要加強 ${weak.length} 字：` + weak.slice(0,12).map(w=>w.w).join("、") + (weak.length > 12 ? " 等" : "")
     : "目前沒有待加強的字 🎉");
@@ -4108,38 +4124,46 @@ function goalStreak(){                 // 連續達標幾天（今天還沒達�
   return n;
 }
 function checkGoal(day){
-  const target = tierMinutes(day.n), got = paidOf(day);
-  if(target <= got) return;
-  const first = got === 0;
+  const net = netOf(day);
+  const target = tierMinutes(net), got = paidOf(day);
+  if(target === got) return;
+  const first = got === 0 && target > 0;
+  const down = target < got;                    // 答錯把淨題數拉低 → 倒扣
   day.paid = target;
   S.bank.earned += target - got;
   const st = first ? goalStreak() : 0;
   const bonus = first && st > 0 && st % BONUS_EVERY === 0;
   if(bonus) S.bank.bonus += STREAK_BONUS;
   save();
-  const nextTier = TIERS.find(t=>day.n < t.n);
+  const nextTier = TIERS.find(t=>net < t.n);
   setTimeout(()=>{
+    if(down){
+      toast(`⚠️ 答錯扣抵，今天剩 ${target} 分鐘`
+        + (nextTier ? `　再答對 ${nextTier.n - net} 題可以拿回 ${nextTier.m} 分鐘` : ""));
+      return;
+    }
     toast(bonus
       ? `🎉 連續 ${st} 天！多拿 ${STREAK_BONUS} 分鐘，存摺共 ${bankLeft()} 分鐘`
-      : `🎮 ${day.n} 題達標！今天共 ${target} 分鐘`
-        + (nextTier ? `，再 ${nextTier.n - day.n} 題可以升到 ${nextTier.m} 分鐘` : `，存摺共 ${bankLeft()} 分鐘`));
+      : `🎮 淨 ${net} 題達標！今天共 ${target} 分鐘`
+        + (nextTier ? `，再答對 ${nextTier.n - net} 題可以升到 ${nextTier.m} 分鐘` : `，存摺共 ${bankLeft()} 分鐘`));
   }, 900);
 }
 function renderBank(){
   const left = bankLeft(), st = goalStreak();
   const today = S.days[dayKey()] || {n:0};
-  const got = paidOf(today), next = TIERS.find(t=>today.n < t.n);
+  const net = netOf(today), got = paidOf(today), next = TIERS.find(t=>net < t.n);
   $("bankLeft").textContent = left;
   $("bankDetail").textContent = `賺到 ${S.bank.earned + S.bank.bonus} 分鐘　已用 ${S.bank.used} 分鐘`
     + (st > 0 ? `　連續 ${st} 天` : "");
   $("bankStreak").textContent = next
-    ? `再 ${next.n - today.n} 題 → ${next.m} 分鐘`
+    ? `再答對 ${next.n - net} 題 → ${next.m} 分鐘`
     : (st > 0 ? `再 ${BONUS_EVERY - st % BONUS_EVERY} 天有紅利` : "已達今日上限");
-  $("goalNum").textContent = `今天 ${today.n} 題 · 已賺 ${got} 分鐘`;
-  $("goalBar").style.width = Math.min(100, today.n / FULLGOAL * 100) + "%";
+  $("goalNum").textContent = `今天對 ${today.r || 0}　錯 ${(today.n || 0) - (today.r || 0)}　淨 ${net} 題 · ${got} 分鐘`;
+  $("goalBar").style.width = Math.min(100, net / FULLGOAL * 100) + "%";
   $("btnSpend").disabled = left < SPEND;
   $("btnSpend").textContent = left >= SPEND ? `兌換 ${SPEND} 分鐘遊戲時間` : `還差 ${SPEND - left} 分鐘才能兌換`;
-  $("tierHint").innerHTML = TIERS.map(t=>`${t.n} 題 = ${t.m} 分鐘`).join("　·　")
+  $("tierHint").innerHTML = "<b>答對 1 題 +1，答錯 1 題 -1</b>，算出來的淨題數換分鐘：<br>"
+    + TIERS.map(t=>`${t.n} 題 = ${t.m} 分鐘`).join("　·　")
     + `<br>一天最多 ${REWARD} 分鐘，連續 ${BONUS_EVERY} 天多送 ${STREAK_BONUS} 分鐘`
     + (getPin() ? "　·　已設家長密碼" : "");
   renderTimer();
@@ -4495,7 +4519,7 @@ function showUpdate(worker){
 let startDeck = "summer";
 try{ startDeck = localStorage.getItem(DECK_KEY) || "summer"; }catch(e){}
 useDeck(startDeck);
-$("heroSub").textContent = `${TIERS.map(t=>t.n+" 題換 "+t.m+" 分鐘").join("、")}，答錯的字會自動多考幾次`;
+$("heroSub").textContent = `答對 +1、答錯 -1，${TIERS.map(t=>t.n+" 題換 "+t.m+" 分").join("、")}`;
 $("chipListen").setAttribute("aria-pressed", listenOn && TTS);
 if(!TTS) $("chipListen").disabled = true;
 $("dailyBtnN").textContent = DAILY;
