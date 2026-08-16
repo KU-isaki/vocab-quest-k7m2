@@ -336,6 +336,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 .rv-front .big-zh{font-size:30px; font-weight:600; line-height:1.35}
 .rv-front .sub{margin-top:8px; font-size:13px; color:var(--ink-faint)}
 .rv-back{width:100%; display:flex; flex-direction:column; gap:12px; align-items:center}
+.rv-back[hidden]{display:none}   /* display:flex 會蓋掉 hidden 屬性 */
 .rv-back .ans{font-size:26px; font-weight:600; line-height:1.35}
 .rv-back .ans-en{font-family:var(--font-en); font-size:34px; font-weight:600}
 .rv-back .use{
@@ -763,7 +764,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.16-h";
+const VERSION = "2026.08.16-i";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
