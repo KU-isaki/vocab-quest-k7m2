@@ -1,8 +1,19 @@
 # 單字闖關
 
+[![測試](https://github.com/KU-isaki/vocab-quest-k7m2/actions/workflows/test.yml/badge.svg)](https://github.com/KU-isaki/vocab-quest-k7m2/actions/workflows/test.yml)
+
 國中英語單字的手機練習網頁。**單一 HTML 檔、無後端、無安裝、離線可用**，打開就能練。
 
 給自己家小孩做的家庭學習小工具，開源出來給有需要的人。
+
+<p align="center">
+  <img src="docs/01-home.png" width="19%" alt="主畫面">
+  <img src="docs/02-quiz.png" width="19%" alt="點字母拼英文">
+  <img src="docs/03-cloze.png" width="19%" alt="例句挖空">
+  <img src="docs/06-stats.png" width="19%" alt="遊戲時間存摺">
+  <img src="docs/07-calendar.png" width="19%" alt="練習日曆">
+</p>
+<p align="center"><sub>主畫面 · 點字母拼英文 · 例句挖空 · 遊戲時間存摺 · 練習日曆</sub></p>
 
 ---
 
@@ -21,6 +32,13 @@ git clone https://github.com/KU-isaki/vocab-quest-k7m2.git
 `index.html` 就是全部。用瀏覽器打開它即可，或推到任何靜態空間（GitHub Pages、Netlify、自己的伺服器都行）。
 
 **自己改內容**：整份工具只有一個檔案，單字、例句、樣式、程式碼全在裡面。見下方「[改成自己的單字](#改成自己的單字)」。
+
+**跑測試**：
+
+```bash
+npm install   # 只需要 jsdom
+npm test      # 780+ 項端到端測試
+```
 
 ---
 
@@ -72,6 +90,8 @@ git clone https://github.com/KU-isaki/vocab-quest-k7m2.git
 - **複習模式**：選好分類按「📇 複習這 N 個字」進入翻卡。正面英文（自動發音）→ 點卡片翻到中文、用法、例句；可切換「先看中文」反向複習。**完全不計分、不影響任何統計**
 - **用法解釋 222 條**：答錯時才顯示（答對不打斷節奏），單字表可隨時展開
 - **成績回報**：一鍵複製成績文字，貼到 LINE 給家長
+- **可以裝成 App**：加到主畫面後有自己的圖示、全螢幕、**完全離線可用**；有新版時會跳出「立即更新」
+- **顯示設定**：字體四段大小可調、配色可選跟隨系統／淺色／深色
 
 ---
 
@@ -171,7 +191,7 @@ const EXAMPLES = {
 - 例句挖空：每個可拼字的字都要能被挖掉、字母數要對得上、句子裡不得洩漏答案
 - 複習翻卡不得影響任何答題統計
 
-測試腳本非常駐（一次性驗證用），需要時再重寫。
+每次 `git push` 由 GitHub Actions 自動跑一次（見上方徽章），本機用 `npm test`。
 
 ---
 
@@ -186,6 +206,8 @@ const EXAMPLES = {
 **為什麼是單一 HTML 檔？** 家長不想維護。沒有 build、沒有依賴、沒有伺服器，複製一個檔案就能跑，十年後打開應該還能用。
 
 **為什麼跨章節重複的字要合併？** 原始資料 1288 筆裡有 85 個字跨章節重複（例如 `short` 同時在「個人特徵」和「尺寸度量」）。不合併的話，選擇題會出現兩個都對的答案。
+
+**為什麼測試要檢查 computed style？** 因為 `hidden` 屬性會被 CSS 蓋掉（`.sheet{display:grid}` 讓複製面板一載入就跳出來）、CSS 優先度會讓按鈕變成白底白字、flex 項目的 `min-height:auto` 會把日曆格子撐開。這些都不是 DOM 結構的問題，只驗 DOM 抓不到。
 
 ---
 

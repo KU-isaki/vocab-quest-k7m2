@@ -1,0 +1,13 @@
+{
+  "name": "vocab-quest",
+  "version": "1.0.0",
+  "description": "國中英語單字練習網頁 — 單一 HTML 檔，無後端、無安裝、離線可用",
+  "private": true,
+  "scripts": {
+    "test": "node tests/run.js"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.0"
+  },
+  "license": "MIT"
+}

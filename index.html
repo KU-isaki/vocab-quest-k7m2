@@ -1,7 +1,13 @@
+<meta charset="utf-8">
 <title>單字闖關</title>
 <meta name="robots" content="noindex, nofollow, noarchive">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172242">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="單字闖關">
 
 <style>
 :root{
@@ -24,8 +30,10 @@
   --r:14px;
   --font-en:ui-rounded,"SF Pro Rounded","Hiragino Maru Gothic ProN",-apple-system,system-ui,sans-serif;
   --font-zh:-apple-system,system-ui,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
-  --font-num:ui-monospace,"SF Mono",Menlo,monospace;
+  --font-num:ui-rounded,"SF Pro Rounded",-apple-system,system-ui,sans-serif;
+  --scale:1;
 }
+html{font-size:calc(16px * var(--scale))}
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
     --ground:#101623;
@@ -58,7 +66,7 @@
 *{box-sizing:border-box}
 body{
   margin:0; background:var(--ground); color:var(--ink);
-  font-family:var(--font-zh); font-size:16px; line-height:1.6;
+  font-family:var(--font-zh); font-size:1rem; line-height:1.6;
   -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent;
 }
 button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
@@ -207,7 +215,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
   min-height:52px; margin-bottom:18px;
 }
 .slot{
-  width:34px; height:44px; border-bottom:3px solid var(--line); border-radius:3px;
+  width:34px; height:44px; border-bottom:3px solid var(--ink-faint); border-radius:3px;
   display:grid; place-items:center; font-family:var(--font-en); font-size:26px; font-weight:600;
   background:transparent;
 }
@@ -277,6 +285,20 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
   transition:opacity .25s ease;
 }
 .toast.on{opacity:1}
+
+.updatebar{
+  position:fixed; left:50%; transform:translateX(-50%); z-index:55;
+  bottom:calc(86px + env(safe-area-inset-bottom));
+  display:flex; align-items:center; gap:10px;
+  padding:9px 10px 9px 16px; border-radius:99px;
+  background:var(--ink); color:var(--ground); font-size:13.5px; box-shadow:var(--shadow);
+  max-width:calc(100% - 32px);
+}
+.updatebar[hidden]{display:none}
+.updatebar button{
+  border:0; border-radius:99px; padding:7px 14px; font-size:13px; font-weight:700;
+  background:var(--ground); color:var(--ink); white-space:nowrap;
+}
 
 /* ---------- 複習翻卡 ---------- */
 .review{
@@ -467,17 +489,18 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 .bank .btn.quiet{margin-top:2px; font-size:13px}
 
 /* ---------- 練習日曆（GitHub 風格） ---------- */
-.ghwrap{overflow-x:auto; -webkit-overflow-scrolling:touch; padding:2px 0 4px; margin-top:10px}
+.ghwrap{overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; padding:5px 0 8px; margin-top:8px}
 .ghinner{display:inline-block; min-width:100%}
-.ghmonths{
-  display:grid; grid-auto-flow:column; grid-auto-columns:15px;
-  font-size:9.5px; color:var(--ink-faint); height:14px; letter-spacing:.02em;
-}
-.ghmonths span{white-space:nowrap}
-.ghgrid{display:grid; grid-auto-flow:column; grid-auto-columns:15px; grid-template-rows:repeat(7,15px)}
+.ghmonths{display:flex; gap:3px; font-size:9.5px; color:var(--ink-faint); height:14px}
+.ghmonths span{width:12px; flex:none; white-space:nowrap; overflow:visible}
+.ghgrid{display:flex; gap:3px; align-items:flex-start}
+.ghcol{display:flex; flex-direction:column; gap:3px; flex:none}
 .ghgrid .cell{
-  width:12px; height:12px; padding:0; border-radius:3px;
-  border:1px solid transparent; background:var(--surface-2);
+  /* flex 項目的 min-height 預設是 auto，button 的預設行高會把格子撐開，
+     所以要同時鎖 min/max-height 並把 line-height 歸零 */
+  width:12px; height:12px; flex:0 0 12px; min-height:12px; max-height:12px;
+  padding:0; margin:0; border-radius:3px; line-height:0;
+  border:1px solid transparent; background:var(--surface-2); display:block;
 }
 .ghgrid .cell.pad{background:none}
 .ghgrid .cell.l1{background:color-mix(in srgb, var(--brand) 24%, var(--surface-2))}
@@ -485,7 +508,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 .ghgrid .cell.l3{background:color-mix(in srgb, var(--brand) 74%, var(--surface-2))}
 .ghgrid .cell.l4{background:var(--brand)}
 .ghgrid .cell.goal{border-color:var(--ok)}
-.ghgrid .cell.today{outline:1.5px solid var(--ink); outline-offset:1px}
+.ghgrid .cell.today{outline:2px solid var(--ink); outline-offset:0}
 .callegend{
   display:flex; align-items:center; gap:4px; margin:8px 0 0;
   font-size:11px; color:var(--ink-faint); flex-wrap:wrap;
@@ -496,6 +519,18 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 .callegend .l3{background:color-mix(in srgb, var(--brand) 74%, var(--surface-2))}
 .callegend .l4{background:var(--brand)}
 .backup-hint{margin:10px 0 12px; font-size:12.5px; line-height:1.7; color:var(--ink-soft)}
+.setrow{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:11px 2px; border-bottom:1px solid var(--line); font-size:14px;
+}
+.segbtns{display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end}
+.segbtns button{
+  border:1px solid var(--line); background:var(--surface); color:var(--ink-soft);
+  font-size:13px; padding:7px 12px; border-radius:9px;
+}
+.segbtns button[aria-pressed="true"]{
+  background:var(--brand-soft); border-color:var(--brand); color:var(--brand); font-weight:700;
+}
 
 /* ---------- bottom nav ---------- */
 .nav{
@@ -570,11 +605,11 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
         <span class="q-count" id="qCount"></span>
       </div>
 
-      <div class="prompt" id="qPrompt"></div>
+      <div class="prompt" id="qPrompt" aria-live="polite" aria-atomic="true"></div>
 
       <div id="qBody"></div>
 
-      <div class="fb" id="qFb">
+      <div class="fb" id="qFb" aria-live="polite">
         <div class="fb-title" id="fbTitle"></div>
         <div class="fb-answer" id="fbAnswer"></div>
         <div class="fb-zh" id="fbZh"></div>
@@ -600,7 +635,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
   <!-- ============ 單字表 ============ -->
   <section class="view" id="vList">
-    <input class="search" id="search" type="search" placeholder="搜尋單字或中文…"
+    <input class="search" id="search" type="search" placeholder="搜尋單字或中文…" aria-label="搜尋單字或中文"
            autocapitalize="off" autocorrect="off" spellcheck="false">
     <div class="listcats" id="listCats"></div>
     <p class="listinfo" id="listInfo"></p>
@@ -625,7 +660,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
         <div class="bar"><i id="goalBar"></i></div>
       </div>
       <div class="timerbox" id="timerBox" hidden></div>
-      <button class="btn" id="btnSpend"></button>
+      <button class="btn" id="btnSpend" aria-label="兌換遊戲時間">兌換遊戲時間</button>
       <p class="privacy" id="tierHint"></p>
       <button class="btn quiet" id="btnPin">🔒 家長密碼</button>
     </div>
@@ -652,6 +687,25 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
     <p class="empty" id="weakEmpty" hidden>目前沒有錯題，繼續保持！</p>
     <button class="btn ghost" id="btnShareAll" style="margin-top:24px">📋 複製整體進度，貼給家長</button>
     <p class="privacy">複製到你手機的剪貼簿，自己貼進 LINE 傳出去<br>不含姓名、不上傳、也不會產生任何人點得開的網址</p>
+    <div class="grouphead"><b>顯示設定</b><span>看不清楚時調整</span></div>
+    <div class="setrow">
+      <span>字體大小</span>
+      <div class="segbtns" role="group" aria-label="字體大小">
+        <button data-scale="0.9" aria-pressed="false">小</button>
+        <button data-scale="1" aria-pressed="true">標準</button>
+        <button data-scale="1.15" aria-pressed="false">大</button>
+        <button data-scale="1.3" aria-pressed="false">特大</button>
+      </div>
+    </div>
+    <div class="setrow">
+      <span>配色</span>
+      <div class="segbtns" role="group" aria-label="配色">
+        <button data-theme-set="auto" aria-pressed="true">跟隨系統</button>
+        <button data-theme-set="light" aria-pressed="false">淺色</button>
+        <button data-theme-set="dark" aria-pressed="false">深色</button>
+      </div>
+    </div>
+
     <div class="grouphead"><b>備份進度</b><span>換手機、被清掉時用</span></div>
     <p class="backup-hint">瀏覽器可能在一段時間沒開之後把紀錄清掉。按「複製備份碼」貼到 LINE 給自己留著，之後貼回來就能還原。</p>
     <button class="btn ghost" id="btnExport">📋 複製備份碼</button>
@@ -665,15 +719,20 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 </div>
 
+<div class="updatebar" id="updateBar" hidden role="status">
+  <span>有新版本了</span>
+  <button id="btnUpdate">立即更新</button>
+</div>
+
 <div class="toast" id="toast" role="status"></div>
 
-<div class="review" id="review" hidden>
+<div class="review" id="review" hidden role="dialog" aria-modal="true" aria-label="複習卡片">
   <div class="rv-top">
     <button class="rv-x" id="rvClose" aria-label="關閉複習">✕</button>
     <span class="rv-count" id="rvCount"></span>
     <button class="rv-mode" id="rvMode" aria-pressed="false">先看中文</button>
   </div>
-  <div class="rv-card" id="rvCard">
+  <div class="rv-card" id="rvCard" role="button" tabindex="0" aria-label="點一下或按 Enter 看答案">
     <div class="rv-front" id="rvFront"></div>
     <div class="rv-back" id="rvBack" hidden></div>
     <p class="rv-tap" id="rvTap">點卡片看答案</p>
@@ -685,10 +744,10 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
   </div>
 </div>
 
-<div class="sheet" id="sheet" hidden>
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-label="手動複製文字">
   <div class="sheet-in">
     <b>長按下面的文字全選複製，再貼到 LINE 傳給爸媽</b>
-    <textarea id="sheetText" readonly rows="7"></textarea>
+    <textarea id="sheetText" readonly rows="7" aria-label="要複製的文字"></textarea>
     <button class="btn" id="sheetCopy">再試一次自動複製</button>
     <button class="btn quiet" id="sheetClose">關閉</button>
   </div>
@@ -704,7 +763,8 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.16-a";
+const VERSION = "2026.08.16-h";
+document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
    想幫哪個字加說明，就在這裡加一行；沒寫的字不會顯示說明區塊。 */
@@ -1010,7 +1070,7 @@ const EXAMPLES = {
 "back":["My back hurts after sitting all day.","坐了一整天後我的背很痛。"],
 "body":["Exercise keeps your body strong.","運動讓你的身體強壯。"],
 "ear":["I have a pain in my right ear.","我的右耳會痛。"],
-"eye":["She has one blue eye and one green eye.","她有一隻藍眼睛和一隻綠眼睛。"],
+"eye":["There is something in my eye.","我的眼睛裡有東西。"],
 "face":["Wash your face before you sleep.","睡覺前洗個臉。"],
 "finger":["I cut my finger with a knife.","我用刀切到手指。"],
 "foot":["My left foot hurts a lot.","我的左腳很痛。"],
@@ -3762,7 +3822,7 @@ function showQ(){
 
   } else if(q.kind === "spell" || q.kind === "cloze"){
     if(q.kind === "cloze"){
-      const blanked = w.ex[0].replace(new RegExp("\\b" + w.w + "\\b", "i"), "＿＿＿");
+      const blanked = w.ex[0].replace(new RegExp("\\b" + w.w + "\\b", "ig"), "＿＿＿");
       P.innerHTML = `<p class="say-cue">把句子裡少掉的單字拼出來</p>
         <div class="sentence">${esc(blanked)}</div>
         <div class="sen-zh">${esc(w.ex[1])}</div>`;
@@ -4024,6 +4084,11 @@ $("btnShare").onclick = e => share(true, e.currentTarget);
 $("btnShareAll").onclick = e => share(false, e.currentTarget);
 $("sheetClose").onclick = () => { $("sheet").hidden = true; };
 $("sheet").onclick = e => { if(e.target === $("sheet")) $("sheet").hidden = true; };
+document.addEventListener("keydown", e => {          // Esc 一律可以關掉浮出的東西
+  if(e.key !== "Escape") return;
+  if(!$("sheet").hidden) $("sheet").hidden = true;
+  else if(!$("review").hidden) $("rvClose").click();
+});
 $("sheetCopy").onclick = async () => {
   if(await copyText($("sheetText").value)){ $("sheet").hidden = true; toast("已複製！打開 LINE 貼上就好"); }
   else toast("這個瀏覽器不給自動複製，請長按文字手動複製");
@@ -4064,12 +4129,12 @@ function renderBank(){
   const today = S.days[dayKey()] || {n:0};
   const got = paidOf(today), next = TIERS.find(t=>today.n < t.n);
   $("bankLeft").textContent = left;
-  $("bankDetail").textContent = `賺到 ${S.bank.earned + S.bank.bonus} 分鐘　已用 ${S.bank.used} 分鐘`;
-  $("bankStreak").textContent = st > 0
-    ? `連續 ${st} 天　再 ${BONUS_EVERY - st % BONUS_EVERY} 天有 ${STREAK_BONUS} 分鐘紅利`
-    : "今天還沒達標";
-  $("goalNum").textContent = `今天 ${today.n} 題　已賺 ${got} 分鐘`
-    + (next ? `　再 ${next.n - today.n} 題升到 ${next.m} 分鐘` : "　已達今日上限");
+  $("bankDetail").textContent = `賺到 ${S.bank.earned + S.bank.bonus} 分鐘　已用 ${S.bank.used} 分鐘`
+    + (st > 0 ? `　連續 ${st} 天` : "");
+  $("bankStreak").textContent = next
+    ? `再 ${next.n - today.n} 題 → ${next.m} 分鐘`
+    : (st > 0 ? `再 ${BONUS_EVERY - st % BONUS_EVERY} 天有紅利` : "已達今日上限");
+  $("goalNum").textContent = `今天 ${today.n} 題 · 已賺 ${got} 分鐘`;
   $("goalBar").style.width = Math.min(100, today.n / FULLGOAL * 100) + "%";
   $("btnSpend").disabled = left < SPEND;
   $("btnSpend").textContent = left >= SPEND ? `兌換 ${SPEND} 分鐘遊戲時間` : `還差 ${SPEND - left} 分鐘才能兌換`;
@@ -4096,24 +4161,25 @@ function renderCal(){
 
   let cells = "", months = "", cur = new Date(start), lastMonth = -1;
   for(let wk = 0; wk < CAL_WEEKS; wk++){
-    const weekStart = new Date(cur);
     // 這一欄如果跨到新的月份，就在上方標月份
-    const m = new Date(weekStart); m.setDate(m.getDate() + 6);
+    const m = new Date(cur); m.setDate(m.getDate() + 6);
     if(m.getMonth() !== lastMonth && m.getDate() <= 7){
       lastMonth = m.getMonth();
       months += `<span>${m.getMonth() + 1}月</span>`;
     }else months += `<span></span>`;
 
+    cells += `<div class="ghcol">`;
     for(let dw = 0; dw < 7; dw++){
       const k = dayKey(cur);
-      if(cur > now){ cells += `<div class="cell pad"></div>`; }
+      if(cur > now){ cells += `<span class="cell pad"></span>`; }
       else{
         const rec = S.days[k];
-        cells += `<button class="cell ${rec ? "l" + level(rec.n) : ""} ${rec && rec.paid ? "goal" : ""} ${k === todayK ? "today" : ""}"
+        cells += `<button class="cell ${rec ? "l" + level(rec.n) : ""} ${rec && paidOf(rec) ? "goal" : ""} ${k === todayK ? "today" : ""}"
                   data-day="${k}" aria-label="${k}"></button>`;
       }
       cur.setDate(cur.getDate() + 1);
     }
+    cells += `</div>`;
   }
   $("calMonths").innerHTML = months;
   $("calGrid").innerHTML = cells;
@@ -4318,6 +4384,12 @@ function flipCard(){
   if(rvZhFirst) say(rvList[rvIdx].w);
 }
 $("rvCard").onclick = flipCard;
+$("rvCard").onkeydown = e => {
+  if(e.key === "Enter" || e.key === " "){ e.preventDefault(); flipCard(); }
+  else if(e.key === "ArrowRight") $("rvNext").click();
+  else if(e.key === "ArrowLeft") $("rvPrev").click();
+  else if(e.key === "Escape") $("rvClose").click();
+};
 $("rvSay").onclick = e => { e.stopPropagation(); say(rvList[rvIdx].w); };
 $("rvNext").onclick = () => { rvIdx = (rvIdx + 1) % rvList.length; showCard(); };
 $("rvPrev").onclick = () => { rvIdx = (rvIdx - 1 + rvList.length) % rvList.length; showCard(); };
@@ -4358,6 +4430,64 @@ $("btnReset").onclick = () => {
   if(!confirm(`確定要清除「${DECK.label}」的所有答題紀錄嗎？`)) return;
   S = blank(); save(); refreshHeader(); renderStats(); renderList(); renderDecks();
 };
+
+/* ================= 顯示設定：字級與配色 ================= */
+function applyScale(v){
+  document.documentElement.style.setProperty("--scale", v);
+  try{ localStorage.setItem("cq-scale", v); }catch(e){}
+  document.querySelectorAll("[data-scale]").forEach(b=>
+    b.setAttribute("aria-pressed", String(b.dataset.scale) === String(v)));
+}
+function applyTheme(v){
+  const r = document.documentElement;
+  if(v === "auto") r.removeAttribute("data-theme");
+  else r.setAttribute("data-theme", v);
+  try{ localStorage.setItem("cq-theme", v); }catch(e){}
+  document.querySelectorAll("[data-theme-set]").forEach(b=>
+    b.setAttribute("aria-pressed", b.dataset.themeSet === v));
+}
+document.querySelectorAll("[data-scale]").forEach(b=>
+  b.onclick = () => { applyScale(b.dataset.scale); toast("字體大小已調整"); });
+document.querySelectorAll("[data-theme-set]").forEach(b=>
+  b.onclick = () => applyTheme(b.dataset.themeSet));
+(function initDisplay(){
+  let s = "1", t = "auto";
+  try{ s = localStorage.getItem("cq-scale") || "1"; t = localStorage.getItem("cq-theme") || "auto"; }catch(e){}
+  applyScale(s); applyTheme(t);
+})();
+
+/* ================= 離線與更新（service worker） =================
+   只有在 https 或 localhost 才會註冊；失敗就當作沒這回事，功能不受影響。 */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").then(reg => {
+      // 已經有一個等待中的新版本
+      if(reg.waiting) showUpdate(reg.waiting);
+      reg.addEventListener("updatefound", () => {
+        const nw = reg.installing;
+        if(!nw) return;
+        nw.addEventListener("statechange", () => {
+          // 有 controller 才代表這是「更新」而不是第一次安裝
+          if(nw.state === "installed" && navigator.serviceWorker.controller) showUpdate(nw);
+        });
+      });
+    }).catch(() => {});
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if(reloaded) return;
+      reloaded = true;
+      location.reload();
+    });
+  });
+}
+function showUpdate(worker){
+  const bar = $("updateBar");
+  bar.hidden = false;
+  $("btnUpdate").onclick = () => {
+    bar.hidden = true;
+    worker.postMessage("skip-waiting");
+  };
+}
 
 /* ================= 啟動 ================= */
 let startDeck = "summer";
