@@ -79,14 +79,17 @@ ok($('btnSpend').textContent.includes('還差'),'應提示還差多少, 實得 '
 w.eval('SHARED.bank.earned=60; save(); renderBank();');
 ok(!$('btnSpend').disabled,'足夠時應可兌換');
 
-// ④ GitHub 風格日曆
+// ④ 練習日曆
+// 預設是月檢視，半年熱力圖要自己切過去
+click([...d.querySelectorAll('#calMode .chip')].find(b=>b.dataset.cal==='half'));
 ok(d.querySelectorAll('#calGrid .cell').length>=26*7-7,'應有約半年的格子, 實得 '+d.querySelectorAll('#calGrid .cell').length);
 ok(d.querySelectorAll('#calMonths span').length===26,'月份標籤欄數應等於週數');
 const todayCell=d.querySelector('#calGrid .cell.today');
 ok(!!todayCell,'今天要標出來');
 ok(/l[1-4]/.test(todayCell.className),'今天有練應上色');
-ok(todayCell.classList.contains('goal'),'今天達標應有達標外框');
-ok(!d.querySelector('#calPrev'),'GitHub 風格不應還有上/下月按鈕');
+ok(todayCell.classList.contains('met'),'今天達標應有達標外框');
+ok($('calMonthView').hidden,'切到半年圖時，月檢視要收起來');
+ok(!$('ghwrap').hidden,'半年圖要顯示');
 
 // ⑤ 間隔重複
 const st=w.eval('S.stats');

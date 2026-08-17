@@ -527,8 +527,45 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 .ghgrid .cell.l2{background:color-mix(in srgb, var(--brand) 48%, var(--surface-2))}
 .ghgrid .cell.l3{background:color-mix(in srgb, var(--brand) 74%, var(--surface-2))}
 .ghgrid .cell.l4{background:var(--brand)}
-.ghgrid .cell.goal{border-color:var(--ok)}
+/* 不能叫 .goal —— 會撞到每日目標區塊的 .goal{margin:16px 0 14px}，格子會被推歪 */
+.ghgrid .cell.met{border-color:var(--ok)}
 .ghgrid .cell.today{outline:2px solid var(--ink); outline-offset:0}
+/* ---------- 月檢視（預設）：一個月剛好排得下，不用左右捲 ---------- */
+#calMonthView[hidden]{display:none}
+.ghwrap[hidden]{display:none}
+.mnav{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:8px; margin:6px 0 8px;
+}
+.mnav b{font-size:14.5px; font-variant-numeric:tabular-nums}
+.mnavbtn{
+  width:34px; height:34px; border-radius:9px; border:1px solid var(--line);
+  background:var(--surface); color:var(--ink-soft); font-size:18px; line-height:1;
+  display:grid; place-items:center; flex:none;
+}
+.mnavbtn:disabled{opacity:.3}
+/* minmax(0,1fr) 是必要的：格子有 aspect-ratio，min-width/min-height 的預設值 auto
+   會回過頭把欄寬撐大（實測 7 欄變成 568px 塞進 358px 的容器），格子就跑出畫面 */
+.mgrid{display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:4px}
+.mgrid .wd{
+  text-align:center; font-size:10.5px; color:var(--ink-faint);
+  padding-bottom:2px; line-height:1.4;
+}
+.mcell{
+  aspect-ratio:1; min-width:0; min-height:0;
+  border-radius:8px; padding:0; border:1px solid transparent;
+  background:var(--surface-2); color:var(--ink-faint);
+  font-size:12.5px; font-variant-numeric:tabular-nums;
+  display:grid; place-items:center;
+}
+.mcell.pad{background:none; border:none; pointer-events:none}
+.mcell.l1{background:color-mix(in srgb, var(--brand) 24%, var(--surface-2)); color:var(--ink-soft)}
+.mcell.l2{background:color-mix(in srgb, var(--brand) 48%, var(--surface-2)); color:var(--ink)}
+.mcell.l3{background:color-mix(in srgb, var(--brand) 74%, var(--surface-2)); color:var(--btn-fg)}
+.mcell.l4{background:var(--brand); color:var(--btn-fg); font-weight:600}
+.mcell.met{border-color:var(--ok)}
+.mcell.today{outline:2px solid var(--ink); outline-offset:0}
+.calsum{margin:10px 0 0; font-size:12.5px; color:var(--ink-soft); text-align:center}
 .callegend{
   display:flex; align-items:center; gap:4px; margin:8px 0 0;
   font-size:11px; color:var(--ink-faint); flex-wrap:wrap;
@@ -696,7 +733,22 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
       <div class="card stat"><b id="stDays">0</b><span>練習天數</span></div>
     </div>
     <div class="grouphead"><b>練習日曆</b><span id="calStreak"></span></div>
-    <div class="ghwrap" id="ghwrap">
+    <div class="chiprow" id="calMode" style="justify-content:flex-start; margin:8px 0 2px">
+      <button class="chip" data-cal="month" aria-pressed="true">📅 這個月</button>
+      <button class="chip" data-cal="half" aria-pressed="false">📈 最近半年</button>
+    </div>
+
+    <div id="calMonthView">
+      <div class="mnav">
+        <button class="mnavbtn" id="calPrev" aria-label="上一個月">‹</button>
+        <b id="calTitle"></b>
+        <button class="mnavbtn" id="calNext" aria-label="下一個月">›</button>
+      </div>
+      <div class="mgrid" id="calMonthGrid"></div>
+      <p class="calsum" id="calSum"></p>
+    </div>
+
+    <div class="ghwrap" id="ghwrap" hidden>
       <div class="ghinner">
         <div class="ghmonths" id="calMonths"></div>
         <div class="ghgrid" id="calGrid"></div>
@@ -786,7 +838,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.17-g";
+const VERSION = "2026.08.17-h";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -4371,7 +4423,62 @@ function streakDays(){                 // 從今天往回數，連續練習幾�
   while(SHARED.days[dayKey(t)]){ n++; t.setDate(t.getDate() - 1); }
   return n;
 }
+/* 兩種檢視：預設「這個月」（排得下、看得清楚），另一個是原本的半年熱力圖。
+   半年那張在手機上一定要左右捲，八月才過一半就已經拉得很寬。 */
+let calView = "month";
+try{ calView = localStorage.getItem("cq-cal") === "half" ? "half" : "month"; }catch(e){}
+let calCursor = new Date();            // 月檢視現在看的是哪個月
+
+function dayNote(k, rec){              // 點格子 / 螢幕閱讀器都用同一句
+  const [, mm, dd] = k.split("-");
+  return rec ? `${+mm}/${+dd} 練了 ${rec.n} 題，答對 ${rec.r || 0} 題`
+               + (paidOf(rec) ? `，賺到 ${paidOf(rec)} 分鐘` : "")
+             : `${+mm}/${+dd} 沒有練習紀錄`;
+}
+function bindDays(root){
+  root.querySelectorAll("[data-day]").forEach(b=>{
+    b.onclick = () => toast(dayNote(b.dataset.day, SHARED.days[b.dataset.day]));
+  });
+}
 function renderCal(){
+  $("calMonthView").hidden = calView !== "month";
+  $("ghwrap").hidden = calView !== "half";
+  $("calMode").querySelectorAll(".chip").forEach(b=>
+    b.setAttribute("aria-pressed", b.dataset.cal === calView));
+  const st = streakDays();
+  $("calStreak").textContent = st > 1 ? `連續 ${st} 天有練` : st === 1 ? "今天有練" : "";
+  if(calView === "month") renderCalMonth(); else renderCalHalf();
+}
+function renderCalMonth(){
+  const now = new Date(); now.setHours(0,0,0,0);
+  const todayK = dayKey(now);
+  const y = calCursor.getFullYear(), m = calCursor.getMonth();
+  const lead = new Date(y, m, 1).getDay();          // 這個月 1 號是星期幾
+  const len = new Date(y, m + 1, 0).getDate();      // 這個月有幾天
+
+  let html = ["日","一","二","三","四","五","六"].map(x=>`<span class="wd">${x}</span>`).join("");
+  for(let i = 0; i < lead; i++) html += `<span class="mcell pad"></span>`;
+  let sumDays = 0, sumN = 0, sumMin = 0;
+  for(let d = 1; d <= len; d++){
+    const dt = new Date(y, m, d), k = dayKey(dt), rec = SHARED.days[k];
+    if(rec){ sumDays++; sumN += rec.n || 0; sumMin += paidOf(rec); }
+    const cls = [
+      "mcell",
+      rec ? "l" + level(rec.n) : "",
+      rec && paidOf(rec) ? "met" : "",
+      k === todayK ? "today" : ""
+    ].filter(Boolean).join(" ");
+    html += `<button class="${cls}" data-day="${k}" aria-label="${esc(dayNote(k, rec))}">${d}</button>`;
+  }
+  $("calTitle").textContent = `${y} 年 ${m + 1} 月`;
+  $("calMonthGrid").innerHTML = html;
+  $("calSum").textContent = sumDays
+    ? `這個月練了 ${sumDays} 天、${sumN} 題，賺到 ${sumMin} 分鐘`
+    : "這個月還沒有練習紀錄";
+  $("calNext").disabled = y === now.getFullYear() && m === now.getMonth();
+  bindDays($("calMonthGrid"));
+}
+function renderCalHalf(){
   const now = new Date(); now.setHours(0,0,0,0);
   const todayK = dayKey(now);
   const end = new Date(now); end.setDate(end.getDate() + (6 - end.getDay()));   // 本週週六
@@ -4392,8 +4499,8 @@ function renderCal(){
       if(cur > now){ cells += `<span class="cell pad"></span>`; }
       else{
         const rec = SHARED.days[k];
-        cells += `<button class="cell ${rec ? "l" + level(rec.n) : ""} ${rec && paidOf(rec) ? "goal" : ""} ${k === todayK ? "today" : ""}"
-                  data-day="${k}" aria-label="${k}"></button>`;
+        cells += `<button class="cell ${rec ? "l" + level(rec.n) : ""} ${rec && paidOf(rec) ? "met" : ""} ${k === todayK ? "today" : ""}"
+                  data-day="${k}" aria-label="${esc(dayNote(k, rec))}"></button>`;
       }
       cur.setDate(cur.getDate() + 1);
     }
@@ -4401,18 +4508,22 @@ function renderCal(){
   }
   $("calMonths").innerHTML = months;
   $("calGrid").innerHTML = cells;
-  $("calGrid").querySelectorAll("[data-day]").forEach(b=>{
-    b.onclick = () => {
-      const rec = SHARED.days[b.dataset.day];
-      const [, mm, dd] = b.dataset.day.split("-");
-      toast(rec ? `${+mm}/${+dd} 練了 ${rec.n} 題，答對 ${rec.r} 題${rec.paid ? "　🎮 達標" : ""}`
-                : `${+mm}/${+dd} 沒有練習紀錄`);
-    };
-  });
+  bindDays($("calGrid"));
   $("ghwrap").scrollLeft = $("ghwrap").scrollWidth;      // 捲到最近的日期
-  const st = streakDays();
-  $("calStreak").textContent = st > 1 ? `連續 ${st} 天有練` : st === 1 ? "今天有練" : "";
 }
+$("calMode").querySelectorAll(".chip").forEach(b=>{
+  b.onclick = () => {
+    calView = b.dataset.cal;
+    calCursor = new Date();                              // 切回來一律看當月
+    try{ localStorage.setItem("cq-cal", calView); }catch(e){}
+    renderCal();
+  };
+});
+$("calPrev").onclick = () => { calCursor.setDate(1); calCursor.setMonth(calCursor.getMonth() - 1); renderCalMonth(); };
+$("calNext").onclick = () => {
+  if($("calNext").disabled) return;                      // 不給看未來的月份
+  calCursor.setDate(1); calCursor.setMonth(calCursor.getMonth() + 1); renderCalMonth();
+};
 
 /* ================= 備份與還原 =================
    把兩個題庫的紀錄壓成一段文字，可貼到 LINE 保存。純本機，不上傳。 */
