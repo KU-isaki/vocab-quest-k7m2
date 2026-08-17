@@ -619,7 +619,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
       <div class="brandmark">
         <b>單字闖關</b><span id="hDeck"></span>
       </div>
-      <div class="score" id="hScore">今天 <b id="hDone">0</b>/<span id="hGoalN">10</span> 題</div>
+      <div class="score" id="hScore">再答對 <b id="hNeed">10</b> 題 → <span id="hGain">2</span> 分</div>
     </div>
     <div class="bar"><i id="hBar"></i></div>
   </header>
@@ -838,7 +838,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.17-h";
+const VERSION = "2026.08.17-i";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -4175,15 +4175,18 @@ function refreshHeader(){
   const today = SHARED.days[dayKey()] || {n:0, r:0};
   const net = netOf(today), got = paidOf(today), next = nextStep(today, net);
 
-  // 頂端那條追今天的進度：分母是下一階的門檻，到頂就顯示已滿
+  /* 頂端那條：直接講「還差幾題、換得到幾分鐘」。
+     本來寫「今天 0/10 題」，但沒說 10 是什麼，而且門檻會跳（10→20→30→50→80），
+     每過一階看起來像進度歸零。 */
   const tier = TIERS.find(t=>net < t.n);
   if(tier){
-    $("hScore").innerHTML = `今天 <b id="hDone">${net}</b>/<span id="hGoalN">${tier.n}</span> 題`;
-    $("hScore").title = `再答對 ${tier.n - net} 題 → ${next ? next.m : tier.m} 分鐘`;
+    $("hScore").innerHTML = `再答對 <b id="hNeed">${tier.n - net}</b> 題 → <span id="hGain">${next.m}</span> 分`;
+    $("hScore").title = `今天淨 ${net} 題（答對 ${today.r || 0}、答錯 ${(today.n || 0) - (today.r || 0)}），`
+      + `做到 ${tier.n} 題可以換 ${next.m} 分鐘`;
     $("hBar").style.width = (net / tier.n * 100) + "%";
   }else{
-    $("hScore").innerHTML = `今天 <b id="hDone">${net}</b> 題 ✓`;
-    $("hScore").title = `今日上限已滿（${REWARD} 分鐘）`;
+    $("hScore").innerHTML = `今日上限已滿 ✓`;
+    $("hScore").title = `今天淨 ${net} 題，已達每日上限 ${REWARD} 分鐘`;
     $("hBar").style.width = "100%";
   }
 

@@ -69,11 +69,13 @@ ok($('sumCard').hidden===false, '10 題後應顯示本輪成績');
 ok($('qCard').hidden===true, '成績頁時題目卡應隱藏');
 const done=w.eval('S.done');
 ok(done===R, `這個題庫的累積答題應為 ${R}, 實得 `+done);
-// 頂端那條追的是「今天」的進度，分母是下一階的門檻
-const hNet=parseInt($('hDone').textContent,10), hGoal=parseInt($('hGoalN').textContent,10);
-ok(hNet===w.eval('netOf(SHARED.days[dayKey()])'), `標頭應顯示今日淨題數, 實得 `+hNet);
-ok(w.eval('TIERS').some(t=>t.n===hGoal), `分母應是某一階的門檻, 實得 `+hGoal);
-ok($('hBar').style.width===(hNet/hGoal*100)+'%', `進度條應為 ${hNet}/${hGoal}, 實得 `+$('hBar').style.width);
+// 頂端那條講的是「今天還差幾題、換得到幾分鐘」
+const hNet=w.eval('netOf(SHARED.days[dayKey()])');
+const hTier=w.eval('TIERS').find(t=>hNet<t.n);
+if(hTier){
+  ok(parseInt($('hNeed').textContent,10)===hTier.n-hNet, `標頭應顯示還差 ${hTier.n-hNet} 題, 實得 `+$('hNeed').textContent);
+  ok($('hBar').style.width===(hNet/hTier.n*100)+'%', `進度條應為 ${hNet}/${hTier.n}, 實得 `+$('hBar').style.width);
+}else ok($('hScore').textContent.includes('✓'),'到頂要顯示完成標記');
 
 // 4. localStorage 有寫入
 const saved=JSON.parse(w.localStorage.getItem('cq-vocab-v1:summer'));

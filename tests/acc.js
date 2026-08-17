@@ -119,30 +119,39 @@ ok(d.querySelectorAll('#goalNum .seg').length>=4,'進度頁那行應該分成多
 ok(d.querySelectorAll('#heroGoal .seg').length>=3,'主畫面那行也要分段');
 ACC.forEach(t=>ok($('tierHint').textContent.includes('×'+t.m),`說明要列出 ×${t.m} 這一級`));
 
-/* ---------- ⑤ 頂端進度條追的是「今天」 ---------- */
-// 舊版分母寫死 100（第一版「100 題循環測驗」的殘留），做超過就變成「已答 347/100」
+/* ---------- ⑤ 頂端那條要看得懂 ---------- */
+// 舊版是「已答 0/100」（第一版殘留，做超過就變成 347/100），
+// 再上一版是「今天 0/10 題」——沒說 10 是什麼，門檻一跳還像進度歸零。
 ok(!/\/100</.test(html.split('</header>')[0]),'標頭不得再寫死 /100 這種永遠追不完的分母');
-const hNet=()=>parseInt($('hDone').textContent,10);
-const hGoal=()=>parseInt($('hGoalN').textContent,10);
+const hTxt=()=>$('hScore').textContent;
 const TIERS2=w.eval('TIERS');
-[[0,0],[5,5],[12,12],[25,25]].forEach(([r])=>{
+[0,5,12,25].forEach(r=>{
   w.eval(`SHARED.days[dayKey()]={n:${r},r:${r},mw:${r}}; refreshHeader();`);
   const tier=TIERS2.find(t=>r<t.n);
-  ok(hNet()===r,`今天淨 ${r} 題就顯示 ${r}, 實得 `+hNet());
-  ok(hGoal()===tier.n,`分母應跳到下一階 ${tier.n}, 實得 `+hGoal());
+  const need=tier.n-r;
+  ok(parseInt($('hNeed').textContent,10)===need,`淨 ${r} 題時應顯示還差 ${need} 題, 實得 `+$('hNeed').textContent);
+  ok(+$('hGain').textContent>0,'要講清楚換得到幾分鐘, 實得 '+$('hGain').textContent);
+  ok(hTxt().includes('題')&&hTxt().includes('分'),'單位要寫出來, 實得 '+hTxt());
+  ok(!/\d+\s*\/\s*\d+/.test(hTxt()),'不要再用看不懂的 X/Y 寫法, 實得 '+hTxt());
   ok($('hBar').style.width===(r/tier.n*100)+'%',`進度條應為 ${r}/${tier.n}, 實得 `+$('hBar').style.width);
-  ok(w.eval('S.done')!==r || r===0,'標頭追的是今日淨題數，不是題庫累積數');
+  ok(/淨 \d+ 題/.test($('hScore').title),'長按/滑過要看得到今天實際做了幾題, 實得 '+$('hScore').title);
 });
-// 到頂之後不能出現「95/80」這種分母被超過的畫面
+// 顯示的分鐘數要跟真的會拿到的一致
+w.eval('SHARED.days[dayKey()]={n:12,r:12,mw:12}; refreshHeader();');
+const tier2=TIERS2.find(t=>12<t.n);
+ok(+$('hGain').textContent===w.eval(`goalMinutes(${tier2.n}, projMul(SHARED.days[dayKey()], ${tier2.n-12}) * accStep(projAcc(SHARED.days[dayKey()], ${tier2.n-12})).m)`),
+   '標頭寫的分鐘要等於真的算出來的, 實得 '+$('hGain').textContent);
+// 到頂之後不能還叫人再答題
 const top=TIERS2[TIERS2.length-1].n+15;
 w.eval(`SHARED.days[dayKey()]={n:${top},r:${top},mw:${top}}; refreshHeader();`);
-ok(!$('hScore').textContent.includes('/'),'到頂就不該再顯示分母, 實得 '+$('hScore').textContent);
-ok($('hScore').textContent.includes('✓'),'到頂要有完成標記, 實得 '+$('hScore').textContent);
+ok(!hTxt().includes('再答對'),'到頂就不該再叫人答題, 實得 '+hTxt());
+ok(hTxt().includes('✓'),'到頂要有完成標記, 實得 '+hTxt());
 ok($('hBar').style.width==='100%','到頂進度條要滿格');
 // 兩個題庫共用日曆，所以切題庫不該讓今天的進度歸零
-const netTop=hNet();
+const barTop=$('hBar').style.width;
 click([...d.querySelectorAll('.deck')].find(b=>b.dataset.deck==='full'));
-ok(hNet()===netTop,`切題庫後今日進度不得歸零, 實得 `+hNet());
+ok($('hBar').style.width===barTop,'切題庫後今日進度不得歸零');
+ok(hTxt().includes('✓'),'切題庫後仍是已達上限, 實得 '+hTxt());
 
 console.log(`\n通過 ${pass} / 失敗 ${fail}`);
 process.exit(fail?1:0);
