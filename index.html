@@ -158,6 +158,14 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 }
 .chip[aria-pressed="true"]{background:var(--brand-soft); border-color:var(--brand); color:var(--brand); font-weight:600}
 .chip:disabled{opacity:.4}
+/* 題數 × 難度：兩列三格的矩陣，任意組合 */
+.matrix{display:grid; grid-template-columns:repeat(3,1fr); gap:7px}
+.matrix .chip{
+  padding:9px 4px; border-radius:11px; text-align:center; line-height:1.3;
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+}
+.matrix .chip small{display:block; font-size:10.5px; color:var(--ink-faint); font-weight:400}
+.matrix .chip[aria-pressed="true"] small{color:var(--brand)}
 
 /* ---------- question ---------- */
 .q{margin-top:16px; padding:20px 18px}
@@ -593,6 +601,9 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
       <div class="pickers">
         <div class="eyebrow" style="text-align:left">考試範圍</div>
         <div class="chipbox"><div class="chiprow" id="catChips"></div></div>
+        <div class="eyebrow" style="text-align:left">題數 × 難度</div>
+        <div class="matrix" id="sizeRow"></div>
+        <div class="matrix" id="lvRow"></div>
         <div class="chiprow" style="margin-top:2px">
           <button class="chip" id="chipListen" aria-pressed="true">🔊 聽力題</button>
         </div>
@@ -603,8 +614,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
         <div class="bar"><i id="heroBar"></i></div>
       </div>
 
-      <button class="btn" id="btnDaily">今日 <span id="dailyBtnN"></span> 題</button>
-      <button class="btn ghost" id="btnStart">完整練習 <span id="fullBtnN"></span> 題</button>
+      <button class="btn" id="btnStart">開始練習</button>
       <button class="btn quiet" id="btnWrongOnly">只考錯過的字（<span id="wrongCount">0</span>）</button>
     </div>
 
@@ -773,7 +783,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.17-d";
+const VERSION = "2026.08.17-e";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -3611,10 +3621,34 @@ const SPEND = 15;                      // 一次兌換幾分鐘
 const STREAK_BONUS = 30;               // 連續 7 天的紅利（分鐘）
 const BONUS_EVERY = 7;
 
-function tierMinutes(n){               // 當日淨題數 → 應得幾分鐘
+/* ---- 難度 ----
+   難度只改「出什麼題型」和「分鐘數的倍率」，題數門檻完全不動，
+   所以調難度不會讓題目變少，只會讓同樣題數更難、也更值錢。 */
+const LEVELS = [
+  {id:"easy", name:"🌱 輕鬆", mul:0.8, note:"多選擇題，打字題少"},
+  {id:"std",  name:"⚖️ 標準", mul:1,   note:"各種題型平均出"},
+  {id:"hard", name:"🔥 挑戰", mul:1.5, note:"打字題與聽力題變多"}
+];
+let LV = LEVELS[1];
+try{ LV = LEVELS.find(l=>l.id === localStorage.getItem("cq-level")) || LEVELS[1]; }catch(e){}
+
+function tierMinutes(n){               // 當日淨題數 → 應得幾分鐘（未計難度）
   let m = 0;
   for(const t of TIERS) if(n >= t.n) m = t.m;
   return m;
+}
+function dayMul(day){                  // 當天實際的平均難度倍率（舊紀錄一律算 ×1）
+  const d = day || {}, n = d.n || 0;
+  if(!n) return LV.mul;
+  return (d.mw === undefined ? n : d.mw) / n;
+}
+function projMul(day, k){              // 再用目前難度做 k 題之後，平均倍率會變成多少
+  const d = day || {}, n = d.n || 0;
+  const mw = d.mw === undefined ? n : d.mw;
+  return (n + k) ? (mw + k * LV.mul) / (n + k) : LV.mul;
+}
+function goalMinutes(net, mul){        // 淨題數 × 難度 → 分鐘，一天仍以 REWARD 為上限
+  return Math.min(REWARD, Math.round(tierMinutes(net) * mul));
 }
 function netOf(day){                   // 答對算 +1，答錯算 -1，最低算到 0
   const d = day || {n:0, r:0};
@@ -3789,12 +3823,19 @@ function drawRound(source, size){
   }
   return shuffle(picked).map(w=>({ word: w, kind: pickKind(w) }));
 }
+/* 難度只調配方，不調題數：越難，打字題（要自己拼出來）和聽力題（沒有字可看）越多 */
+const MIX = {
+  easy: {listen:.15, need:3, typeP:.25, kinds:["spell","en2zh","en2zh","en2zh"], ear:1},
+  std:  {listen:.3,  need:2, typeP:.4,  kinds:["spell","spell","en2zh","en2zh"], ear:2},
+  hard: {listen:.5,  need:1, typeP:.5,  kinds:["spell","spell","en2zh"],         ear:3}
+};
 function pickKind(w){
   const ear = listenOn && TTS;                 // 沒開聽力題或瀏覽器不支援就不出
-  if(!w.spellable) return ear && Math.random() < .3 ? "listen" : "en2zh";
-  if(stat(w.w).streak >= 2 && Math.random() < .4) return "type";
-  const kinds = ["spell", "spell", "en2zh", "en2zh"];
-  if(ear) kinds.push("listen");
+  const m = MIX[LV.id];
+  if(!w.spellable) return ear && Math.random() < m.listen ? "listen" : "en2zh";
+  if(stat(w.w).streak >= m.need && Math.random() < m.typeP) return "type";
+  const kinds = m.kinds.slice();
+  if(ear) for(let i = 0; i < m.ear; i++) kinds.push("listen");
   if(w.ex) kinds.push("cloze");                // 有例句的字才出挖空題
   return kinds[Math.floor(Math.random() * kinds.length)];
 }
@@ -3816,8 +3857,34 @@ $("chipListen").onclick = e => {
   try{ localStorage.setItem("cq-listen", listenOn ? "1" : "0"); }catch(err){}
   toast(listenOn ? "聽力題已開啟" : "聽力題已關閉（沒聲音的時候用）");
 };
-$("btnStart").onclick = () => { warm(); startRound(false, ROUND); };
-$("btnDaily").onclick = () => { warm(); startRound(false, DAILY); };
+/* 題數 × 難度矩陣：兩列各選一個，湊出這一輪要考什麼 */
+const SIZES = [{n:10, tag:"暖身"}, {n:30, tag:"標準一輪"}, {n:50, tag:"衝刺"}];
+let pickSize = ROUND;
+try{ pickSize = SIZES.some(s=>s.n === +localStorage.getItem("cq-size")) ? +localStorage.getItem("cq-size") : ROUND; }catch(e){}
+
+function renderMatrix(){
+  $("sizeRow").innerHTML = SIZES.map(s=>
+    `<button class="chip" data-size="${s.n}" aria-pressed="${pickSize === s.n}">${s.n} 題<small>${s.tag}</small></button>`).join("");
+  $("lvRow").innerHTML = LEVELS.map(l=>
+    `<button class="chip" data-lv="${l.id}" aria-pressed="${LV.id === l.id}">${l.name}<small>×${l.mul} 分鐘</small></button>`).join("");
+  $("sizeRow").querySelectorAll(".chip").forEach(b=>{
+    b.onclick = () => {
+      pickSize = +b.dataset.size;
+      try{ localStorage.setItem("cq-size", pickSize); }catch(e){}
+      renderMatrix();
+    };
+  });
+  $("lvRow").querySelectorAll(".chip").forEach(b=>{
+    b.onclick = () => {
+      LV = LEVELS.find(l=>l.id === b.dataset.lv);
+      try{ localStorage.setItem("cq-level", LV.id); }catch(e){}
+      renderMatrix(); renderBank(); refreshHeader();
+      toast(`難度：${LV.name}　${LV.note}　分鐘 ×${LV.mul}`);
+    };
+  });
+  $("btnStart").textContent = `開始練習　${pickSize} 題 · ${LV.name}`;
+}
+$("btnStart").onclick = () => { warm(); startRound(false, pickSize); };
 $("btnWrongOnly").onclick = () => { warm(); startRound(true); };
 $("btnQuit").onclick = () => endRound();
 $("btnAgain").onclick = () => startRound(wrongMode, roundSize);
@@ -3961,7 +4028,11 @@ function grade(ok){
   }
   S.done++;
   const dk = dayKey(), day = SHARED.days[dk] || (SHARED.days[dk] = {n:0, r:0});
+  // mw 累加每題的難度倍率，之後除以題數就是當天的平均倍率。
+  // 這樣才不能「用輕鬆模式刷完題數、最後切挑戰模式回頭領獎」。
+  const mw = (day.mw === undefined ? day.n : day.mw) + LV.mul;
   day.n++; if(ok) day.r++;
+  day.mw = Math.round(mw * 100) / 100;
   checkGoal(day);
   save(); refreshHeader();
 
@@ -4024,9 +4095,9 @@ function refreshHeader(){
   $("wrongCount").textContent = WORDS.filter(w=>stat(w.w).x > 0 && stat(w.w).streak < 2).length;
 
   const today = SHARED.days[dayKey()] || {n:0, r:0};
-  const net = netOf(today), got = paidOf(today), next = TIERS.find(t=>net < t.n);
+  const net = netOf(today), got = paidOf(today), next = nextStep(today, net);
   $("heroGoal").textContent = `今天答對 ${today.r || 0}　答錯 ${(today.n || 0) - (today.r || 0)}　已賺 ${got} 分鐘`;
-  $("heroReward").textContent = next ? `再答對 ${next.n - net} 題 → ${next.m} 分鐘` : "今日上限已滿 ✓";
+  $("heroReward").textContent = next ? `再答對 ${next.k} 題 → ${next.m} 分鐘` : "今日上限已滿 ✓";
   $("heroBar").style.width = Math.min(100, net / FULLGOAL * 100) + "%";
 }
 
@@ -4114,7 +4185,7 @@ function reportText(roundOnly){
   const L = ["📘 單字闖關 · " + DECK.label];
   if(roundOnly){
     const total = roundDone();
-    L.push(`這一輪：${roundRight} / ${total} 題` + (total < queue.length ? "（提早結束）" : ""));
+    L.push(`這一輪：${roundRight} / ${total} 題 · 難度 ${LV.name}` + (total < queue.length ? "（提早結束）" : ""));
     L.push(missed.length ? "這輪錯的字：" + missed.map(w=>w.w).join("、")
                          : (total ? "這輪全對 👏" : "這輪沒有作答"));
   }
@@ -4178,9 +4249,15 @@ function goalStreak(){                 // 連續達標幾天（今天還沒達�
   while(paidOf(SHARED.days[dayKey(t)])){ n++; t.setDate(t.getDate() - 1); }
   return n;
 }
+function nextStep(day, net){           // 下一階：還要答對幾題、到了大約幾分鐘（含難度倍率）
+  const t = TIERS.find(x=>net < x.n);
+  if(!t) return null;
+  const k = t.n - net;
+  return {k, m: goalMinutes(t.n, projMul(day, k))};
+}
 function checkGoal(day){
   const net = netOf(day);
-  const target = tierMinutes(net), got = paidOf(day);
+  const target = goalMinutes(net, dayMul(day)), got = paidOf(day);
   if(target === got) return;
   const first = got === 0 && target > 0;
   const down = target < got;                    // 答錯把淨題數拉低 → 倒扣
@@ -4190,35 +4267,36 @@ function checkGoal(day){
   const bonus = first && st > 0 && st % BONUS_EVERY === 0;
   if(bonus) SHARED.bank.bonus += STREAK_BONUS;
   save();
-  const nextTier = TIERS.find(t=>net < t.n);
+  const nx = nextStep(day, net);
   setTimeout(()=>{
     if(down){
       toast(`⚠️ 答錯扣抵，今天剩 ${target} 分鐘`
-        + (nextTier ? `　再答對 ${nextTier.n - net} 題可以拿回 ${nextTier.m} 分鐘` : ""));
+        + (nx ? `　再答對 ${nx.k} 題可以拿回 ${nx.m} 分鐘` : ""));
       return;
     }
     toast(bonus
       ? `🎉 連續 ${st} 天！多拿 ${STREAK_BONUS} 分鐘，存摺共 ${bankLeft()} 分鐘`
       : `🎮 淨 ${net} 題達標！今天共 ${target} 分鐘`
-        + (nextTier ? `，再答對 ${nextTier.n - net} 題可以升到 ${nextTier.m} 分鐘` : `，存摺共 ${bankLeft()} 分鐘`));
+        + (nx ? `，再答對 ${nx.k} 題可以升到 ${nx.m} 分鐘` : `，存摺共 ${bankLeft()} 分鐘`));
   }, 900);
 }
 function renderBank(){
   const left = bankLeft(), st = goalStreak();
   const today = SHARED.days[dayKey()] || {n:0};
-  const net = netOf(today), got = paidOf(today), next = TIERS.find(t=>net < t.n);
+  const net = netOf(today), got = paidOf(today), next = nextStep(today, net);
   $("bankLeft").textContent = left;
   $("bankDetail").textContent = `賺到 ${SHARED.bank.earned + SHARED.bank.bonus} 分鐘　已用 ${SHARED.bank.used} 分鐘`
     + (st > 0 ? `　連續 ${st} 天` : "");
   $("bankStreak").textContent = next
-    ? `再答對 ${next.n - net} 題 → ${next.m} 分鐘`
+    ? `再答對 ${next.k} 題 → ${next.m} 分鐘`
     : (st > 0 ? `再 ${BONUS_EVERY - st % BONUS_EVERY} 天有紅利` : "已達今日上限");
   $("goalNum").textContent = `今天對 ${today.r || 0}　錯 ${(today.n || 0) - (today.r || 0)}　淨 ${net} 題 · ${got} 分鐘`;
   $("goalBar").style.width = Math.min(100, net / FULLGOAL * 100) + "%";
   $("btnSpend").disabled = left < SPEND;
   $("btnSpend").textContent = left >= SPEND ? `兌換 ${SPEND} 分鐘遊戲時間` : `還差 ${SPEND - left} 分鐘才能兌換`;
   $("tierHint").innerHTML = "<b>答對 1 題 +1，答錯 1 題 -1</b>，算出來的淨題數換分鐘：<br>"
-    + TIERS.map(t=>`${t.n} 題 = ${t.m} 分鐘`).join("　·　")
+    + TIERS.map(t=>`${t.n} 題 = ${goalMinutes(t.n, LV.mul)} 分鐘`).join("　·　")
+    + `<br>目前難度 ${LV.name}（分鐘 ×${LV.mul}），題數門檻不會變`
     + `<br>一天最多 ${REWARD} 分鐘，連續 ${BONUS_EVERY} 天多送 ${STREAK_BONUS} 分鐘`
     + (getPin() ? "　·　已設家長密碼" : "");
   renderTimer();
@@ -4589,11 +4667,10 @@ loadShared();
 let startDeck = "summer";
 try{ startDeck = localStorage.getItem(DECK_KEY) || "summer"; }catch(e){}
 useDeck(startDeck);
-$("heroSub").textContent = `答對 +1、答錯 -1，${TIERS.map(t=>t.n+" 題換 "+t.m+" 分").join("、")}`;
+$("heroSub").textContent = `答對 +1、答錯 -1，換遊戲時間（${TIERS[0].n} 題 ${TIERS[0].m} 分起跳，一天最多 ${REWARD} 分）`;
 $("chipListen").setAttribute("aria-pressed", listenOn && TTS);
 if(!TTS) $("chipListen").disabled = true;
-$("dailyBtnN").textContent = DAILY;
-$("fullBtnN").textContent = ROUND;
+renderMatrix();
 renderDecks();
 renderChips();
 $("verline").textContent = "版本 " + VERSION;

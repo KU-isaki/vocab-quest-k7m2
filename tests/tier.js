@@ -48,7 +48,8 @@ function answerWrong(){
   } else { $('typed').value='zzzz'; click($('btnCheck')); }
   click($('btnNext'));
 }
-function play(n){ click($('btnDaily')); for(let i=0;i<n;i++) answer(); click($('btnQuit')); click($('btnBackHome')); }
+const pickN=n=>click([...d.querySelectorAll('#sizeRow .chip')].find(b=>+b.dataset.size===n));
+function play(n){ pickN(10); click($('btnStart')); for(let i=0;i<n;i++) answer(); click($('btnQuit')); click($('btnBackHome')); }
 
 console.log('  級距:', TIERS.map(t=>`${t.n}題=${t.m}分`).join(' · '));
 ok(w.eval('tierMinutes(0)')===0,'0 題 = 0 分');
@@ -78,7 +79,7 @@ console.log('  分次累積到', TIERS[TIERS.length-1].n, '題 → 總共', bank
 w.eval('S=blank(); save();');
 const R3=w.eval('ROUND');
 w.eval('SHARED={days:{},bank:{earned:0,used:0,bonus:0}}; saveShared(); S=blank(); save();');
-click($('btnStart')); for(let i=0;i<R3;i++) answer(); click($('btnBackHome'));
+pickN(R3); click($('btnStart')); for(let i=0;i<R3;i++) answer(); click($('btnBackHome'));
 ok(bank()===w.eval('tierMinutes('+R3+')'),`一次做 ${R3} 題應得 ${w.eval('tierMinutes('+R3+')')} 分, 實得 ${bank()}`);
 
 // 兌換：密碼、申請訊息、倒數

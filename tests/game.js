@@ -45,14 +45,17 @@ function answer(correct=true){
   click($('btnNext'));
 }
 
-// ① 今日目標入口
-ok(!!$('btnDaily'),'應有今日 N 題按鈕');
-ok($('btnDaily').textContent.includes(String(DAILY)),`今日按鈕應顯示 ${DAILY}`);
-ok($('btnStart').textContent.includes(String(ROUND)),`完整練習按鈕應顯示 ${ROUND}`);
+// ① 題數 × 難度矩陣入口
+const sizeBtns=()=>[...d.querySelectorAll('#sizeRow .chip')];
+const pickN=n=>click(sizeBtns().find(b=>+b.dataset.size===n));
+ok(sizeBtns().length===3,'題數列應有 3 個按鈕, 實得 '+sizeBtns().length);
+ok(d.querySelectorAll('#lvRow .chip').length===3,'難度列應有 3 個按鈕');
+ok(sizeBtns().some(b=>+b.dataset.size===DAILY),`題數列應有 ${DAILY} 題`);
+ok($('btnStart').textContent.includes(String(ROUND)),`預設應為 ${ROUND} 題, 實得 `+$('btnStart').textContent);
 ok($('heroGoal').textContent.includes('答對 0'),'主畫面應顯示今日進度, 實得 '+$('heroGoal').textContent);
 
 // ② 做滿每日目標 → 拿到遊戲時間
-click($('btnDaily'));
+pickN(DAILY); click($('btnStart'));
 ok($('qCount').textContent.includes(`/ ${DAILY}`),`今日模式一輪應為 ${DAILY} 題, 實得 `+$('qCount').textContent);
 for(let i=0;i<DAILY;i++) answer(true);
 const S1={bank:w.eval('SHARED.bank'),days:w.eval('SHARED.days')};
@@ -62,7 +65,7 @@ click($('btnBackHome'));
 ok($('heroGoal').textContent.includes(`已賺 ${T1} 分鐘`),'主畫面應顯示已賺分鐘, 實得 '+$('heroGoal').textContent);
 
 // 同一天再練是「升級」不是重複發放：20 題該拿第二階，不是兩次第一階
-click($('btnDaily')); for(let i=0;i<DAILY;i++) answer(true); click($('btnBackHome'));
+pickN(DAILY); click($('btnStart')); for(let i=0;i<DAILY;i++) answer(true); click($('btnBackHome'));
 const S2={bank:w.eval('SHARED.bank'),days:w.eval('SHARED.days')};
 ok(S2.bank.earned===TIERS[1].m,`累積 ${TIERS[1].n} 題應為 ${TIERS[1].m} 分（非 ${T1*2}），實得 `+S2.bank.earned);
 
@@ -100,6 +103,7 @@ ok(w.eval('reviewCount()')>0,'應統計出今天該複習的字數');
 // ⑥ 聽力題
 ok(!!$('chipListen'),'應有聽力題開關');
 let sawListen=false;
+pickN(ROUND);
 for(let r=0;r<6&&!sawListen;r++){ click($('btnStart'));
   for(let i=0;i<ROUND;i++){ if($('qKind').textContent.includes('只聽')){ sawListen=true;
       ok(!d.querySelector('#qPrompt .en'),'聽力題一開始不該顯示英文');
@@ -114,6 +118,7 @@ ok(sawListen,'應該要出得到聽力題');
 click($('chipListen'));
 ok($('chipListen').getAttribute('aria-pressed')==='false','開關要能關掉');
 let listenAfterOff=0;
+pickN(ROUND);
 for(let r=0;r<4;r++){ click($('btnStart'));
   for(let i=0;i<ROUND;i++){ if($('qKind').textContent.includes('只聽')) listenAfterOff++; answer(true); }
   click($('btnBackHome')); }
