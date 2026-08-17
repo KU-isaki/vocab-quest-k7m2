@@ -125,6 +125,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 /* ---------- deck picker ---------- */
 .decks{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px}
+.decks[hidden]{display:none}   /* display:grid 會蓋掉 hidden 屬性 */
 .deck{
   padding:13px 12px; border-radius:var(--r); border:1.5px solid var(--line);
   background:var(--surface); text-align:left; line-height:1.35;
@@ -725,7 +726,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
     <div class="card bank">
       <div class="bank-top">
         <div class="bank-main">
-          <span class="eyebrow">遊戲時間存摺</span>
+          <span class="eyebrow">遊戲時間存摺 · 兩個題庫共用</span>
           <div class="bank-num"><b id="bankLeft">0</b><span>分鐘可用</span></div>
           <p id="bankDetail"></p>
         </div>
@@ -742,6 +743,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
       </details>
     </div>
 
+    <div class="grouphead"><b id="statDeck">成績</b><span>只算這個題庫</span></div>
     <div class="tiles2">
       <div class="card stat accent"><b id="stDone">0</b><span>累積答題數</span></div>
       <div class="card stat"><b id="stRate">—</b><span>總答對率</span></div>
@@ -750,7 +752,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
       <div class="card stat"><b id="stDue">0</b><span>今天該複習</span></div>
       <div class="card stat"><b id="stDays">0</b><span>練習天數</span></div>
     </div>
-    <div class="grouphead"><b>練習日曆</b><span id="calStreak"></span></div>
+    <div class="grouphead"><b>練習日曆 · 兩個題庫共用</b><span id="calStreak"></span></div>
     <div class="chiprow" id="calMode" style="justify-content:flex-start; margin:8px 0 2px">
       <button class="chip" data-cal="month" aria-pressed="true">📅 這個月</button>
       <button class="chip" data-cal="half" aria-pressed="false">📈 最近半年</button>
@@ -779,7 +781,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
       </div>
     </details>
 
-    <div class="grouphead"><b>需要加強的字</b><span id="weakNum"></span></div>
+    <div class="grouphead"><b id="weakDeck">需要加強的字</b><span id="weakNum"></span></div>
     <ul class="wlist" id="weakList"></ul>
     <p class="empty" id="weakEmpty" hidden>目前沒有錯題，繼續保持！</p>
     <button class="btn ghost" id="btnShareAll" style="margin-top:24px">📋 複製整體進度，貼給家長</button>
@@ -829,7 +831,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
     </details>
 
     <div class="grouphead"><b>清除紀錄</b><span>要家長密碼</span></div>
-    <button class="btn quiet" id="btnReset">清除這個題庫的答題紀錄</button>
+    <button class="btn quiet" id="btnReset">清除答題紀錄</button>
     <button class="btn quiet" id="btnResetShared">清除練習日曆與遊戲時間</button>
     <details class="info"><summary>這兩個差在哪？</summary>
       <div class="info-in"><b>題庫的答題紀錄</b>（答對率、已熟練、待加強）是兩個題庫各記各的，只清你目前選的那一個。<br>
@@ -888,7 +890,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.17-j";
+const VERSION = "2026.08.17-k";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -3875,11 +3877,18 @@ document.querySelectorAll(".nav button").forEach(b=>{
     if(b.dataset.view === "vStats") renderStats();
     if(b.dataset.view === "vList") renderList();
     if(b.dataset.view === "vSet") renderSettings();
+    showDeckPicker(b.dataset.view);
     window.scrollTo(0,0);
   };
 });
 
 /* ================= 題庫切換 ================= */
+/* 題庫選擇只在真的會整頁改變的地方出現。
+   進度頁只有一半的內容跟題庫有關（存摺和日曆是共用的），設定頁只有一個清除鈕用得到，
+   所以那兩頁改用文字標明是哪個題庫，要換題庫回練習頁換。 */
+function showDeckPicker(view){
+  $("deckPicker").hidden = view === "vStats" || view === "vSet";
+}
 function renderDecks(){
   $("deckPicker").innerHTML = Object.values(DECKS).map(d=>{
     let n = 0;
@@ -3898,6 +3907,9 @@ function renderDecks(){
     };
   });
   $("hDeck").textContent = DECK.label;
+  $("statDeck").textContent = `${DECK.label} 的成績`;
+  $("weakDeck").textContent = `${DECK.label} 需要加強的字`;
+  $("btnReset").textContent = `清除「${DECK.label}」的答題紀錄`;
 }
 
 /* ================= 範圍選擇 ================= */
@@ -4902,6 +4914,7 @@ if(!TTS) $("chipListen").disabled = true;
 renderMatrix();
 renderSettings();
 renderDecks();
+showDeckPicker("vQuiz");
 renderChips();
 $("verline").textContent = "版本 " + VERSION;
 $("heroVer").textContent = "版本 " + VERSION;

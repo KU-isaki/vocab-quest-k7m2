@@ -96,8 +96,39 @@ ok(!!th && th.closest('details.info'),'分鐘怎麼算的說明要收在可展�
 ok(th.textContent.includes('答對率'),'收起來不代表內容消失, 實得 '+th.textContent.slice(0,20));
 ok(d.querySelector('.callegend').closest('details.info'),'日曆圖例也要收起來');
 
-/* ---------- ⑤ 版面別再一大片小字 ---------- */
+/* ---------- ⑤ 題庫選擇只出現在真的用得到的頁面 ---------- */
+// 進度頁只有一半內容跟題庫有關（存摺、日曆是共用的），設定頁只有一個清除鈕用得到
+const picker=$('deckPicker');
+const disp=el=>w.getComputedStyle(el).display;
+[['vQuiz',true],['vList',true],['vStats',false],['vSet',false],['vQuiz',true]].forEach(([v,want])=>{
+  click(nav(v));
+  ok(picker.hidden===!want,`${v} 的題庫選擇應該${want?'顯示':'收起來'}, hidden=`+picker.hidden);
+  ok((disp(picker)!=='none')===want,`${v} 實際算出來的 display 也要對, 實得 `+disp(picker));
+});
+// display:grid 會蓋掉 hidden 屬性 —— 這個坑踩過，釘住
+ok(/\.decks\[hidden\]\{[^}]*display:\s*none/.test(html),'.decks[hidden] 要明確設成 display:none');
+
+// 收起來之後，那兩頁要用文字講清楚是哪個題庫
+click(nav('vStats'));
+const label=w.eval('DECK.label');
+ok($('statDeck').textContent.includes(label),`統計要標明是「${label}」的成績, 實得 `+$('statDeck').textContent);
+ok($('weakDeck').textContent.includes(label),`待加強要標明題庫, 實得 `+$('weakDeck').textContent);
+ok(/共用/.test($('vStats').textContent),'共用的部分（存摺、日曆）要標明是共用的');
+click(nav('vSet'));
+ok($('btnReset').textContent.includes(label),`清除鈕要寫出題庫名, 實得 `+$('btnReset').textContent);
+// 換題庫之後這些字要跟著換
+click(nav('vQuiz'));
+click([...d.querySelectorAll('.deck')].find(b=>b.dataset.deck==='full'));
+const label2=w.eval('DECK.label');
+ok(label2!==label,'應該真的換了題庫');
+click(nav('vStats'));
+ok($('statDeck').textContent.includes(label2),`換題庫後統計標題要跟著換, 實得 `+$('statDeck').textContent);
+click(nav('vSet'));
+ok($('btnReset').textContent.includes(label2),`換題庫後清除鈕也要跟著換, 實得 `+$('btnReset').textContent);
+
+/* ---------- ⑥ 版面別再一大片小字 ---------- */
 // 進度頁裸露的說明段落（沒被 details 包住的）應該很少
+click(nav('vStats'));
 const loose=[...$('vStats').querySelectorAll('.privacy, .backup-hint, .callegend')]
   .filter(x=>!x.closest('details'));
 ok(loose.length===0,'進度頁不該再有沒收起來的說明小字, 實得 '+loose.map(x=>x.className).join(','));
