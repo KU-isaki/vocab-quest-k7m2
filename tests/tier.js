@@ -178,6 +178,34 @@ click($('btnSpend'));
   click($('btnQuit')); click($('btnBackHome'));
   ok(bank() > after, `再答對應該把分鐘賺回來（${after} → ${bank()}）`);
 
+  // ===== 跨日累積：存摺不會每天歸零 =====
+  console.log('\n  ── 跨日累積 ──');
+  w.eval('S = blank(); SHARED={days:{},bank:{earned:0,used:0,bonus:0}}; save();');
+  // 先造一筆「昨天」的紀錄：全對 30 題、已發放的分鐘照樣算
+  const yKey = w.eval('(()=>{const t=new Date(); t.setDate(t.getDate()-1); return dayKey(t);})()');
+  const yPaid = w.eval(`dayMinutes({n:30,r:30,mw:30})`);
+  w.eval(`SHARED.days["${yKey}"]={n:30,r:30,mw:30,paid:${yPaid}}; SHARED.bank.earned=${yPaid}; saveShared();`);
+  ok(bank()===yPaid, `昨天先賺了 ${yPaid} 分鐘`);
+
+  // 今天再練：今天從 0 題重新算級距，但存摺是加上去的
+  pickN(10); click($('btnStart'));
+  for(let i=0;i<TIERS[0].n;i++) answer();
+  click($('btnQuit')); click($('btnBackHome'));
+  const tPaid = w.eval('paidOf(SHARED.days[dayKey()])');
+  console.log(`  昨天 ${yPaid} 分 + 今天 ${tPaid} 分 → 存摺 ${bank()} 分`);
+  ok(tPaid===perfect(TIERS[0].m), `今天的級距要重新從 0 題算起, 實得 ${tPaid}`);
+  ok(bank()===yPaid+tPaid, `存摺應累積成 ${yPaid+tPaid} 分, 實得 ${bank()}`);
+  ok(w.eval(`SHARED.days["${yKey}"].paid`)===yPaid, '昨天的紀錄不得被今天改動');
+  ok(w.eval('bankLeft()')===yPaid+tPaid, '可用分鐘也要跟著累積');
+
+  // 跨日累積可以超過單日上限（上限是「一天最多賺多少」，不是「存摺最多存多少」）
+  w.eval(`SHARED.days["${yKey}"].paid=${REWARD}; SHARED.bank.earned=${REWARD*2}; saveShared(); renderBank();`);
+  ok(w.eval('bankLeft()')===REWARD*2,`存摺可以存超過單日上限 ${REWARD} 分, 實得 `+w.eval('bankLeft()'));
+  // 用掉一部分之後，剩下的仍然留著
+  const left0=w.eval('bankLeft()');
+  w.eval(`SHARED.bank.used=${SPEND}; saveShared();`);
+  ok(w.eval('bankLeft()')===left0-SPEND,'兌換只扣掉用掉的，其餘留到之後');
+
   console.log(`\n通過 ${pass} / 失敗 ${fail}`);
   process.exit(fail?1:0);
 })();
