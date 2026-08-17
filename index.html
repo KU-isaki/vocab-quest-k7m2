@@ -582,7 +582,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
       <div class="brandmark">
         <b>單字闖關</b><span id="hDeck"></span>
       </div>
-      <div class="score">已答 <b id="hDone">0</b>/100</div>
+      <div class="score" id="hScore">今天 <b id="hDone">0</b>/<span id="hGoalN">10</span> 題</div>
     </div>
     <div class="bar"><i id="hBar"></i></div>
   </header>
@@ -786,7 +786,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.17-f";
+const VERSION = "2026.08.17-g";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -4091,9 +4091,11 @@ function endRound(){
   $("sumTitle").textContent = !total ? "這輪還沒作答"
     : pct === 1 ? (total < queue.length ? `答對的 ${total} 題全對 🎉` : "全對！太厲害了 🎉")
     : pct >= .8 ? "很不錯，快滿分了" : pct >= .5 ? "有進步空間，再來一輪" : "先看看下面這幾個字";
-  const left = Math.max(0, 100 - S.done);
+  const tday = SHARED.days[dayKey()] || {n:0, r:0};
+  const tnet = netOf(tday), tnx = nextStep(tday, tnet);
   $("sumText").textContent = (total && total < queue.length ? `這輪提早結束，只算答過的 ${total} 題　·　` : "")
-    + (left > 0 ? `距離 100 題還差 ${left} 題` : `已完成 ${S.done} 題，繼續練都算加分`);
+    + `今天淨 ${tnet} 題 · ${paidOf(tday)} 分鐘`
+    + (tnx ? `　再答對 ${tnx.k} 題 → ${tnx.m} 分鐘` : "　今日上限已滿 ✓");
   $("sumMiss").innerHTML = missed.length
     ? missed.map(w=>`<li><span class="w">${esc(w.w)}</span><span class="z">${esc(w.zh)}</span>
         <button class="sp" data-say="${esc(w.w)}">🔊</button></li>`).join("")
@@ -4116,12 +4118,23 @@ function endRound(){
 }
 
 function refreshHeader(){
-  $("hDone").textContent = S.done;
-  $("hBar").style.width = Math.min(100, S.done) + "%";
   $("wrongCount").textContent = WORDS.filter(w=>stat(w.w).x > 0 && stat(w.w).streak < 2).length;
 
   const today = SHARED.days[dayKey()] || {n:0, r:0};
   const net = netOf(today), got = paidOf(today), next = nextStep(today, net);
+
+  // 頂端那條追今天的進度：分母是下一階的門檻，到頂就顯示已滿
+  const tier = TIERS.find(t=>net < t.n);
+  if(tier){
+    $("hScore").innerHTML = `今天 <b id="hDone">${net}</b>/<span id="hGoalN">${tier.n}</span> 題`;
+    $("hScore").title = `再答對 ${tier.n - net} 題 → ${next ? next.m : tier.m} 分鐘`;
+    $("hBar").style.width = (net / tier.n * 100) + "%";
+  }else{
+    $("hScore").innerHTML = `今天 <b id="hDone">${net}</b> 題 ✓`;
+    $("hScore").title = `今日上限已滿（${REWARD} 分鐘）`;
+    $("hBar").style.width = "100%";
+  }
+
   const ac = accStep(accOf(today));
   $("heroGoal").innerHTML = segs(
     `今天答對 ${today.r || 0}`,

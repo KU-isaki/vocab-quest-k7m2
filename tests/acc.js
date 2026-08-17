@@ -119,5 +119,30 @@ ok(d.querySelectorAll('#goalNum .seg').length>=4,'進度頁那行應該分成多
 ok(d.querySelectorAll('#heroGoal .seg').length>=3,'主畫面那行也要分段');
 ACC.forEach(t=>ok($('tierHint').textContent.includes('×'+t.m),`說明要列出 ×${t.m} 這一級`));
 
+/* ---------- ⑤ 頂端進度條追的是「今天」 ---------- */
+// 舊版分母寫死 100（第一版「100 題循環測驗」的殘留），做超過就變成「已答 347/100」
+ok(!/\/100</.test(html.split('</header>')[0]),'標頭不得再寫死 /100 這種永遠追不完的分母');
+const hNet=()=>parseInt($('hDone').textContent,10);
+const hGoal=()=>parseInt($('hGoalN').textContent,10);
+const TIERS2=w.eval('TIERS');
+[[0,0],[5,5],[12,12],[25,25]].forEach(([r])=>{
+  w.eval(`SHARED.days[dayKey()]={n:${r},r:${r},mw:${r}}; refreshHeader();`);
+  const tier=TIERS2.find(t=>r<t.n);
+  ok(hNet()===r,`今天淨 ${r} 題就顯示 ${r}, 實得 `+hNet());
+  ok(hGoal()===tier.n,`分母應跳到下一階 ${tier.n}, 實得 `+hGoal());
+  ok($('hBar').style.width===(r/tier.n*100)+'%',`進度條應為 ${r}/${tier.n}, 實得 `+$('hBar').style.width);
+  ok(w.eval('S.done')!==r || r===0,'標頭追的是今日淨題數，不是題庫累積數');
+});
+// 到頂之後不能出現「95/80」這種分母被超過的畫面
+const top=TIERS2[TIERS2.length-1].n+15;
+w.eval(`SHARED.days[dayKey()]={n:${top},r:${top},mw:${top}}; refreshHeader();`);
+ok(!$('hScore').textContent.includes('/'),'到頂就不該再顯示分母, 實得 '+$('hScore').textContent);
+ok($('hScore').textContent.includes('✓'),'到頂要有完成標記, 實得 '+$('hScore').textContent);
+ok($('hBar').style.width==='100%','到頂進度條要滿格');
+// 兩個題庫共用日曆，所以切題庫不該讓今天的進度歸零
+const netTop=hNet();
+click([...d.querySelectorAll('.deck')].find(b=>b.dataset.deck==='full'));
+ok(hNet()===netTop,`切題庫後今日進度不得歸零, 實得 `+hNet());
+
 console.log(`\n通過 ${pass} / 失敗 ${fail}`);
 process.exit(fail?1:0);

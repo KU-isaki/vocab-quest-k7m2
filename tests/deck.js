@@ -32,26 +32,26 @@ const play=(n)=>{ click($('btnStart'));
     else { $('typed').value='q'; click($('btnCheck')); }
     click($('btnNext')); } };
 play(R);
-ok($('hDone').textContent===String(R),`暑假版答 ${R} 題`);
+ok(w.eval('S.done')===R,`暑假版答 ${R} 題`);
 
 // 切到總整理版
 click($('btnBackHome'));
 click(deckBtn('full'));
 ok($('hDeck').textContent==='總整理版','切換到總整理版');
 ok(d.querySelectorAll('#catChips .chip').length===38,'總整理版 38 顆 chip(含全部), 實得 '+d.querySelectorAll('#catChips .chip').length);
-ok($('hDone').textContent==='0','切換後進度獨立歸零, 實得 '+$('hDone').textContent);
+ok(w.eval('S.done')===0,'切換後進度獨立歸零, 實得 '+w.eval('S.done'));
 click([...d.querySelectorAll('.nav button')].find(b=>b.dataset.view==='vList'));
 const rows=d.querySelectorAll('#listBody .wrow').length;
 ok(rows>1200,'總整理版單字表 >1200 列(含跨類重複顯示), 實得 '+rows);
 ok(d.querySelectorAll('#listBody .tip').length===37,'應有 37 則記憶提示, 實得 '+d.querySelectorAll('#listBody .tip').length);
 click([...d.querySelectorAll('.nav button')].find(b=>b.dataset.view==='vQuiz'));
 play(R);
-ok($('hDone').textContent===String(R),`總整理版答 ${R} 題`);
+ok(w.eval('S.done')===R,`總整理版答 ${R} 題`);
 
 // 切回暑假版，進度應保留
 click($('btnBackHome'));
 click(deckBtn('summer'));
-ok($('hDone').textContent===String(R),`切回暑假版進度仍為 ${R}, 實得 `+$('hDone').textContent);
+ok(w.eval('S.done')===R,`切回暑假版進度仍為 ${R}, 實得 `+w.eval('S.done'));
 const ls=Object.keys(w.localStorage).filter(k=>k.startsWith('cq-'));
 ok(ls.includes('cq-vocab-v1:summer')&&ls.includes('cq-vocab-v1:full'),'兩個題庫各自存檔, 實得 '+JSON.stringify(ls));
 

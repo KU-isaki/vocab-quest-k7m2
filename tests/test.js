@@ -67,9 +67,13 @@ for(let i=0;i<R;i++){
 }
 ok($('sumCard').hidden===false, '10 題後應顯示本輪成績');
 ok($('qCard').hidden===true, '成績頁時題目卡應隱藏');
-const done=parseInt($('hDone').textContent,10);
-ok(done===R, `標頭累積答題應為 ${R}, 實得 `+done);
-ok($('hBar').style.width===Math.min(100,R)+'%', `進度條應 ${Math.min(100,R)}%, 實得 `+$('hBar').style.width);
+const done=w.eval('S.done');
+ok(done===R, `這個題庫的累積答題應為 ${R}, 實得 `+done);
+// 頂端那條追的是「今天」的進度，分母是下一階的門檻
+const hNet=parseInt($('hDone').textContent,10), hGoal=parseInt($('hGoalN').textContent,10);
+ok(hNet===w.eval('netOf(SHARED.days[dayKey()])'), `標頭應顯示今日淨題數, 實得 `+hNet);
+ok(w.eval('TIERS').some(t=>t.n===hGoal), `分母應是某一階的門檻, 實得 `+hGoal);
+ok($('hBar').style.width===(hNet/hGoal*100)+'%', `進度條應為 ${hNet}/${hGoal}, 實得 `+$('hBar').style.width);
 
 // 4. localStorage 有寫入
 const saved=JSON.parse(w.localStorage.getItem('cq-vocab-v1:summer'));
@@ -110,7 +114,7 @@ ok(d.querySelectorAll('#listBody .wrow').length>=3, '中文搜尋「頭」應有
 // 9. 清除紀錄
 $('search').value=''; $('search').dispatchEvent(new w.Event('input',{bubbles:true}));
 click($('btnReset'));
-ok($('hDone').textContent==='0', '清除後歸零');
+ok(w.eval('S.done')===0, '清除後歸零');
 
 // 10. 出題型態涵蓋
 console.log('  題型分布(第一輪):', JSON.stringify(kinds));
