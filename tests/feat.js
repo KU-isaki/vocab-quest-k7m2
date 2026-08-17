@@ -79,7 +79,10 @@ ok(!/http|www\.|\.com|https/.test(t1+t2),'訊息不得含任何網址');
 ok(!/姓名|name:|我是/.test(t1+t2),'訊息不得含姓名欄位');
 ok(t1.includes('單字闖關')&&new RegExp('\\d+ / '+R).test(t1),'本輪訊息應有輪次成績, 實得 '+t1.split('\n')[1]);
 ok(t2.includes('累積'),'整體訊息應有累積數據');
-ok(d.querySelectorAll('.privacy').length>=2,'成績頁與進度頁都要有隱私說明, 實得 '+d.querySelectorAll('.privacy').length);
+// 隱私說明有些改成點開才看（<details class="info">），兩種都算
+const privacyBlocks=d.querySelectorAll('.privacy, .info');
+ok(privacyBlocks.length>=2,'成績頁與進度頁都要有隱私說明, 實得 '+privacyBlocks.length);
+ok([...privacyBlocks].some(x=>/不上傳|網址/.test(x.textContent)),'要講清楚不會上傳、不會產生網址');
 ok($('btnShare')&&$('btnShareAll'),'兩顆分享按鈕都存在');
 // 不得殘留任何會把成績送出去的網址
 const src=fs.readFileSync(require('path').join(__dirname,'..','index.html'),'utf8');

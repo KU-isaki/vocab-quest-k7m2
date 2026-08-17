@@ -508,6 +508,20 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 }
 .bank .btn.quiet{margin-top:2px; font-size:13px}
 
+/* ---------- 點一下才展開的說明 ----------
+   規則細節（分鐘怎麼算、圖例、備份說明）平常收起來，需要時才看，
+   免得每一頁都是一大段小字。<details> 是瀏覽器原生的，不用自己寫展開邏輯。 */
+.info{border:1px solid var(--line); border-radius:11px; margin:10px 0; background:var(--surface-2)}
+.info>summary{
+  cursor:pointer; padding:10px 13px; font-size:13px; color:var(--ink-soft);
+  display:flex; align-items:center; gap:6px; list-style:none;
+}
+.info>summary::-webkit-details-marker{display:none}
+.info>summary::after{content:"⌄"; margin-left:auto; font-size:15px; line-height:1; transition:transform .15s}
+.info[open]>summary::after{transform:rotate(180deg)}
+.info .info-in{padding:0 13px 12px; font-size:12.5px; line-height:1.8; color:var(--ink-faint)}
+.info .info-in b{color:var(--ink-soft)}
+
 /* ---------- 練習日曆（GitHub 風格） ---------- */
 .ghwrap{overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; padding:5px 0 8px; margin-top:8px}
 .ghinner{display:inline-block; min-width:100%}
@@ -597,7 +611,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
   border-top:1px solid var(--line);
   padding-bottom:env(safe-area-inset-bottom);
 }
-.nav-in{max-width:520px; margin:0 auto; display:grid; grid-template-columns:repeat(3,1fr)}
+.nav-in{max-width:520px; margin:0 auto; display:grid; grid-template-columns:repeat(4,1fr)}
 .nav button{
   background:none; border:0; padding:10px 4px 12px; display:flex; flex-direction:column;
   align-items:center; gap:3px; font-size:11px; color:var(--ink-faint); font-weight:500;
@@ -687,7 +701,10 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
       <div class="weakbox" id="sumWeak" hidden></div>
       <button class="btn" id="btnAgain">再來一輪</button>
       <button class="btn ghost" id="btnShare" style="margin-top:8px">📋 複製成績，貼給家長</button>
-      <p class="privacy">複製到你手機的剪貼簿，自己貼進 LINE 傳出去<br>不含姓名、不上傳、也不會產生任何人點得開的網址</p>
+      <details class="info"><summary>複製出去安全嗎？</summary>
+        <div class="info-in">只是把文字放進你手機的剪貼簿，要不要貼出去由你決定。<br>
+          內容<b>不含姓名</b>、不會上傳到任何地方，也<b>不會產生任何人點得開的網址</b>。</div>
+      </details>
       <button class="btn quiet" id="btnBackHome">回主畫面</button>
     </div>
   </section>
@@ -720,8 +737,9 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
       </div>
       <div class="timerbox" id="timerBox" hidden></div>
       <button class="btn" id="btnSpend" aria-label="兌換遊戲時間">兌換遊戲時間</button>
-      <p class="privacy" id="tierHint"></p>
-      <button class="btn quiet" id="btnPin">🔒 家長密碼</button>
+      <details class="info"><summary>分鐘是怎麼算的？</summary>
+        <div class="info-in" id="tierHint"></div>
+      </details>
     </div>
 
     <div class="tiles2">
@@ -754,13 +772,26 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
         <div class="ghgrid" id="calGrid"></div>
       </div>
     </div>
-    <p class="callegend"><span>少</span><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i><span>多</span>　達標的日子有外框　·　點格子看當天紀錄</p>
+    <details class="info"><summary>格子的顏色代表什麼？</summary>
+      <div class="info-in">
+        <p class="callegend"><span>少</span><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i><span>多</span></p>
+        顏色越深代表當天做越多題　·　達標的日子有綠色外框　·　點格子看當天紀錄
+      </div>
+    </details>
 
     <div class="grouphead"><b>需要加強的字</b><span id="weakNum"></span></div>
     <ul class="wlist" id="weakList"></ul>
     <p class="empty" id="weakEmpty" hidden>目前沒有錯題，繼續保持！</p>
     <button class="btn ghost" id="btnShareAll" style="margin-top:24px">📋 複製整體進度，貼給家長</button>
-    <p class="privacy">複製到你手機的剪貼簿，自己貼進 LINE 傳出去<br>不含姓名、不上傳、也不會產生任何人點得開的網址</p>
+    <details class="info"><summary>複製出去安全嗎？</summary>
+      <div class="info-in">只是把文字放進你手機的剪貼簿，要不要貼出去由你決定。<br>
+        內容<b>不含姓名</b>、不會上傳到任何地方，也<b>不會產生任何人點得開的網址</b>。</div>
+    </details>
+  </section>
+
+  <!-- ============ 設定 ============ -->
+  <section class="view" id="vSet">
+
     <div class="grouphead"><b>顯示設定</b><span>看不清楚時調整</span></div>
     <div class="setrow">
       <span>字體大小</span>
@@ -780,13 +811,31 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
       </div>
     </div>
 
+    <div class="grouphead"><b>家長設定</b><span id="pinState"></span></div>
+    <button class="btn ghost" id="btnPin">🔒 家長密碼</button>
+    <details class="info"><summary>家長密碼會保護什麼？</summary>
+      <div class="info-in">設一組 4 位數密碼之後，這三件事要輸入密碼才做得了：<br>
+        <b>兌換遊戲時間</b>　·　<b>清除題庫的答題紀錄</b>　·　<b>清除練習日曆與遊戲時間</b><br>
+        都是誤觸會出事的操作。密碼只存在這台手機裡。</div>
+    </details>
+
     <div class="grouphead"><b>備份進度</b><span>換手機、被清掉時用</span></div>
-    <p class="backup-hint">瀏覽器可能在一段時間沒開之後把紀錄清掉。按「複製備份碼」貼到 LINE 給自己留著，之後貼回來就能還原。</p>
     <button class="btn ghost" id="btnExport">📋 複製備份碼</button>
     <button class="btn ghost" id="btnImport" style="margin-top:8px">📥 貼上備份碼還原</button>
+    <details class="info"><summary>為什麼需要備份碼？</summary>
+      <div class="info-in">紀錄存在這台手機的這個瀏覽器裡，換瀏覽器、清除瀏覽資料、或
+        iOS Safari 長時間沒開這個網站，都可能被清掉。<br>
+        按「複製備份碼」會把兩個題庫的紀錄壓成一段文字，貼到 LINE 給自己留著，之後貼回來就能還原。</div>
+    </details>
 
-    <button class="btn quiet" id="btnReset" style="margin-top:20px">清除這個題庫的答題紀錄</button>
+    <div class="grouphead"><b>清除紀錄</b><span>要家長密碼</span></div>
+    <button class="btn quiet" id="btnReset">清除這個題庫的答題紀錄</button>
     <button class="btn quiet" id="btnResetShared">清除練習日曆與遊戲時間</button>
+    <details class="info"><summary>這兩個差在哪？</summary>
+      <div class="info-in"><b>題庫的答題紀錄</b>（答對率、已熟練、待加強）是兩個題庫各記各的，只清你目前選的那一個。<br>
+        <b>練習日曆與遊戲時間</b>是兩個題庫共用的，清了兩邊都會不見。</div>
+    </details>
+
     <p class="foot">紀錄存在這台手機的這個瀏覽器裡<br>換瀏覽器開會從頭開始，請固定用同一個</p>
   </section>
 
@@ -833,12 +882,13 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
     <button data-view="vQuiz" aria-current="true"><em>✏️</em>練習</button>
     <button data-view="vList"><em>📖</em>單字表</button>
     <button data-view="vStats"><em>📊</em>進度</button>
+    <button data-view="vSet"><em>⚙️</em>設定</button>
   </div>
 </nav>
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.17-i";
+const VERSION = "2026.08.17-j";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -3824,6 +3874,7 @@ document.querySelectorAll(".nav button").forEach(b=>{
     document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on", v.id===b.dataset.view));
     if(b.dataset.view === "vStats") renderStats();
     if(b.dataset.view === "vList") renderList();
+    if(b.dataset.view === "vSet") renderSettings();
     window.scrollTo(0,0);
   };
 });
@@ -4412,9 +4463,13 @@ function renderBank(){
     + `<br>答對率：` + ACC.map((t,i)=> i === ACC.length - 1
         ? `不到 ${Math.round(ACC[i-1].p*100)}% ×${t.m}`
         : `${Math.round(t.p*100)}% 以上 ×${t.m}`).join("　·　")
-    + `<br>一天最多 ${REWARD} 分鐘，連續 ${BONUS_EVERY} 天多送 ${STREAK_BONUS} 分鐘`
-    + (getPin() ? "　·　已設家長密碼" : "");
+    + `<br>一天最多 ${REWARD} 分鐘，連續 ${BONUS_EVERY} 天多送 ${STREAK_BONUS} 分鐘`;
   renderTimer();
+}
+
+/* 設定頁：目前只有密碼狀態要跟著資料變，其他都是按了就生效的開關 */
+function renderSettings(){
+  $("pinState").textContent = getPin() ? "🔒 已設密碼" : "未設密碼";
 }
 
 /* ================= 練習日曆 ================= */
@@ -4632,7 +4687,7 @@ $("btnPin").onclick = () => {
   const v = String(t).trim();
   if(v && !/^\d{4}$/.test(v)){ toast("⚠️ 請輸入 4 位數字"); return; }
   try{ v ? localStorage.setItem(PIN_KEY, v) : localStorage.removeItem(PIN_KEY); }catch(e){}
-  renderBank();
+  renderSettings();
   toast(v ? "已設定家長密碼" : "已取消家長密碼");
 };
 
@@ -4845,6 +4900,7 @@ $("heroSub").textContent = `答對 +1、答錯 -1，換遊戲時間（${TIERS[0]
 $("chipListen").setAttribute("aria-pressed", listenOn && TTS);
 if(!TTS) $("chipListen").disabled = true;
 renderMatrix();
+renderSettings();
 renderDecks();
 renderChips();
 $("verline").textContent = "版本 " + VERSION;

@@ -9,11 +9,11 @@
 <p align="center">
   <img src="docs/01-home.png" width="19%" alt="主畫面">
   <img src="docs/02-quiz.png" width="19%" alt="點字母拼英文">
-  <img src="docs/03-cloze.png" width="19%" alt="例句挖空">
   <img src="docs/06-stats.png" width="19%" alt="遊戲時間存摺">
   <img src="docs/07-calendar.png" width="19%" alt="練習日曆">
+  <img src="docs/08-settings.png" width="19%" alt="設定">
 </p>
-<p align="center"><sub>主畫面 · 點字母拼英文 · 例句挖空 · 遊戲時間存摺 · 練習日曆</sub></p>
+<p align="center"><sub>主畫面 · 點字母拼英文 · 遊戲時間存摺 · 練習日曆 · 設定</sub></p>
 
 ---
 
@@ -37,7 +37,7 @@ git clone https://github.com/KU-isaki/vocab-quest-k7m2.git
 
 ```bash
 npm install   # 只需要 jsdom
-npm test      # 1130+ 項端到端測試
+npm test      # 1150+ 項端到端測試
 ```
 
 ---
@@ -155,6 +155,8 @@ npm test      # 1130+ 項端到端測試
 - **用法解釋 222 條**：答錯時才顯示（答對不打斷節奏），單字表可隨時展開
 - **成績回報**：一鍵複製成績文字，貼到 LINE 給家長
 - **可以裝成 App**：加到主畫面後有自己的圖示、全螢幕、**完全離線可用**；有新版時會跳出「立即更新」
+- **四個分頁**：練習 · 單字表 · 進度 · **設定**。設定頁放顯示設定、家長密碼、備份、清除紀錄；進度頁只留成果（存摺、統計、日曆、待加強）
+- **說明點一下才展開**：規則細節（分鐘怎麼算、日曆圖例、備份說明、密碼保護什麼）平常收起來，用瀏覽器原生的 `<details>`，不用自己寫展開邏輯
 - **顯示設定**：字體四段大小可調、配色可選跟隨系統／淺色／深色
 
 ---
@@ -273,6 +275,7 @@ const EXAMPLES = {
 - 備份碼往返後資料完全一致（含 `Mr.`、`hard-working` 這類含符號的字）
 - 例句挖空：每個可拼字的字都要能被挖掉、字母數要對得上、句子裡不得洩漏答案
 - 複習翻卡不得影響任何答題統計
+- **設定頁**：導覽列欄數要跟分頁數一致、設定類元件要真的搬過去（進度頁不得殘留）、可展開的說明預設要收起來且內容不得為空
 
 每次 `git push` 由 GitHub Actions 自動跑一次（見上方徽章），本機用 `npm test`。
 

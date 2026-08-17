@@ -113,7 +113,7 @@ click($('btnSpend'));
   w.prompt=()=>'1234';
   click($('btnPin'));
   ok(w.eval('getPin()')==='1234','應能設定密碼');
-  ok($('tierHint').textContent.includes('已設家長密碼'),'畫面要提示已設密碼');
+  ok($('pinState').textContent.includes('已設密碼'),'設定頁要提示已設密碼, 實得 '+$('pinState').textContent);
   w.eval('SHARED.bank.earned=100; save(); renderBank();');
   w.prompt=()=>'9999';           // 輸錯
   const used0=w.eval('SHARED.bank.used');
