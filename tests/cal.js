@@ -21,7 +21,7 @@ const stats=()=>click([...d.querySelectorAll('.nav button')].find(b=>b.dataset.v
 const SW=w.eval('SUMMER_WORDS'); const byZh={}; SW.forEach(x=>(byZh[x.zh]=byZh[x.zh]||[]).push(x.w));
 function answer(){ const t=$('qKind').textContent;
   if(t.includes('說中文')){ const en=d.querySelector('#qPrompt .en').textContent.trim();
-    click([...d.querySelectorAll('#qBody .choice')].find(b=>b.dataset.w===en)); }
+    click([...d.querySelectorAll('#qBody .choice')].find(b=>b.dataset.w===en)); click($('btnCheck')); }
   else { const a=ansOf();
     if((t.includes('拼英文')||t.includes('填單字'))){ const ts=[...d.querySelectorAll('#qBody .tile')];
       const seq=a.toLowerCase().split('').map(c=>ts.find(x=>x.textContent===c&&!x.classList.contains('used')));

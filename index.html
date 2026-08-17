@@ -208,6 +208,9 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
   font-style:normal; font-size:12px; font-weight:700; color:var(--ink-faint);
   display:grid; place-items:center; font-family:var(--font-num);
 }
+/* 選起來但還沒送出：只是標記，按「檢查」才驗證，免得誤觸就被判錯 */
+.choice.sel{background:var(--brand-soft); border-color:var(--brand); color:var(--brand); font-weight:600}
+.choice.sel i{background:var(--brand); color:var(--btn-fg)}
 .choice.right{background:var(--ok-soft); border-color:var(--ok); color:var(--ok); font-weight:600}
 .choice.right i{background:var(--ok); color:var(--surface)}
 .choice.wrong{background:var(--no-soft); border-color:var(--no); color:var(--no)}
@@ -770,7 +773,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.17-c";
+const VERSION = "2026.08.17-d";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -3858,19 +3861,29 @@ function showQ(){
     if(opts.length < 4) take(shuffle(WORDS));   // 小分類（「語言」只有 2 字）湊不滿就跨類補
     opts = shuffle(opts);
     B.innerHTML = `<div class="choices">` + opts.map((o,i)=>
-      `<button class="choice" data-w="${esc(o.w)}"><i>${"ABCD"[i]}</i>${esc(o.zh)}</button>`).join("") + `</div>`;
+      `<button class="choice" data-w="${esc(o.w)}"><i>${"ABCD"[i]}</i>${esc(o.zh)}</button>`).join("") + `</div>
+      <div class="spellbar"><button class="btn" id="btnCheck" disabled>先選一個答案</button></div>`;
+    // 點選項只是「選起來」，可以改；按下「檢查」才送出，避免誤觸直接算錯
+    let sel = null;
     B.querySelectorAll(".choice").forEach(btn=>{
       btn.onclick = () => {
         if(answered) return;
-        const ok = btn.dataset.w === w.w;
-        B.querySelectorAll(".choice").forEach(x=>{
-          x.disabled = true;
-          if(x.dataset.w === w.w) x.classList.add("right");
-          else if(x === btn) x.classList.add("wrong");
-        });
-        grade(ok);
+        sel = btn;
+        B.querySelectorAll(".choice").forEach(x=>x.classList.toggle("sel", x === btn));
+        const c = $("btnCheck");
+        c.disabled = false; c.textContent = "檢查";
       };
     });
+    $("btnCheck").onclick = () => {
+      if(answered || !sel) return;                            // 沒選一律不受理
+      const ok = sel.dataset.w === w.w;
+      B.querySelectorAll(".choice").forEach(x=>{
+        x.disabled = true; x.classList.remove("sel");
+        if(x.dataset.w === w.w) x.classList.add("right");
+        else if(x === sel) x.classList.add("wrong");
+      });
+      grade(ok);
+    };
 
   } else if(q.kind === "spell" || q.kind === "cloze"){
     if(q.kind === "cloze"){

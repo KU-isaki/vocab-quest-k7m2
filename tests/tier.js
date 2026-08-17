@@ -27,7 +27,7 @@ function answer(){ const t=$('qKind').textContent;
   if(t.includes('說中文')||t.includes('只聽')){ const r=$('reveal'); if(r) click(r);
     const en=(d.querySelector('#qPrompt .en')||{textContent:''}).textContent.trim();
     const bs=[...d.querySelectorAll('#qBody .choice')];
-    click(bs.find(x=>x.dataset.w===en)||bs[0]);
+    click(bs.find(x=>x.dataset.w===en)||bs[0]); click($('btnCheck'));
   } else { const a=ansOf();
     if((t.includes('拼英文')||t.includes('填單字'))){ const ts=[...d.querySelectorAll('#qBody .tile')];
       const seq=a.toLowerCase().split('').map(c=>ts.find(x=>x.textContent===c&&!x.classList.contains('used')));
@@ -39,7 +39,7 @@ function answerWrong(){
   if(d.querySelector('#qBody .choice')){
     const en=(d.querySelector('#qPrompt .en')||{textContent:''}).textContent.trim();
     const bs=[...d.querySelectorAll('#qBody .choice')];
-    click(bs.find(x=>x.dataset.w!==en)||bs[0]);
+    click(bs.find(x=>x.dataset.w!==en)||bs[0]); click($('btnCheck'));
   } else if(d.querySelector('#qBody .tile')){
     const ts=[...d.querySelectorAll('#qBody .tile')];
     const n=d.querySelectorAll('#qBody .slot').length;

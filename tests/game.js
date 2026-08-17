@@ -35,7 +35,7 @@ function answer(correct=true){
     }
     const target=(d.querySelector('#qPrompt .en')||{}).textContent;
     const b= correct ? bs.find(x=>x.dataset.w===(target||'').trim()) : bs.find(x=>x.dataset.w!==(target||'').trim());
-    click(b||bs[0]);
+    click(b||bs[0]); click($('btnCheck'));
   } else {
     const a=ansOf();
     if((t.includes('拼英文')||t.includes('填單字'))){ const ts=[...d.querySelectorAll('#qBody .tile')];

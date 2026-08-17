@@ -44,6 +44,7 @@ for(let i=0;i<R;i++){
   if(kind.includes('說中文')){
     kinds.en2zh++;
     click(d.querySelector('#qBody .choice'));
+    click($('btnCheck'));
   }else if((kind.includes('拼英文')||kind.includes('填單字'))){
     kinds.spell++;
     const tiles=[...d.querySelectorAll('#qBody .tile')];

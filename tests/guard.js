@@ -15,7 +15,7 @@ let kind='';
 for(let i=0;i<200;i++){
   kind=$('qKind').textContent;
   if(kind.includes('拼英文')) break;
-  if(d.querySelector('#qBody .choice')) click(d.querySelector('#qBody .choice'));
+  if(d.querySelector('#qBody .choice')){ click(d.querySelector('#qBody .choice')); click($('btnCheck')); }
   else if(d.querySelector('#qBody .tile')){
     const ts=[...d.querySelectorAll('#qBody .tile')];
     ts.slice(0,d.querySelectorAll('#qBody .slot').length).forEach(click);
@@ -67,6 +67,54 @@ click(tiles.find(t=>!t.classList.contains('used')));
 click($('btnCheck'));
 ok($('qFb').classList.contains('on'),'拼滿後按檢查要能正常作答');
 
+// ⑥-2 選擇題：點選項只是「選起來」，要按檢查才送出（誤觸不該直接算錯）
+let chs=null;
+for(let i=0;i<200 && !chs;i++){
+  if($('btnNext')) click($('btnNext'));
+  if($('qCard').hidden && $('btnAgain')) click($('btnAgain'));
+  const c=[...d.querySelectorAll('#qBody .choice')];
+  if(c.length){ chs=c; break; }
+  if(d.querySelector('#qBody .tile')){
+    const ts=[...d.querySelectorAll('#qBody .tile')];
+    ts.slice(0,d.querySelectorAll('#qBody .slot').length).forEach(click);
+    click($('btnCheck'));
+  } else if($('typed')){
+    $('typed').value='z'; $('typed').dispatchEvent(new w.Event('input',{bubbles:true})); click($('btnCheck'));
+  }
+}
+if(chs){
+  const rightEn=w.eval('queue[idx].word.w');
+  const wrongBtn=chs.find(b=>b.dataset.w!==rightEn), rightBtn=chs.find(b=>b.dataset.w===rightEn);
+  ok($('btnCheck').disabled,'選擇題還沒選就不能按檢查');
+  ok(!$('btnCheck').textContent.includes('檢查'),'停用時要提示先選答案, 實得 '+$('btnCheck').textContent);
+  click($('btnCheck'));
+  ok(!$('qFb').classList.contains('on'),'沒選就按檢查不得作答');
+
+  // 先誤觸錯的選項 → 不得立刻判錯
+  click(wrongBtn);
+  ok(wrongBtn.classList.contains('sel'),'點下去要標記成已選');
+  ok(!$('qFb').classList.contains('on'),'只是選起來，還不能送出判定');
+  ok(!wrongBtn.classList.contains('wrong'),'還沒送出就不得顯示答錯');
+  ok(!chs.some(b=>b.classList.contains('right')),'還沒送出就不得洩漏正確答案');
+  ok(chs.every(b=>!b.disabled),'還沒送出時選項要能改');
+  ok(!$('btnCheck').disabled,'選了之後檢查鈕才啟用');
+
+  // 改選正確的 → 只能有一個被選起來
+  click(rightBtn);
+  ok(chs.filter(b=>b.classList.contains('sel')).length===1,'同時只能選一個');
+  ok(rightBtn.classList.contains('sel'),'改選後標記要跟著換');
+  ok(!wrongBtn.classList.contains('sel'),'舊的選項要取消標記');
+
+  // 按檢查才真正送出，而且是算最後選的那個
+  const before=w.eval('S.right');
+  click($('btnCheck'));
+  ok($('qFb').classList.contains('on'),'按檢查才送出作答');
+  ok(rightBtn.classList.contains('right'),'送出後才標示正確答案');
+  ok(w.eval('S.right')===before+1,'應該算最後選的那個（正確）, 實得 '+w.eval('S.right'));
+  ok(chs.every(b=>b.disabled),'送出後選項要鎖住');
+  ok(chs.every(b=>!b.classList.contains('sel')),'送出後不留選取樣式，以免跟對錯顏色打架');
+}else console.log('  （沒抽到選擇題，略過該段）');
+
 // ⑦ 版面距離
 const css=html.match(/<style>([\s\S]*?)<\/style>/)[1];
 const m=css.match(/\.spellbar\{[^}]*margin-top:(\d+)px/);
@@ -77,7 +125,7 @@ click($('btnNext'));
 let typed=null;
 for(let i=0;i<200 && !typed;i++){
   if($('typed')){ typed=$('typed'); break; }
-  if(d.querySelector('#qBody .choice')) click(d.querySelector('#qBody .choice'));
+  if(d.querySelector('#qBody .choice')){ click(d.querySelector('#qBody .choice')); click($('btnCheck')); }
   else if(d.querySelector('#qBody .tile')){
     const ts=[...d.querySelectorAll('#qBody .tile')];
     ts.slice(0,d.querySelectorAll('#qBody .slot').length).forEach(click);

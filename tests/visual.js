@@ -29,7 +29,7 @@ ok(disp($('qCard'))!=='none','題目卡要顯示');
 ok(disp($('startCard'))==='none','起始卡要隱藏');
 ok(disp($('qFb'))==='none','作答前回饋區要隱藏');
 // 依題型正確作答（拼字題要先拼滿，不然新的防誤按機制會擋下來）
-if(d.querySelector('#qBody .choice')) click(d.querySelector('#qBody .choice'));
+if(d.querySelector('#qBody .choice')){ click(d.querySelector('#qBody .choice')); click($('btnCheck')); }
 else if(d.querySelector('#qBody .tile')){
   const ts=[...d.querySelectorAll('#qBody .tile')];
   ts.slice(0,d.querySelectorAll('#qBody .slot').length).forEach(click);

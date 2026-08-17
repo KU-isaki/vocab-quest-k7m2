@@ -54,6 +54,7 @@ for(let r=0;r<3 && !(sawWrong&&sawRight);r++){ click($('btnStart'));
       const en=d.querySelector('#qPrompt .en').textContent.trim();
       const bs=[...d.querySelectorAll('#qBody .choice')];
       click(wrong ? bs.find(b=>b.dataset.w!==en) : bs.find(b=>b.dataset.w===en));
+      click($('btnCheck'));
     } else {
       const ans=ansOf();
       if((t.includes('拼英文')||t.includes('填單字'))){

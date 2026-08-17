@@ -25,6 +25,7 @@ function answer(correct){
     const en=d.querySelector('#qPrompt .en').textContent.trim();
     const bs=[...d.querySelectorAll('#qBody .choice')];
     click(correct? bs.find(b=>b.dataset.w===en) : bs.find(b=>b.dataset.w!==en));
+    click($('btnCheck'));   // 選完要按檢查才送出
   } else {
     const ans=ansOf();
     if((t.includes('拼英文')||t.includes('填單字'))){
