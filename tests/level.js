@@ -101,7 +101,8 @@ const play=(n,lv)=>{
 };
 play(10,'easy'); play(10,'easy'); play(10,'easy');   // 輕鬆刷到 30 題
 const easyPaid=w.eval('SHARED.days[dayKey()].paid');
-ok(easyPaid===w.eval('goalMinutes(30,LEVELS[0].mul)'),`輕鬆做滿 30 題應得 ${w.eval('goalMinutes(30,LEVELS[0].mul)')} 分, 實得 ${easyPaid}`);
+const easyExp=w.eval('goalMinutes(30, LEVELS[0].mul * ACC[0].m)');   // 全對 → 答對率也給 ×1.2
+ok(easyPaid===easyExp,`輕鬆全對做滿 30 題應得 ${easyExp} 分, 實得 ${easyPaid}`);
 // 現在切到挑戰但不再作答 → 已賺的分鐘不得跳上去
 click(lvBtns().find(b=>b.dataset.lv==='hard'));
 w.eval('checkGoal(SHARED.days[dayKey()])');

@@ -22,7 +22,9 @@ function ansOf(){
 }
 let pass=0,fail=0; const ok=(c,m)=>{c?pass++:(fail++,console.log('  ✗ '+m))};
 const DAILY=w.eval('DAILY'), ROUND=w.eval('ROUND'), REWARD=w.eval('REWARD');
-const TIERS=w.eval('TIERS'), SPEND=w.eval('SPEND'), T1=TIERS[0].m;
+const TIERS=w.eval('TIERS'), SPEND=w.eval('SPEND');
+// 測試都全對 → 答對率 100% → ×1.2
+const ACCTOP=w.eval('ACC[0].m'), perfect=m=>Math.min(REWARD,Math.round(m*ACCTOP)), T1=perfect(TIERS[0].m);
 const SW=w.eval('SUMMER_WORDS'); const byZh={}; SW.forEach(x=>(byZh[x.zh]=byZh[x.zh]||[]).push(x.w));
 const stats=()=>click([...d.querySelectorAll('.nav button')].find(b=>b.dataset.view==='vStats'));
 function answer(correct=true){
@@ -67,11 +69,11 @@ ok($('heroGoal').textContent.includes(`已賺 ${T1} 分鐘`),'主畫面應顯示
 // 同一天再練是「升級」不是重複發放：20 題該拿第二階，不是兩次第一階
 pickN(DAILY); click($('btnStart')); for(let i=0;i<DAILY;i++) answer(true); click($('btnBackHome'));
 const S2={bank:w.eval('SHARED.bank'),days:w.eval('SHARED.days')};
-ok(S2.bank.earned===TIERS[1].m,`累積 ${TIERS[1].n} 題應為 ${TIERS[1].m} 分（非 ${T1*2}），實得 `+S2.bank.earned);
+ok(S2.bank.earned===perfect(TIERS[1].m),`累積 ${TIERS[1].n} 題應為 ${perfect(TIERS[1].m)} 分（非 ${T1*2}），實得 `+S2.bank.earned);
 
 // ③ 存摺畫面與兌換
 stats();
-ok($('bankLeft').textContent===String(TIERS[1].m),`存摺應有 ${TIERS[1].m} 分鐘, 實得 `+$('bankLeft').textContent);
+ok($('bankLeft').textContent===String(perfect(TIERS[1].m)),`存摺應有 ${perfect(TIERS[1].m)} 分鐘, 實得 `+$('bankLeft').textContent);
 ok($('btnSpend').disabled,`只有 ${TIERS[1].m} 分鐘不足 ${SPEND} 分，應停用`);
 ok($('btnSpend').textContent.includes('還差'),'應提示還差多少, 實得 '+$('btnSpend').textContent);
 w.eval('SHARED.bank.earned=60; save(); renderBank();');

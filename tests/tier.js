@@ -51,6 +51,9 @@ function answerWrong(){
 const pickN=n=>click([...d.querySelectorAll('#sizeRow .chip')].find(b=>+b.dataset.size===n));
 function play(n){ pickN(10); click($('btnStart')); for(let i=0;i<n;i++) answer(); click($('btnQuit')); click($('btnBackHome')); }
 
+// 全對 = 答對率 100% = ×1.2；難度維持標準 ×1
+const ACCTOP=w.eval('ACC[0].m');
+const perfect=m=>Math.min(REWARD, Math.round(m*ACCTOP));
 console.log('  級距:', TIERS.map(t=>`${t.n}題=${t.m}分`).join(' · '));
 ok(w.eval('tierMinutes(0)')===0,'0 題 = 0 分');
 ok(w.eval('tierMinutes('+(TIERS[0].n-1)+')')===0,`未達第一階 = 0 分`);
@@ -71,7 +74,7 @@ for(const t of TIERS){
     if(day.n>=t.n) break;
     play(step);
   }
-  ok(bank()===t.m, `分次累積到 ${t.n} 題應共 ${t.m} 分, 實得 ${bank()}`);
+  ok(bank()===perfect(t.m), `分次累積到 ${t.n} 題（全對）應共 ${perfect(t.m)} 分, 實得 ${bank()}`);
 }
 console.log('  分次累積到', TIERS[TIERS.length-1].n, '題 → 總共', bank(), '分鐘');
 
@@ -80,7 +83,7 @@ w.eval('S=blank(); save();');
 const R3=w.eval('ROUND');
 w.eval('SHARED={days:{},bank:{earned:0,used:0,bonus:0}}; saveShared(); S=blank(); save();');
 pickN(R3); click($('btnStart')); for(let i=0;i<R3;i++) answer(); click($('btnBackHome'));
-ok(bank()===w.eval('tierMinutes('+R3+')'),`一次做 ${R3} 題應得 ${w.eval('tierMinutes('+R3+')')} 分, 實得 ${bank()}`);
+ok(bank()===perfect(w.eval('tierMinutes('+R3+')')),`一次做 ${R3} 題（全對）應得 ${perfect(w.eval('tierMinutes('+R3+')'))} 分, 實得 ${bank()}`);
 
 // 兌換：密碼、申請訊息、倒數
 stats();
@@ -153,7 +156,7 @@ click($('btnSpend'));
   click($('btnStart'));
   for(let i=0;i<tierN;i++) answer();          // 全對 tierN 題
   click($('btnQuit')); click($('btnBackHome'));
-  ok(bank()===tierM, `全對 ${tierN} 題應得 ${tierM} 分, 實得 ${bank()}`);
+  ok(bank()===perfect(tierM), `全對 ${tierN} 題應得 ${perfect(tierM)} 分, 實得 ${bank()}`);
 
   // 答錯數題，讓淨題數掉回第一階
   const wrongNeeded = Math.ceil((tierN - TIERS[0].n) / 2) + 1;
@@ -161,12 +164,12 @@ click($('btnSpend'));
   for(let i=0;i<wrongNeeded;i++) answerWrong();
   click($('btnQuit')); click($('btnBackHome'));
   const after = bank();
-  ok(after < tierM, `答錯 ${wrongNeeded} 題後應該被倒扣（${tierM} → ${after}）`);
+  ok(after < perfect(tierM), `答錯 ${wrongNeeded} 題後應該被倒扣（${perfect(tierM)} → ${after}）`);
   ok(after >= 0, '倒扣後不得變成負數, 實得 '+after);
   const day = w.eval('SHARED.days[dayKey()]');
   ok(day.paid === after, `當日已發放分鐘要跟著調整, day.paid=${day.paid} bank=${after}`);
-  ok(w.eval('tierMinutes(netOf(' + JSON.stringify({n:day.n,r:day.r}) + '))') === after,
-     `倒扣後的分鐘要等於淨題數該得的（淨 ${day.r-(day.n-day.r)} 題）`);
+  ok(w.eval('dayMinutes(SHARED.days[dayKey()])') === after,
+     `倒扣後的分鐘要等於淨題數 × 難度 × 答對率該得的（淨 ${day.r-(day.n-day.r)} 題、答對率 ${Math.round(day.r/day.n*100)}%）`);
   console.log(`  對 ${day.r} 錯 ${day.n-day.r} → 淨 ${Math.max(0,day.r-(day.n-day.r))} 題 → ${after} 分鐘`);
 
   // 再全對補回來

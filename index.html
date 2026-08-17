@@ -492,7 +492,10 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
   display:flex; justify-content:space-between; flex-wrap:wrap; gap:2px 10px;
   margin-bottom:7px; font-size:12px; color:var(--ink-soft);
 }
-.goal-head span{white-space:nowrap}   /* 寧可各自一行，也不要把「分鐘」斷開 */
+/* 整段可以換行（數字變長時才不會被切掉），但每個小段不從中間斷開 */
+.goal-head>span{white-space:normal; min-width:0}
+.goal-head .seg{white-space:nowrap}
+.goal-head .seg + .seg{margin-left:10px}
 .goal-head span:first-child{font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums}
 .goal .bar{height:8px}
 .goal .bar>i{background:linear-gradient(90deg, var(--brand), color-mix(in srgb, var(--ok) 70%, var(--brand)))}
@@ -783,7 +786,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.17-e";
+const VERSION = "2026.08.17-f";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -3647,8 +3650,31 @@ function projMul(day, k){              // 再用目前難度做 k 題之後，�
   const mw = d.mw === undefined ? n : d.mw;
   return (n + k) ? (mw + k * LV.mul) / (n + k) : LV.mul;
 }
-function goalMinutes(net, mul){        // 淨題數 × 難度 → 分鐘，一天仍以 REWARD 為上限
+/* ---- 答對率倍率 ----
+   淨題數已經會扣掉答錯，但只扣一次；不加這層的話，「亂猜、猜錯再多做幾題補回來」
+   仍然划算。改成當天的答對率直接乘在分鐘數上：仔細作答比硬刷題數值錢。 */
+const ACC = [
+  {p:.95, m:1.2, name:"幾乎全對"},
+  {p:.85, m:1.1, name:"很穩"},
+  {p:.70, m:1,   name:"及格"},
+  {p:.50, m:.85, name:"要小心"},
+  {p:0,   m:.7,  name:"太多錯"}
+];
+function accOf(day){                   // 當天答對率（還沒作答就當 100%，不先扣人分數）
+  const d = day || {};
+  return d.n ? (d.r || 0) / d.n : 1;
+}
+function accStep(a){ return ACC.find(t=>a >= t.p) || ACC[ACC.length-1]; }
+function accMul(day){ return accStep(accOf(day)).m; }
+function projAcc(day, k){              // 再答對 k 題之後，答對率會變成多少
+  const d = day || {}, n = d.n || 0, r = d.r || 0;
+  return (n + k) ? (r + k) / (n + k) : 1;
+}
+function goalMinutes(net, mul){        // 淨題數 × 難度 × 答對率 → 分鐘，一天仍以 REWARD 為上限
   return Math.min(REWARD, Math.round(tierMinutes(net) * mul));
+}
+function dayMinutes(day){              // 當天應得的分鐘（難度與答對率都算進去）
+  return goalMinutes(netOf(day), dayMul(day) * accMul(day));
 }
 function netOf(day){                   // 答對算 +1，答錯算 -1，最低算到 0
   const d = day || {n:0, r:0};
@@ -4096,7 +4122,12 @@ function refreshHeader(){
 
   const today = SHARED.days[dayKey()] || {n:0, r:0};
   const net = netOf(today), got = paidOf(today), next = nextStep(today, net);
-  $("heroGoal").textContent = `今天答對 ${today.r || 0}　答錯 ${(today.n || 0) - (today.r || 0)}　已賺 ${got} 分鐘`;
+  const ac = accStep(accOf(today));
+  $("heroGoal").innerHTML = segs(
+    `今天答對 ${today.r || 0}`,
+    `答錯 ${(today.n || 0) - (today.r || 0)}`,
+    today.n ? `答對率 ${Math.round(accOf(today)*100)}% ×${ac.m}` : "",
+    `已賺 ${got} 分鐘`);
   $("heroReward").textContent = next ? `再答對 ${next.k} 題 → ${next.m} 分鐘` : "今日上限已滿 ✓";
   $("heroBar").style.width = Math.min(100, net / FULLGOAL * 100) + "%";
 }
@@ -4192,7 +4223,8 @@ function reportText(roundOnly){
   L.push(`累積：${S.done} 題，答對率 ${pct}%`);
   L.push(`已熟練 ${WORDS.filter(w=>mastered(w.w)).length} 字`);
   const today = SHARED.days[dayKey()] || {n:0};
-  L.push(`今天 ${today.n} 題（對 ${today.r || 0}、錯 ${(today.n || 0) - (today.r || 0)}）　🎮 存摺 ${bankLeft()} 分鐘`);
+  L.push(`今天 ${today.n} 題（對 ${today.r || 0}、錯 ${(today.n || 0) - (today.r || 0)}`
+    + (today.n ? `，答對率 ${Math.round(accOf(today)*100)}%` : "") + `）　🎮 存摺 ${bankLeft()} 分鐘`);
   L.push(weak.length                            // 每次都列出還沒學會的字，不是只給數字
     ? `還要加強 ${weak.length} 字：` + weak.slice(0,12).map(w=>w.w).join("、") + (weak.length > 12 ? " 等" : "")
     : "目前沒有待加強的字 🎉");
@@ -4238,6 +4270,10 @@ $("sheetCopy").onclick = async () => {
 };
 
 /* ================= 每日目標 · 遊戲時間存摺 ================= */
+// 一段一段包起來，讓長句可以整段換行，但「27 題」「×1.1」這種不會被切斷
+function segs(...parts){
+  return parts.filter(Boolean).map(t=>`<span class="seg">${esc(t)}</span>`).join("");
+}
 function bankLeft(){ return Math.max(0, SHARED.bank.earned + SHARED.bank.bonus - SHARED.bank.used); }
 function paidOf(day){                  // 舊版存的是 true，換算成分鐘
   const p = (day || {}).paid;
@@ -4249,18 +4285,18 @@ function goalStreak(){                 // 連續達標幾天（今天還沒達�
   while(paidOf(SHARED.days[dayKey(t)])){ n++; t.setDate(t.getDate() - 1); }
   return n;
 }
-function nextStep(day, net){           // 下一階：還要答對幾題、到了大約幾分鐘（含難度倍率）
+function nextStep(day, net){           // 下一階：還要答對幾題、到了大約幾分鐘（含難度與答對率）
   const t = TIERS.find(x=>net < x.n);
   if(!t) return null;
   const k = t.n - net;
-  return {k, m: goalMinutes(t.n, projMul(day, k))};
+  return {k, m: goalMinutes(t.n, projMul(day, k) * accStep(projAcc(day, k)).m)};
 }
 function checkGoal(day){
   const net = netOf(day);
-  const target = goalMinutes(net, dayMul(day)), got = paidOf(day);
+  const target = dayMinutes(day), got = paidOf(day);
   if(target === got) return;
   const first = got === 0 && target > 0;
-  const down = target < got;                    // 答錯把淨題數拉低 → 倒扣
+  const down = target < got;                    // 答錯把淨題數或答對率拉低 → 倒扣
   day.paid = target;
   SHARED.bank.earned += target - got;
   const st = first ? goalStreak() : 0;
@@ -4270,7 +4306,9 @@ function checkGoal(day){
   const nx = nextStep(day, net);
   setTimeout(()=>{
     if(down){
+      const a = accStep(accOf(day));
       toast(`⚠️ 答錯扣抵，今天剩 ${target} 分鐘`
+        + (a.m < 1 ? `（答對率 ${Math.round(accOf(day)*100)}% · ${a.name} ×${a.m}）` : "")
         + (nx ? `　再答對 ${nx.k} 題可以拿回 ${nx.m} 分鐘` : ""));
       return;
     }
@@ -4290,13 +4328,22 @@ function renderBank(){
   $("bankStreak").textContent = next
     ? `再答對 ${next.k} 題 → ${next.m} 分鐘`
     : (st > 0 ? `再 ${BONUS_EVERY - st % BONUS_EVERY} 天有紅利` : "已達今日上限");
-  $("goalNum").textContent = `今天對 ${today.r || 0}　錯 ${(today.n || 0) - (today.r || 0)}　淨 ${net} 題 · ${got} 分鐘`;
+  const ac = accStep(accOf(today));
+  $("goalNum").innerHTML = segs(
+    `今天對 ${today.r || 0}`,
+    `錯 ${(today.n || 0) - (today.r || 0)}`,
+    `淨 ${net} 題`,
+    today.n ? `答對率 ${Math.round(accOf(today)*100)}%（${ac.name} ×${ac.m}）` : "",
+    `${got} 分鐘`);
   $("goalBar").style.width = Math.min(100, net / FULLGOAL * 100) + "%";
   $("btnSpend").disabled = left < SPEND;
   $("btnSpend").textContent = left >= SPEND ? `兌換 ${SPEND} 分鐘遊戲時間` : `還差 ${SPEND - left} 分鐘才能兌換`;
   $("tierHint").innerHTML = "<b>答對 1 題 +1，答錯 1 題 -1</b>，算出來的淨題數換分鐘：<br>"
-    + TIERS.map(t=>`${t.n} 題 = ${goalMinutes(t.n, LV.mul)} 分鐘`).join("　·　")
-    + `<br>目前難度 ${LV.name}（分鐘 ×${LV.mul}），題數門檻不會變`
+    + TIERS.map(t=>`${t.n} 題 = ${goalMinutes(t.n, LV.mul * ac.m)} 分鐘`).join("　·　")
+    + `<br>再乘兩個倍率：難度 ${LV.name} ×${LV.mul}　·　今日答對率 ×${ac.m}`
+    + `<br>答對率：` + ACC.map((t,i)=> i === ACC.length - 1
+        ? `不到 ${Math.round(ACC[i-1].p*100)}% ×${t.m}`
+        : `${Math.round(t.p*100)}% 以上 ×${t.m}`).join("　·　")
     + `<br>一天最多 ${REWARD} 分鐘，連續 ${BONUS_EVERY} 天多送 ${STREAK_BONUS} 分鐘`
     + (getPin() ? "　·　已設家長密碼" : "");
   renderTimer();
