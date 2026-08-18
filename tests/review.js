@@ -98,7 +98,8 @@ ok($('review').hidden,'應能關閉複習');
 // ④ 從「全部」進複習
 click([...d.querySelectorAll('#listCats .chip')][0]);
 click($('btnReview'));
-ok($('rvCount').textContent.endsWith('/ 1203')||$('rvCount').textContent.endsWith('/ 1204'),'全部模式應可複習全部字, 實得 '+$('rvCount').textContent);
+const total=w.eval('WORDS.length');
+ok($('rvCount').textContent.endsWith('/ '+total),`全部模式應可複習全部 ${total} 字, 實得 `+$('rvCount').textContent);
 click($('rvClose'));
 
 console.log(`\n通過 ${pass} / 失敗 ${fail}`);
