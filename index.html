@@ -294,6 +294,21 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 }
 .weakbox button:active{filter:brightness(.95)}
 .weakbox em{font-style:normal; font-size:12px; color:var(--ink-faint); align-self:center}
+
+/* 每輪結算頁附的小閱讀題組：跟評分/獎勵完全脫鉤，純粹練閱讀 */
+.readblock{
+  margin:4px 0 18px; padding:16px 15px; border-radius:14px;
+  border:1px solid var(--line); background:var(--surface-2); text-align:left;
+}
+.readblock .passage{
+  font-size:14.5px; line-height:1.7; color:var(--ink); margin:0 0 14px;
+  padding-bottom:14px; border-bottom:1px dashed var(--line);
+}
+.readblock .passage b{
+  display:block; font-size:12px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-faint); margin-bottom:6px; font-weight:700;
+}
+.readblock .prompt{text-align:left; padding:0 0 10px; font-size:16px; font-weight:600}
 .toast{
   position:fixed; left:50%; bottom:86px; transform:translateX(-50%);
   max-width:calc(100% - 40px); z-index:50;
@@ -700,6 +715,21 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
       <p id="sumText"></p>
       <ul class="misslist" id="sumMiss"></ul>
       <div class="weakbox" id="sumWeak" hidden></div>
+
+      <div class="readblock" id="readBlock" hidden>
+        <div class="q-head">
+          <span class="q-kind">📖 閱讀理解</span>
+          <span class="q-count" id="readCount"></span>
+        </div>
+        <div class="passage" id="readPassage"></div>
+        <div class="prompt" id="readPrompt"></div>
+        <div id="readBody"></div>
+        <div class="fb" id="readFb" aria-live="polite">
+          <div class="fb-title" id="readFbTitle"></div>
+          <button class="btn ghost" id="readNext">下一題</button>
+        </div>
+      </div>
+
       <button class="btn" id="btnAgain">再來一輪</button>
       <button class="btn ghost" id="btnShare" style="margin-top:8px">📋 複製成績，貼給家長</button>
       <details class="info"><summary>複製出去安全嗎？</summary>
@@ -890,7 +920,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.18-a";
+const VERSION = "2026.08.18-b";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -4234,9 +4264,102 @@ function endRound(){
     : "";
   $("sumWeak").querySelectorAll("[data-say]").forEach(b=>b.onclick = ()=>say(b.dataset.say));
 
+  startReadBlock();
   refreshHeader(); renderDecks();
   window.scrollTo({top:0, behavior:"smooth"});
 }
+
+/* ================= 每輪結算頁附的閱讀題組 =================
+   跟答題評分、遊戲時間完全脫鉤：只是練閱讀，不影響分鐘數，
+   避免跟已經調好的難度/答對率獎勵機制打架。文章跟題目都是原創，
+   短短一段＋兩題，練「讀懂一段英文再回答」而不是單字記憶。 */
+const READING_SETS = [
+  {t:"A New Neighbor", p:"Last week, a new family moved in next door. Their daughter, Mia, is the same age as me. On Saturday, she knocked on our door and gave my mom a plate of cookies. My mom invited her in for tea. Now Mia and I are best friends, and we walk to school together every day.",
+   q:[{q:"Why did Mia visit the writer's house?", opts:["To ask for help","To bring cookies","To borrow some tea","To walk to school"], a:1},
+      {q:"What can we learn from the story?", opts:["Mia doesn't like the writer's family","The writer's mom doesn't like sweets","Mia and the writer became close friends","They go to different schools"], a:2}]},
+  {t:"The Lost Kite", p:"Tom took his new kite to the park. The wind was strong, and the kite flew higher and higher. Suddenly, it got stuck in a tall tree. Tom felt sad, but his father climbed up and got it down. Tom was so happy that he hugged his father tightly.",
+   q:[{q:"Where did the kite get stuck?", opts:["On the ground","In a tree","On the roof","In the river"], a:1},
+      {q:"How did Tom feel when he got the kite back?", opts:["Angry","Bored","Happy","Tired"], a:2}]},
+  {t:"Rainy Day Plan", p:"Ben planned to play soccer with his friends in the park. But when he woke up, it was raining hard. He was disappointed at first. Then he decided to go to the library instead and read some comic books. In the end, he had a good time.",
+   q:[{q:"Why didn't Ben go to the park?", opts:["He was too tired","It was raining","The park was closed","He forgot his ball"], a:1},
+      {q:"What did Ben do instead?", opts:["He stayed in bed","He watched TV","He read comic books at the library","He played soccer at home"], a:2}]},
+  {t:"The School Bake Sale", p:"Our school held a bake sale to raise money for a children's hospital. Students brought cookies, cakes, and bread from home. Many parents came to buy the food. By the end of the day, we had collected more than $500. Everyone felt proud of what they had done.",
+   q:[{q:"What was the bake sale for?", opts:["To sell old books","To raise money for a hospital","To welcome new students","To celebrate a holiday"], a:1},
+      {q:"How did the students feel after the event?", opts:["Tired and angry","Proud","Worried","Bored"], a:1}]},
+  {t:"A Robot Helper", p:"The Chen family bought a small robot last month. It can clean the floor, water the plants, and even help cook simple meals. Unlike people, the robot never gets tired. Mr. Chen says the robot has made his family's life much easier.",
+   q:[{q:"What can the robot NOT do, according to the passage?", opts:["Clean the floor","Water the plants","Cook simple meals","Do homework"], a:3},
+      {q:"Why does Mr. Chen like the robot?", opts:["It talks to him","It saves money","It makes life easier","It looks nice"], a:2}]},
+  {t:"The Library Card", p:"Amy got her first library card today. The clerk gave her a small brochure that explains the rules: she can borrow up to five books at a time, and she must return them within two weeks. Amy was excited to pick out her first book.",
+   q:[{q:"What did the clerk give Amy?", opts:["A book","A brochure","Money","A pen"], a:1},
+      {q:"How long can Amy keep a book?", opts:["One day","One week","Two weeks","One month"], a:2}]},
+  {t:"Grandma's Garden", p:"My grandma has a small garden behind her house. Every morning, she waters the vegetables before breakfast. When the tomatoes and beans are ready, she shares them with our neighbors. She says growing food makes her feel healthy and happy.",
+   q:[{q:"When does grandma water her garden?", opts:["At night","Before breakfast","After dinner","On weekends only"], a:1},
+      {q:"What does grandma do with the vegetables?", opts:["She sells them","She shares them with neighbors","She throws them away","She keeps them a secret"], a:1}]},
+  {t:"The Sick Puppy", p:"Last night, our puppy Coco didn't eat anything and looked very tired. My father was worried, so we took Coco to see the vet this morning. The vet said Coco just needed more rest. After sleeping all day, Coco felt much better in the evening.",
+   q:[{q:"Why did the family take Coco to the vet?", opts:["Coco was hurt","Coco looked sick and tired","Coco was lost","Coco bit someone"], a:1},
+      {q:"What did Coco need to get better?", opts:["Medicine","A new home","More rest","More food"], a:2}]}
+];
+let readQueue = [], readIdx = 0, readSet = null;
+function pickReadingSet(){
+  if(!READING_SETS.length) return null;
+  let last = -1;
+  try{ last = +localStorage.getItem("cq-lastread"); }catch(e){}
+  const pool = READING_SETS.length > 1 ? READING_SETS.filter((_,i)=>i !== last) : READING_SETS;
+  const set = pool[Math.floor(Math.random()*pool.length)];
+  try{ localStorage.setItem("cq-lastread", READING_SETS.indexOf(set)); }catch(e){}
+  return set;
+}
+function startReadBlock(){
+  readSet = pickReadingSet();
+  $("readBlock").hidden = !readSet;
+  if(!readSet) return;
+  readQueue = readSet.q; readIdx = 0;
+  showReadQ();
+}
+function showReadQ(){
+  const item = readQueue[readIdx];
+  $("readCount").textContent = `第 ${readIdx+1} / ${readQueue.length} 題`;
+  $("readFb").className = "fb";
+  $("readNext").hidden = false;
+  $("readPassage").innerHTML = `<b>${esc(readSet.t)}</b>${esc(readSet.p)}`;
+  $("readPrompt").textContent = item.q;
+  const body = $("readBody");
+  body.innerHTML = `<div class="choices">` + item.opts.map((o,i)=>
+    `<button class="choice" data-i="${i}"><i>${"ABCD"[i]}</i>${esc(o)}</button>`).join("") + `</div>
+    <div class="spellbar"><button class="btn" id="readCheck" disabled>先選一個答案</button></div>`;
+  let sel = null, answered = false;
+  body.querySelectorAll(".choice").forEach(btn=>{
+    btn.onclick = () => {
+      if(answered) return;
+      sel = btn;
+      body.querySelectorAll(".choice").forEach(x=>x.classList.toggle("sel", x === btn));
+      const c = $("readCheck");
+      c.disabled = false; c.textContent = "檢查";
+    };
+  });
+  $("readCheck").onclick = () => {
+    if(answered || !sel) return;                              // 沒選一律不受理，跟一般選擇題一樣
+    answered = true;
+    const ok = +sel.dataset.i === item.a;
+    body.querySelectorAll(".choice").forEach(x=>{
+      x.disabled = true; x.classList.remove("sel");
+      if(+x.dataset.i === item.a) x.classList.add("right");
+      else if(x === sel) x.classList.add("wrong");
+    });
+    const fb = $("readFb");
+    fb.className = "fb on " + (ok ? "ok" : "no");
+    $("readFbTitle").textContent = ok ? "✓ 答對了！" : "✗ 再看一次文章找答案";
+    $("readNext").textContent = readIdx + 1 >= readQueue.length ? "完成" : "下一題";
+    fb.scrollIntoView({behavior:"smooth", block:"nearest"});
+  };
+}
+$("readNext").onclick = () => {
+  readIdx++;
+  if(readIdx >= readQueue.length){
+    $("readFbTitle").textContent += "　·　這段閱讀完成了 🎉";
+    $("readNext").hidden = true;
+  }else showReadQ();
+};
 
 function refreshHeader(){
   $("wrongCount").textContent = WORDS.filter(w=>stat(w.w).x > 0 && stat(w.w).streak < 2).length;

@@ -7,13 +7,14 @@
 給自己家小孩做的家庭學習小工具，開源出來給有需要的人。
 
 <p align="center">
-  <img src="docs/01-home.png" width="19%" alt="主畫面">
-  <img src="docs/02-quiz.png" width="19%" alt="點字母拼英文">
-  <img src="docs/06-stats.png" width="19%" alt="遊戲時間存摺">
-  <img src="docs/07-calendar.png" width="19%" alt="練習日曆">
-  <img src="docs/08-settings.png" width="19%" alt="設定">
+  <img src="docs/01-home.png" width="16%" alt="主畫面">
+  <img src="docs/02-quiz.png" width="16%" alt="點字母拼英文">
+  <img src="docs/06-stats.png" width="16%" alt="遊戲時間存摺">
+  <img src="docs/07-calendar.png" width="16%" alt="練習日曆">
+  <img src="docs/08-settings.png" width="16%" alt="設定">
+  <img src="docs/09-reading.png" width="16%" alt="閱讀題組">
 </p>
-<p align="center"><sub>主畫面 · 點字母拼英文 · 遊戲時間存摺 · 練習日曆 · 設定</sub></p>
+<p align="center"><sub>主畫面 · 點字母拼英文 · 遊戲時間存摺 · 練習日曆 · 設定 · 閱讀題組</sub></p>
 
 ---
 
@@ -160,6 +161,7 @@ npm test      # 1130+ 項端到端測試
 - **四個分頁**：練習 · 單字表 · 進度 · **設定**。設定頁放顯示設定、家長密碼、備份、清除紀錄；進度頁只留成果（存摺、統計、日曆、待加強）
 - **說明點一下才展開**：規則細節（分鐘怎麼算、日曆圖例、備份說明、密碼保護什麼）平常收起來，用瀏覽器原生的 `<details>`，不用自己寫展開邏輯
 - **顯示設定**：字體四段大小可調、配色可選跟隨系統／淺色／深色
+- **每輪結算頁附一小段閱讀題組**：一段短文（約 40-90 字）配兩題四選一，練「讀懂一段英文再回答」而不是單字記憶。跟計分、獎勵時間**完全脫鉤**——純粹的閱讀練習，不會被拿去刷分鐘數，也不會被難度/答對率的獎勵機制影響。8 篇文章輪替，同一篇不會連續出現兩輪
 
 ---
 
@@ -301,6 +303,8 @@ const EXAMPLES = {
 **為什麼測試要檢查 computed style？** 因為 `hidden` 屬性會被 CSS 蓋掉（`.sheet{display:grid}` 讓複製面板一載入就跳出來）、CSS 優先度會讓按鈕變成白底白字、flex 項目的 `min-height:auto` 會把日曆格子撐開、`aspect-ratio` 的自動最小尺寸會把 `1fr` 欄寬撐爆（7 欄變成 568px 塞進 358px 的容器）。這些都不是 DOM 結構的問題，只驗 DOM 抓不到。
 
 **為什麼日曆格子的 class 要測撞名？** 月檢視的達標格子原本取名 `.goal`，撞到每日目標區塊既有的 `.goal{margin:16px 0 14px}`，達標的日子就被推低 16px、整個月曆歪掉。測試會抓出「加在格子上的修飾 class 有裸規則」這種情況。
+
+**為什麼閱讀題組放在結算頁、不是按「開始練習」就先擋一段？** 一開始想的是每次開始練習前先跳出閱讀題組再進正式題目，但這樣會擋住 12 個測試檔、將近 30 處直接點 `btnStart` 就預期馬上進入答題畫面的假設，牽動面太大。改成附加在結算頁（`endRound()` 裡）之後，只跟 3 個檔案有關，而且對使用者體驗更好：不會延後開始練習的第一題，變成練完一輪後的收尾小活動。答對答錯也刻意不寫進 `S.done`／`SHARED.days`，避免跟已經調好的難度倍率、答對率倍率這套防刷分鐘數機制打架。
 
 ---
 
