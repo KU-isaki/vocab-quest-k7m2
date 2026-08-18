@@ -102,6 +102,14 @@ ok($('readNext').textContent==='完成','最後一小題答完，按鈕文字要
 click($('readNext'));
 ok($('readNext').hidden===true,'兩題都做完後應該收起下一題按鈕');
 ok($('readFbTitle').textContent.includes('完成'),'應該有完成的提示, 實得 '+$('readFbTitle').textContent);
+// .btn{display:flex} 曾經蓋掉 [hidden]，按鈕看起來收起來了其實還在、還能按，
+// 小孩手滑多按幾下「完成」，完成提示就會一直疊加（真實回報過的 bug）
+const css=html.match(/<style>([\s\S]*?)<\/style>/)[1];
+ok(/#readNext\[hidden\]\{[^}]*display:\s*none/.test(css),'#readNext[hidden] 要明確設成 display:none, 否則會被 .btn{display:flex} 蓋掉');
+ok(w.getComputedStyle($('readNext')).display==='none','按鈕實際算出來的 display 也要是 none, 不能只靠 DOM 的 hidden 屬性');
+const titleBefore=$('readFbTitle').textContent;
+click($('readNext')); click($('readNext')); click($('readNext'));   // 模擬手滑連點好幾下
+ok($('readFbTitle').textContent===titleBefore,'完成後再點幾次不該讓完成提示一直疊加, 實得 '+$('readFbTitle').textContent);
 
 /* ---------- ⑤ 同一篇不會連續出現 ---------- */
 click($('btnBackHome'));

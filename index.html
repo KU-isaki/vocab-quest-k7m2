@@ -300,6 +300,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
   margin:4px 0 18px; padding:16px 15px; border-radius:14px;
   border:1px solid var(--line); background:var(--surface-2); text-align:left;
 }
+#readNext[hidden]{display:none}   /* .btn{display:flex} 會蓋掉 hidden 屬性，按鈕會一直留著、一直能按 */
 .readblock .passage{
   font-size:14.5px; line-height:1.7; color:var(--ink); margin:0 0 14px;
   padding-bottom:14px; border-bottom:1px dashed var(--line);
@@ -920,7 +921,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.18-b";
+const VERSION = "2026.08.18-c";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -4299,7 +4300,7 @@ const READING_SETS = [
    q:[{q:"Why did the family take Coco to the vet?", opts:["Coco was hurt","Coco looked sick and tired","Coco was lost","Coco bit someone"], a:1},
       {q:"What did Coco need to get better?", opts:["Medicine","A new home","More rest","More food"], a:2}]}
 ];
-let readQueue = [], readIdx = 0, readSet = null;
+let readQueue = [], readIdx = 0, readSet = null, readFinished = false;
 function pickReadingSet(){
   if(!READING_SETS.length) return null;
   let last = -1;
@@ -4313,7 +4314,7 @@ function startReadBlock(){
   readSet = pickReadingSet();
   $("readBlock").hidden = !readSet;
   if(!readSet) return;
-  readQueue = readSet.q; readIdx = 0;
+  readQueue = readSet.q; readIdx = 0; readFinished = false;
   showReadQ();
 }
 function showReadQ(){
@@ -4354,8 +4355,10 @@ function showReadQ(){
   };
 }
 $("readNext").onclick = () => {
+  if(readFinished) return;                 // 按鈕理論上已經隱藏，這裡是防手滑連點的第二道保險
   readIdx++;
   if(readIdx >= readQueue.length){
+    readFinished = true;
     $("readFbTitle").textContent += "　·　這段閱讀完成了 🎉";
     $("readNext").hidden = true;
   }else showReadQ();
