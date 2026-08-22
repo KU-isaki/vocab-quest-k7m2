@@ -102,5 +102,23 @@ const total=w.eval('WORDS.length');
 ok($('rvCount').textContent.endsWith('/ '+total),`全部模式應可複習全部 ${total} 字, 實得 `+$('rvCount').textContent);
 click($('rvClose'));
 
+// ⑥ 例句發音：單字表展開的例句、翻卡背面的例句都要能念整句（兩個題庫共用同一套畫面）
+const exBtn1=d.querySelector('#listBody .note .exline .sp-ex');
+ok(!!exBtn1,'單字表的例句要有發音鈕');
+ok(exBtn1&&/\s/.test(exBtn1.dataset.say||''),'例句發音鈕要念整句而不是單字, 實得 '+(exBtn1&&exBtn1.dataset.say));
+let spoken=''; w.speechSynthesis.speak=u=>{spoken=u.text;};
+click(exBtn1);
+ok(spoken===exBtn1.dataset.say.replace(/-/g,' '),'按例句發音鈕要念出例句, 實得 '+spoken);
+click($('btnReview'));
+let guard=0;                                   // 翻到一張有例句的卡
+while(guard++<300){ click($('rvCard')); if(d.querySelector('#rvBack .ex .sp-ex')) break; click($('rvNext')); }
+const exBtn2=d.querySelector('#rvBack .ex .sp-ex');
+ok(!!exBtn2,'翻卡背面的例句要有發音鈕');
+spoken='';
+click(exBtn2);
+ok(spoken===exBtn2.dataset.say.replace(/-/g,' '),'翻卡的例句發音鈕要念出例句, 實得 '+spoken);
+ok(!$('rvBack').hidden,'按例句發音不該影響卡片狀態');
+click($('rvClose'));
+
 console.log(`\n通過 ${pass} / 失敗 ${fail}`);
 process.exit(fail?1:0);
