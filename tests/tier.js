@@ -91,6 +91,7 @@ ok($('btnSpend').textContent.includes(String(SPEND)),'兌換鈕應顯示分鐘�
 ok(!$('btnSpend').disabled,'15 分鐘足夠應可兌換');
 let copied='';
 w.navigator.clipboard={writeText:async t=>{copied=t;}};
+w.prompt=()=>String(SPEND);            // 兌換分鐘數改成用輸入的
 click($('btnSpend'));
 (async()=>{
   await new Promise(r=>setTimeout(r,30));
@@ -120,7 +121,7 @@ click($('btnSpend'));
   click($('btnSpend'));
   await new Promise(r=>setTimeout(r,20));
   ok(w.eval('SHARED.bank.used')===used0,'密碼錯誤不得扣款');
-  w.prompt=()=>'1234';           // 輸對
+  let sq=['1234',String(SPEND)], qi=0; w.prompt=()=>sq[qi++];   // 先問密碼、再問分鐘數
   click($('btnSpend'));
   await new Promise(r=>setTimeout(r,20));
   ok(w.eval('SHARED.bank.used')===used0+SPEND,'密碼正確才扣款');
@@ -136,6 +137,32 @@ click($('btnSpend'));
   click($('btnPin'));
   ok(w.eval('getPin()')==='5678','非 4 位數應被擋下、保留原密碼, 實得 '+w.eval('getPin()'));
   seq=['5678','']; si=0; w.prompt=()=>seq[si++]; click($('btnPin'));
+
+  // ===== 兌換要能自己輸入分鐘數（下限 15、不能超過存摺、倒數要累加）=====
+  console.log('\n  ── 自訂兌換分鐘數 ──');
+  w.eval('SHARED.bank={earned:100,used:0,bonus:0}; save(); renderBank();');
+  ok($('btnSpend').textContent.includes('至少'),'兌換鈕要提示最低分鐘數, 實得 '+$('btnSpend').textContent);
+  w.prompt=()=>String(SPEND-1);
+  click($('btnSpend')); await new Promise(r=>setTimeout(r,20));
+  ok(w.eval('SHARED.bank.used')===0,'低於下限不得扣款, 實得 '+w.eval('SHARED.bank.used'));
+  w.prompt=()=>'999';
+  click($('btnSpend')); await new Promise(r=>setTimeout(r,20));
+  ok(w.eval('SHARED.bank.used')===0,'超過存摺餘額不得扣款');
+  w.prompt=()=>null;
+  click($('btnSpend')); await new Promise(r=>setTimeout(r,20));
+  ok(w.eval('SHARED.bank.used')===0,'取消輸入不得扣款');
+  w.prompt=()=>'abc';
+  click($('btnSpend')); await new Promise(r=>setTimeout(r,20));
+  ok(w.eval('SHARED.bank.used')===0,'亂打文字不得扣款');
+  w.prompt=()=>'20';
+  click($('btnSpend')); await new Promise(r=>setTimeout(r,30));
+  ok(w.eval('SHARED.bank.used')===20,'應能自訂兌換 20 分鐘, 實得 '+w.eval('SHARED.bank.used'));
+  const until1=w.eval('SHARED.bank.until');
+  ok(until1>Date.now()+19*60000,'倒數應約 20 分鐘, 實得剩 '+Math.round((until1-Date.now())/60000)+' 分');
+  click($('btnSpend')); await new Promise(r=>setTimeout(r,30));   // 倒數還在跑就再兌換一次
+  ok(w.eval('SHARED.bank.used')===40,'第二次兌換也要扣款, 實得 '+w.eval('SHARED.bank.used'));
+  ok(w.eval('SHARED.bank.until')>=until1+20*60000-1000,
+     '倒數沒跑完再兌換要往後累加，不能把上一次還沒用完的時間蓋掉, 實差 '+Math.round((w.eval('SHARED.bank.until')-until1)/60000)+' 分');
 
   // 舊版存檔 paid:true 要能換算
   w.eval(`SHARED.days["2026-01-01"]={n:30,r:30,paid:true};`);

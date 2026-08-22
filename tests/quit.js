@@ -85,5 +85,19 @@ const expect=Math.round(S.right/S.done*100);
 ok(rep2.includes(`答對率 ${expect}%`),`答對率應為 ${expect}%（${S.right}/${S.done}）`);
 ok(rep2.includes(`累積：${S.done} 題`),'累積題數要跟實際一致');
 
+// ⑥ 誤觸防護：結束鈕不能吃到 .btn 的全寬（會橫跨卡片底整條），中途結束要先確認
+const css=html.match(/<style>([\s\S]*?)<\/style>/)[1];
+ok(/#btnQuit\{[^}]*width:\s*auto/.test(css),'#btnQuit 要縮成小按鈕，不能全寬');
+ok(/#btnQuit\{[^}]*margin:\s*2\d+px auto/.test(css),'#btnQuit 要跟作答區拉開距離並置中');
+click($('btnBackHome')); click($('btnStart'));
+answer(true); click($('btnNext'));
+w.confirm=()=>false;                    // 按了「取消」→ 要留在題目頁
+click($('btnQuit'));
+ok($('qCard').hidden===false,'取消確認後應留在題目繼續作答');
+ok($('sumCard').hidden===true,'取消確認後不該跳到結算頁');
+w.confirm=()=>true;
+click($('btnQuit'));
+ok($('sumCard').hidden===false,'確認後才結束這一輪');
+
 console.log(`\n通過 ${pass} / 失敗 ${fail}`);
 process.exit(fail?1:0);

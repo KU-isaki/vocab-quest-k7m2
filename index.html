@@ -116,6 +116,8 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 .btn:active{transform:scale(.985); filter:brightness(.94)}
 .btn.ghost{background:var(--surface); color:var(--ink); border-color:var(--line); font-weight:500}
 .btn.quiet{background:transparent; color:var(--ink-soft); border-color:transparent; font-size:14.5px; padding:10px}
+/* 結束這輪：不能全寬貼著作答區，否則按「下一題」後版面上移，手快就誤觸 */
+#btnQuit{width:auto; margin:26px auto 0; padding:10px 20px}
 .btn.done{background:var(--ok); color:var(--btn-fg); border-color:var(--ok); font-weight:600}
 .btn:disabled{
   background:var(--surface-2); color:var(--ink-faint); border-color:var(--line);
@@ -921,7 +923,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.18-c";
+const VERSION = "2026.08.22-a";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -4064,7 +4066,14 @@ function renderMatrix(){
 }
 $("btnStart").onclick = () => { warm(); startRound(false, pickSize); };
 $("btnWrongOnly").onclick = () => { warm(); startRound(true); };
-$("btnQuit").onclick = () => endRound();
+$("btnQuit").onclick = () => {
+  const n = roundDone();
+  if(n < queue.length){                          // 沒答完就走，先確認一次，擋誤觸
+    const msg = n ? `要提早結束這一輪嗎？\n已答的 ${n} 題會照算。` : "還沒作答，要結束這一輪嗎？";
+    if(!confirm(msg)) return;
+  }
+  endRound();
+};
 $("btnAgain").onclick = () => startRound(wrongMode, roundSize);
 $("btnBackHome").onclick = () => { $("sumCard").hidden = true; $("startCard").hidden = false; refreshHeader(); };
 
@@ -4600,7 +4609,7 @@ function renderBank(){
     `${got} 分鐘`);
   $("goalBar").style.width = Math.min(100, net / FULLGOAL * 100) + "%";
   $("btnSpend").disabled = left < SPEND;
-  $("btnSpend").textContent = left >= SPEND ? `兌換 ${SPEND} 分鐘遊戲時間` : `還差 ${SPEND - left} 分鐘才能兌換`;
+  $("btnSpend").textContent = left >= SPEND ? `兌換遊戲時間（一次至少 ${SPEND} 分鐘）` : `還差 ${SPEND - left} 分鐘才能兌換`;
   $("tierHint").innerHTML = "<b>答對 1 題 +1，答錯 1 題 -1</b>，算出來的淨題數換分鐘：<br>"
     + TIERS.map(t=>`${t.n} 題 = ${goalMinutes(t.n, LV.mul * ac.m)} 分鐘`).join("　·　")
     + `<br>再乘兩個倍率：難度 ${LV.name} ×${LV.mul}　·　今日答對率 ×${ac.m}`
@@ -4859,19 +4868,25 @@ function renderTimer(){
 $("btnSpend").onclick = async () => {
   if(bankLeft() < SPEND) return;
   if(!checkPin()) return;
-  if(!confirm(`要用掉 ${SPEND} 分鐘遊戲時間嗎？\n用完剩下 ${bankLeft() - SPEND} 分鐘。`)) return;
-  SHARED.bank.used += SPEND;
-  SHARED.bank.until = Date.now() + SPEND * 60000;
+  const t = prompt(`要兌換幾分鐘？（一次至少 ${SPEND} 分鐘，存摺剩 ${bankLeft()} 分鐘）`, SPEND);
+  if(t === null || String(t).trim() === "") return;
+  const m = Math.floor(+String(t).trim());
+  if(!Number.isFinite(m) || m < SPEND){ toast(`一次至少兌換 ${SPEND} 分鐘`); return; }
+  if(m > bankLeft()){ toast(`存摺只剩 ${bankLeft()} 分鐘，不夠兌換 ${m} 分鐘`); return; }
+  if(!confirm(`要用掉 ${m} 分鐘遊戲時間嗎？\n用完剩下 ${bankLeft() - m} 分鐘。`)) return;
+  SHARED.bank.used += m;
+  // 倒數還在跑就往後延長；直接覆蓋會把上一次還沒用完的時間吃掉
+  SHARED.bank.until = Math.max(Date.now(), SHARED.bank.until || 0) + m * 60000;
   save(); renderBank(); renderTimer();
 
   const today = SHARED.days[dayKey()] || {n:0};
   const now = new Date();
   const msg = ["🎮 遊戲時間申請",
     `今天練了 ${today.n} 題，拿到 ${paidOf(today)} 分鐘`,
-    `現在使用 ${SPEND} 分鐘，用完剩 ${bankLeft()} 分鐘`,
+    `現在使用 ${m} 分鐘，用完剩 ${bankLeft()} 分鐘`,
     `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")} 開始`
   ].join("\n");
-  if(await copyText(msg)) toast(`已複製申請訊息，貼給爸媽　·　開始倒數 ${SPEND} 分鐘`);
+  if(await copyText(msg)) toast(`已複製申請訊息，貼給爸媽　·　開始倒數 ${m} 分鐘`);
   else openSheet(msg);
 };
 
