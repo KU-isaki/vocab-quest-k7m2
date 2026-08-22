@@ -219,6 +219,8 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
   font-style:normal; font-size:12px; font-weight:700; color:var(--ink-faint);
   display:grid; place-items:center; font-family:var(--font-num);
 }
+.choices.sen .choice{font-size:14.5px; line-height:1.55}
+.choices.sen-en .choice{font-family:var(--font-en); font-size:15px}
 /* 選起來但還沒送出：只是標記，按「檢查」才驗證，免得誤觸就被判錯 */
 .choice.sel{background:var(--brand-soft); border-color:var(--brand); color:var(--brand); font-weight:600}
 .choice.sel i{background:var(--brand); color:var(--btn-fg)}
@@ -928,7 +930,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.23-b";
+const VERSION = "2026.08.23-c";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -4021,7 +4023,7 @@ function pickKind(w){
   if(stat(w.w).streak >= m.need && Math.random() < m.typeP) return "type";
   const kinds = m.kinds.slice();
   if(ear) for(let i = 0; i < m.ear; i++) kinds.push("listen");
-  if(w.ex) kinds.push("cloze");                // 有例句的字才出挖空題
+  if(w.ex){ kinds.push("cloze", "zh2en"); if(ear) kinds.push("senlisten"); }  // 有例句的字才出句子題
   return kinds[Math.floor(Math.random() * kinds.length)];
 }
 function startRound(useWrong, count){
@@ -4082,7 +4084,7 @@ $("btnQuit").onclick = () => {
 $("btnAgain").onclick = () => startRound(wrongMode, roundSize);
 $("btnBackHome").onclick = () => { $("sumCard").hidden = true; $("startCard").hidden = false; refreshHeader(); };
 
-const KIND_LABEL = {en2zh:"看英文 · 說中文", spell:"看中文 · 拼英文", type:"進階 · 打出英文", listen:"🔊 只聽發音", cloze:"看句子 · 填單字"};
+const KIND_LABEL = {en2zh:"看英文 · 說中文", spell:"看中文 · 拼英文", type:"進階 · 打出英文", listen:"🔊 只聽發音", cloze:"看句子 · 填單字", senlisten:"🔊 聽例句 · 選中文", zh2en:"看中文 · 選英文句"};
 
 function showQ(){
   answered = false;
@@ -4092,35 +4094,43 @@ function showQ(){
   $("qFb").className = "fb";
   const P = $("qPrompt"), B = $("qBody");
 
-  if(q.kind === "en2zh" || q.kind === "listen"){
-    if(q.kind === "listen"){
-      P.innerHTML = `<p class="say-cue">聽發音，選出中文意思</p>
+  if(q.kind === "en2zh" || q.kind === "listen" || q.kind === "senlisten" || q.kind === "zh2en"){
+    const senKind = q.kind === "senlisten" || q.kind === "zh2en";   // 句子題：選項是整句例句
+    const sayText = q.kind === "senlisten" ? w.ex[0] : w.w;
+    if(q.kind === "listen" || q.kind === "senlisten"){
+      P.innerHTML = `<p class="say-cue">${q.kind === "listen" ? "聽發音，選出中文意思" : "聽例句，選出正確的中文意思"}</p>
         <button class="bigspeak" id="spk" aria-label="再聽一次">🔊</button>
-        <button class="speak" id="reveal">聽不到？顯示單字</button>`;
-      $("reveal").onclick = e => {
-        e.currentTarget.outerHTML = `<div class="en">${esc(w.w)}</div>`;
-      };
+        <button class="speak" id="reveal">${q.kind === "listen" ? "聽不到？顯示單字" : "聽不到？顯示句子"}</button>`;
+      const revealHTML = q.kind === "listen"
+        ? `<div class="en">${esc(w.w)}</div>`
+        : `<div class="sentence">${esc(w.ex[0])}</div>`;
+      $("reveal").onclick = e => { e.currentTarget.outerHTML = revealHTML; };
+    }else if(q.kind === "zh2en"){
+      P.innerHTML = `<p class="say-cue">看中文，選出正確的英文句子</p>
+        <div class="sen-zh">${esc(w.ex[1])}</div>`;
     }else{
       P.innerHTML = `<p class="say-cue">先自己念一次，再選中文意思</p>
         <div class="en">${esc(w.w)}</div>
         <button class="speak" id="spk">🔊 聽發音</button>`;
     }
-    $("spk").onclick = () => say(w.w);
-    say(w.w);
-    // 四個選項的中文必須互不相同，否則會出現兩個都對的答案（tall / high 都是「高的」）
-    let opts = [w]; const seenZh = new Set([w.zh]);
+    if($("spk")){ $("spk").onclick = () => say(sayText); say(sayText); }
+    // 四個選項必須互不相同，否則會出現兩個都對的答案（tall / high 都是「高的」）
+    let opts = [w];
+    const keyOf = senKind ? (q.kind === "senlisten" ? (x => x.ex[1]) : (x => x.ex[0])) : (x => x.zh);
+    const seen = new Set([keyOf(w)]);
     const take = list => {
       for(const x of list){
         if(opts.length >= 4) break;
-        if(x.w === w.w || seenZh.has(x.zh)) continue;
-        seenZh.add(x.zh); opts.push(x);
+        if(x.w === w.w || (senKind && !x.ex) || seen.has(keyOf(x))) continue;
+        seen.add(keyOf(x)); opts.push(x);
       }
     };
-    take(shuffle(WORDS.filter(x=>x.cats.some(c=>w.cats.includes(c)))));
-    if(opts.length < 4) take(shuffle(WORDS));   // 小分類（「語言」只有 2 字）湊不滿就跨類補
+    const pool = senKind ? WORDS.filter(x=>x.ex) : WORDS;
+    take(shuffle(pool.filter(x=>x.cats.some(c=>w.cats.includes(c)))));
+    if(opts.length < 4) take(shuffle(pool));    // 小分類（「語言」只有 2 字）湊不滿就跨類補
     opts = shuffle(opts);
-    B.innerHTML = `<div class="choices">` + opts.map((o,i)=>
-      `<button class="choice" data-w="${esc(o.w)}"><i>${"ABCD"[i]}</i>${esc(o.zh)}</button>`).join("") + `</div>
+    B.innerHTML = `<div class="choices${senKind ? " sen" : ""}${q.kind === "zh2en" ? " sen-en" : ""}">` + opts.map((o,i)=>
+      `<button class="choice" data-w="${esc(o.w)}"><i>${"ABCD"[i]}</i>${esc(keyOf(o))}</button>`).join("") + `</div>
       <div class="spellbar"><button class="btn" id="btnCheck" disabled>先選一個答案</button></div>`;
     // 點選項只是「選起來」，可以改；按下「檢查」才送出，避免誤觸直接算錯
     let sel = null;

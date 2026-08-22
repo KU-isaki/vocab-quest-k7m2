@@ -50,10 +50,10 @@ let sawWrong=false, sawRight=false;
 for(let r=0;r<3 && !(sawWrong&&sawRight);r++){ click($('btnStart'));
   for(let i=0;i<R;i++){ const t=$('qKind').textContent;
     const wrong = i%2===0;
-    if(t.includes('說中文')){
-      const en=d.querySelector('#qPrompt .en').textContent.trim();
+    if(d.querySelector('#qBody .choice')){
+      const aw=w.eval('queue[idx].word.w');
       const bs=[...d.querySelectorAll('#qBody .choice')];
-      click(wrong ? bs.find(b=>b.dataset.w!==en) : bs.find(b=>b.dataset.w===en));
+      click(wrong ? bs.find(b=>b.dataset.w!==aw) : bs.find(b=>b.dataset.w===aw));
       click($('btnCheck'));
     } else {
       const ans=ansOf();

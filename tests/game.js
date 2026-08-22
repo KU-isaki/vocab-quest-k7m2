@@ -29,14 +29,10 @@ const SW=w.eval('SUMMER_WORDS'); const byZh={}; SW.forEach(x=>(byZh[x.zh]=byZh[x
 const stats=()=>click([...d.querySelectorAll('.nav button')].find(b=>b.dataset.view==='vStats'));
 function answer(correct=true){
   const t=$('qKind').textContent;
-  if(t.includes('說中文')||t.includes('只聽')){
+  if(d.querySelector('#qBody .choice')){
     const bs=[...d.querySelectorAll('#qBody .choice')];
-    const en=(d.querySelector('#qPrompt .en')||{}).textContent;
-    if(t.includes('只聽')&&!en){ // 聽力題：用 reveal 取得答案
-      const r=$('reveal'); if(r) click(r);
-    }
-    const target=(d.querySelector('#qPrompt .en')||{}).textContent;
-    const b= correct ? bs.find(x=>x.dataset.w===(target||'').trim()) : bs.find(x=>x.dataset.w!==(target||'').trim());
+    const aw=w.eval('queue[idx].word.w');
+    const b= correct ? bs.find(x=>x.dataset.w===aw) : bs.find(x=>x.dataset.w!==aw);
     click(b||bs[0]); click($('btnCheck'));
   } else {
     const a=ansOf();

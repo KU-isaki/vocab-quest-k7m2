@@ -60,10 +60,9 @@ const bank=()=>w.eval('SHARED.bank.earned');
 const paid=()=>w.eval('paidOf(SHARED.days[dayKey()])');
 function answer(right){
   if(d.querySelector('#qBody .choice')){
-    const r=$('reveal'); if(r) click(r);
-    const en=(d.querySelector('#qPrompt .en')||{textContent:''}).textContent.trim();
+    const aw=w.eval('queue[idx].word.w');
     const bs=[...d.querySelectorAll('#qBody .choice')];
-    click((right? bs.find(x=>x.dataset.w===en) : bs.find(x=>x.dataset.w!==en))||bs[0]);
+    click((right? bs.find(x=>x.dataset.w===aw) : bs.find(x=>x.dataset.w!==aw))||bs[0]);
     click($('btnCheck'));
   }else if(d.querySelector('#qBody .tile')){
     const a=w.eval('queue[idx].word.w').toLowerCase();

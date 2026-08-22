@@ -45,10 +45,11 @@ ok(sizes.every(x=>x===30),'三種難度都要出滿 30 題（難度不准減題�
 w.eval('WORDS.forEach(x=>{ S.stats[x.w]={r:5,x:0,streak:5,due:"2000-01-01"}; });');
 function mix(lv){
   setLv(lv);
-  const c={type:0,listen:0,en2zh:0,spell:0,cloze:0};
-  for(let i=0;i<40;i++) w.eval('drawRound(pool(),30)').forEach(q=>c[q.kind]++);
+  const c={};                                   // 動態計數，新題型加進來也不會變 NaN
+  for(let i=0;i<40;i++) w.eval('drawRound(pool(),30)').forEach(q=>c[q.kind]=(c[q.kind]||0)+1);
   const all=Object.values(c).reduce((a,b)=>a+b,0);
-  return {hard:(c.type+c.listen)/all, type:c.type/all, listen:c.listen/all, en2zh:c.en2zh/all, c};
+  const n=k=>(c[k]||0);
+  return {hard:(n('type')+n('listen'))/all, type:n('type')/all, listen:n('listen')/all, en2zh:n('en2zh')/all, c};
 }
 const E=mix('easy'), S_=mix('std'), H=mix('hard');
 console.log('  難題（打字+聽力）比例 →',
@@ -78,10 +79,9 @@ w.eval('WORDS.forEach(x=>{ S.stats[x.w]={r:5,x:0,streak:5,due:"2000-01-01"}; });
 const answer=()=>{
   const t=$('qKind').textContent;
   if(d.querySelector('#qBody .choice')){
-    const r=$('reveal'); if(r) click(r);
-    const en=(d.querySelector('#qPrompt .en')||{textContent:''}).textContent.trim();
+    const aw=w.eval('queue[idx].word.w');
     const bs=[...d.querySelectorAll('#qBody .choice')];
-    click(bs.find(x=>x.dataset.w===en)||bs[0]); click($('btnCheck'));
+    click(bs.find(x=>x.dataset.w===aw)||bs[0]); click($('btnCheck'));
   }else if(d.querySelector('#qBody .tile')){
     const a=w.eval('queue[idx].word.w').toLowerCase();
     const ts=[...d.querySelectorAll('#qBody .tile')];

@@ -21,10 +21,10 @@ const SW=w.eval('SUMMER_WORDS'); const byZh={}; SW.forEach(x=>(byZh[x.zh]=byZh[x
 // n 題答對, 之後可選擇中途結束
 function answer(correct){
   const t=$('qKind').textContent;
-  if(t.includes('說中文')){
-    const en=d.querySelector('#qPrompt .en').textContent.trim();
+  if(d.querySelector('#qBody .choice')){
+    const aw=w.eval('queue[idx].word.w');
     const bs=[...d.querySelectorAll('#qBody .choice')];
-    click(correct? bs.find(b=>b.dataset.w===en) : bs.find(b=>b.dataset.w!==en));
+    click(correct? bs.find(b=>b.dataset.w===aw) : bs.find(b=>b.dataset.w!==aw));
     click($('btnCheck'));   // 選完要按檢查才送出
   } else {
     const ans=ansOf();

@@ -61,7 +61,7 @@ for(let r=0;r<8 && clozeChecks<12;r++){
       } else click($('btnCheck'));
     } else {
       // 其他題型隨便答
-      if(t.includes('說中文')||t.includes('只聽')){ const rv=$('reveal'); if(rv) click(rv);
+      if(d.querySelector('#qBody .choice')){
         click(d.querySelector('#qBody .choice')); click($('btnCheck')); }
       else if(t.includes('拼英文')){ const ts=[...d.querySelectorAll('#qBody .tile')];
         ts.slice(0,d.querySelectorAll('#qBody .slot').length).forEach(click); click($('btnCheck')); }

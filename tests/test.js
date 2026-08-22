@@ -41,7 +41,7 @@ ok($('startCard').hidden===true, '起始卡應隱藏');
 let kinds={en2zh:0,spell:0,type:0};
 for(let i=0;i<R;i++){
   const kind=$('qKind').textContent;
-  if(kind.includes('說中文')){
+  if(d.querySelector('#qBody .choice')){
     kinds.en2zh++;
     click(d.querySelector('#qBody .choice'));
     click($('btnCheck'));

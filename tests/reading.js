@@ -44,10 +44,10 @@ function ansOf(){
   return null;
 }
 function answerWord(){ const t=$('qKind').textContent;
-  if(t.includes('說中文')||t.includes('只聽')){ const r=$('reveal'); if(r) click(r);
-    const en=(d.querySelector('#qPrompt .en')||{textContent:''}).textContent.trim();
+  if(d.querySelector('#qBody .choice')){
+    const aw=w.eval('queue[idx].word.w');
     const bs=[...d.querySelectorAll('#qBody .choice')];
-    click(bs.find(x=>x.dataset.w===en)||bs[0]); click($('btnCheck'));
+    click(bs.find(x=>x.dataset.w===aw)||bs[0]); click($('btnCheck'));
   }else if(t.includes('拼英文')||t.includes('填單字')){ const a=ansOf();
     const ts=[...d.querySelectorAll('#qBody .tile')];
     const seq=a.toLowerCase().split('').map(c=>ts.find(x=>x.textContent===c&&!x.classList.contains('used')));

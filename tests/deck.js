@@ -27,7 +27,7 @@ ok(d.querySelectorAll('#listBody .wrow').length===114,'暑假版 114 字, 實得
 // 暑假版答 10 題
 const play=(n)=>{ click($('btnStart'));
   for(let i=0;i<n;i++){ const t=$('qKind').textContent;
-    if(t.includes('說中文')){ click(d.querySelector('#qBody .choice')); click($('btnCheck')); }
+    if(d.querySelector('#qBody .choice')){ click(d.querySelector('#qBody .choice')); click($('btnCheck')); }
     else if((t.includes('拼英文')||t.includes('填單字'))){ [...d.querySelectorAll('#qBody .tile')].slice(0,d.querySelectorAll('#qBody .slot').length).forEach(click); click($('btnCheck')); }
     else { $('typed').value='q'; click($('btnCheck')); }
     click($('btnNext')); } };
@@ -60,7 +60,7 @@ click(deckBtn('full'));
 let dupOpt=0, checked=0;
 for(let r=0;r<9;r++){ click($('btnStart'));
   for(let i=0;i<R;i++){ const t=$('qKind').textContent;
-    if(t.includes('說中文')){ const zs=[...d.querySelectorAll('#qBody .choice')].map(b=>b.textContent.slice(1));
+    if(d.querySelector('#qBody .choice')){ const zs=[...d.querySelectorAll('#qBody .choice')].map(b=>b.textContent.slice(1));
       checked++; if(new Set(zs).size!==zs.length) {dupOpt++; if(dupOpt<3) console.log('   重複選項:',zs);}
       click(d.querySelector('#qBody .choice')); click($('btnCheck')); }
     else if((t.includes('拼英文')||t.includes('填單字'))){ [...d.querySelectorAll('#qBody .tile')].slice(0,d.querySelectorAll('#qBody .slot').length).forEach(click); click($('btnCheck')); }
