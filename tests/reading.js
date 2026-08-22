@@ -15,13 +15,14 @@ let pass=0,fail=0; const ok=(c,m)=>{c?pass++:(fail++,console.log('  ✗ '+m))};
 
 /* ---------- ① 內容本身要乾淨 ---------- */
 const SETS=w.eval('READING_SETS');
-ok(Array.isArray(SETS)&&SETS.length>=6,'閱讀題組至少要有幾篇可以輪替, 實得 '+(SETS&&SETS.length));
+ok(Array.isArray(SETS)&&SETS.length>=30,'閱讀題組應擴充到 30 篇, 實得 '+(SETS&&SETS.length));
 SETS.forEach((s,i)=>{
   const tag=`第 ${i+1} 篇「${s.t}」`;
   ok(typeof s.t==='string'&&s.t.trim().length>0,`${tag} 要有標題`);
   const words=s.p.trim().split(/\s+/).length;
   ok(words>=20&&words<=90,`${tag} 篇幅要「不用太長」, 實得 ${words} 字`);
-  ok(Array.isArray(s.q)&&s.q.length===2,`${tag} 應該有兩題小題組, 實得 ${s.q&&s.q.length}`);
+  ok(Array.isArray(s.q)&&s.q.length===8,`${tag} 題目池應該有 8 題, 實得 ${s.q&&s.q.length}`);
+  ok(new Set((s.q||[]).map(x=>x.q)).size===(s.q||[]).length,`${tag} 題目池內的題目不能重複`);
   s.q.forEach((item,qi)=>{
     const qtag=`${tag} 第 ${qi+1} 小題`;
     ok(typeof item.q==='string'&&item.q.trim().length>0,`${qtag} 要有題目文字`);
@@ -65,7 +66,8 @@ const shownSet=SETS.find(s=>$('readPassage').textContent.includes(s.t));
 ok(!!shownSet,'畫面上的文章應該對得到 READING_SETS 裡的一篇');
 ok($('readPassage').textContent.includes(shownSet.p.slice(0,20)),'畫面應顯示文章內容');
 ok($('readCount').textContent.includes('1')&&$('readCount').textContent.includes('2'),'題號要顯示第幾題／共幾題, 實得 '+$('readCount').textContent);
-ok($('readPrompt').textContent===shownSet.q[0].q,'應顯示第一小題的題目');
+const item1=shownSet.q.find(x=>x.q===$('readPrompt').textContent);
+ok(!!item1,'第一題應來自這一篇的題目池, 實得 '+$('readPrompt').textContent);
 ok(d.querySelectorAll('#readBody .choice').length===4,'閱讀題應該有四個選項');
 
 /* ---------- ③ 兩段式作答：沒選不能按檢查 ---------- */
@@ -81,7 +83,7 @@ ok($('readFb').className.indexOf('on')===-1,'按選項不會直接送出答案�
 const beforeDone=w.eval('S.done');
 const beforeDay=JSON.parse(JSON.stringify(w.eval("SHARED.days[dayKey()]||{}")));
 const beforeBank=w.eval('SHARED.bank ? SHARED.bank.earned : 0');
-const correctIdx=shownSet.q[0].a;
+const correctIdx=item1.a;
 click(d.querySelectorAll('#readBody .choice')[correctIdx]);
 click($('readCheck'));
 ok($('readFb').className.includes('on ok'),'答對閱讀題應該顯示答對的樣式');
@@ -92,8 +94,9 @@ ok(w.eval('SHARED.bank ? SHARED.bank.earned : 0')===beforeBank,'答閱讀題不�
 
 // 第二小題故意答錯，確認錯誤樣式也正常，一樣不影響統計
 click($('readNext'));
-ok($('readPrompt').textContent===shownSet.q[1].q,'應該進到第二小題');
-const wrongIdx=(shownSet.q[1].a+1)%4;
+const item2=shownSet.q.find(x=>x.q===$('readPrompt').textContent);
+ok(!!item2&&item2!==item1,'第二題也應來自題目池, 且跟第一題不同');
+const wrongIdx=(item2.a+1)%4;
 click(d.querySelectorAll('#readBody .choice')[wrongIdx]);
 click($('readCheck'));
 ok($('readFb').className.includes('on no'),'答錯閱讀題應該顯示答錯的樣式');
@@ -117,6 +120,17 @@ runRound();
 const shownSet2=SETS.find(s=>$('readPassage').textContent.includes(s.t));
 ok(!!shownSet2,'第二輪畫面上的文章也應該對得到 READING_SETS 裡的一篇');
 ok(shownSet2.t!==shownSet.t,'不該連續兩輪出現同一篇文章, 實得 '+shownSet.t+' / '+shownSet2.t);
+
+/* ---------- ⑥ 每次從 8 題的題目池隨機抽 2 題 ---------- */
+let sawLate=false, drawsOk=true;
+for(let i=0;i<40;i++){
+  w.eval('startReadBlock()');
+  const que=w.eval('readQueue'), set=w.eval('readSet');
+  if(que.length!==2||que[0]===que[1]||!que.every(x=>set.q.includes(x))) drawsOk=false;
+  if(que.some(x=>set.q.indexOf(x)>=2)) sawLate=true;
+}
+ok(drawsOk,'每次都應從該篇題目池抽出 2 題不同的題目');
+ok(sawLate,'40 次抽題應該抽得到第 3 題以後的題目（不能永遠只出前兩題）');
 
 console.log(`\n通過 ${pass} / 失敗 ${fail}`);
 process.exit(fail?1:0);
