@@ -15,6 +15,10 @@ const MAX_BODY  = 1024 * 1024;         // 1 MB。備份碼滿載約 40 KB，這�
 const MAX_NAME  = 40;
 
 function timingSafe(a, b){             // 別用 === 直接比密鑰
+  // 兩邊都是空字串時長度相等、迴圈不跑、d 是 0 —— 會回傳 true。
+  // 也就是密鑰沒設定時「不帶 Authorization」反而通過，等於全世界都能寫。
+  // 這裡先擋掉空字串，下面 fetch 開頭再擋一次沒設定的情況。
+  if(!a || !b) return false;
   if(typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
   let d = 0;
   for(let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
@@ -45,6 +49,23 @@ function json(body, status, req, env){
 }
 const pad = n => String(n).padStart(12, "0");
 
+// KV 的鑰匙用 : 分段，名字裡混進 : 會汙染整個結構
+// （叫「amy:x」的人，他的 snap 會混進「amy」的歷史裡）
+const NAME_OK = /^[\w\u4e00-\u9fff .-]{1,40}$/;
+function dec(s){ try{ return decodeURIComponent(s); }catch(e){ return null; } }
+
+// KV 的 list 一頁最多 1000 把鑰匙。90 天的歷史一定會超過，
+// 不接 cursor 的話拿到的是「最舊的那 1000 把」，最新的反而看不到。
+async function listAll(kv, prefix){
+  let cursor, out = [], page = 0;
+  do{
+    const r = await kv.list({prefix, cursor});
+    out = out.concat(r.keys.map(k=>k.name));
+    cursor = r.list_complete ? null : r.cursor;
+  }while(cursor && ++page < 20);
+  return out;
+}
+
 export default {
   async fetch(req, env){
     const url = new URL(req.url);
@@ -52,12 +73,15 @@ export default {
 
     if(req.method === "OPTIONS") return new Response(null, {status:204, headers:corsHeaders(req, env)});
 
+    // 密鑰沒綁就整支停用。寧可壞掉也不要默默變成沒有門的房子。
+    if(!env.WRITE_CODE || !env.READ_CODE) return json({e:"not configured"}, 500, req, env);
+
     // ---- 寫入：只有小孩那把鑰匙進得來 ----
     if(req.method === "PUT" && parts[0] === "s" && parts.length === 2){
       if(!timingSafe(bearer(req), env.WRITE_CODE || "")) return json({e:"bad code"}, 401, req, env);
 
-      const child = decodeURIComponent(parts[1]).trim();
-      if(!child || child.length > MAX_NAME) return json({e:"bad child"}, 400, req, env);
+      const child = (dec(parts[1]) || "").trim();
+      if(!NAME_OK.test(child) || child.length > MAX_NAME) return json({e:"bad child"}, 400, req, env);
 
       const raw = await req.text();
       if(raw.length > MAX_BODY) return json({e:"too big"}, 413, req, env);
@@ -66,7 +90,7 @@ export default {
       if(!body || typeof body.code !== "string") return json({e:"bad payload"}, 400, req, env);
 
       const at = Math.floor(Date.now() / 1000);
-      const dev = String((body.sum && body.sum.dev) || "?").slice(0, 16);
+      const dev = (String((body.sum && body.sum.dev) || "").replace(/[^\w-]/g, "").slice(0, 16)) || "x";
       const rec = JSON.stringify({at, child, dev, code:body.code, sum:body.sum || null});
 
       await env.KV.put(`snap:${child}:${dev}:${pad(at)}`, rec,
@@ -96,7 +120,9 @@ export default {
       }
 
       if(parts[1] === "snap" && parts.length === 3){         // 家長要拿完整備份碼時才給
-        const v = await env.KV.get(`head:${decodeURIComponent(parts[2])}`);
+        const child = dec(parts[2]);
+        if(!child || !NAME_OK.test(child)) return json({e:"bad child"}, 400, req, env);
+        const v = await env.KV.get(`head:${child}`);
         if(!v) return json({e:"not found"}, 404, req, env);
         return new Response(v, {status:200,
           headers:Object.assign({"Content-Type":"application/json; charset=utf-8",
@@ -104,9 +130,21 @@ export default {
       }
 
       if(parts[1] === "history" && parts.length === 3){      // 出事時倒退查
-        const child = decodeURIComponent(parts[2]);
-        const ks = await env.KV.list({prefix:`snap:${child}:`});
-        return json({keys:ks.keys.map(k=>k.name).sort().reverse().slice(0, 50)}, 200, req, env);
+        const child = dec(parts[2]);
+        if(!child || !NAME_OK.test(child)) return json({e:"bad child"}, 400, req, env);
+        const ks = await listAll(env.KV, `snap:${child}:`);
+        return json({keys:ks.sort().reverse().slice(0, 50)}, 200, req, env);
+      }
+
+      // 光有鑰匙名稱救不回東西，要能真的把那一份取出來
+      if(parts[1] === "at" && parts.length >= 3){
+        const key = dec(url.pathname.slice(url.pathname.indexOf("/at/") + 4));
+        if(!key || !key.startsWith("snap:")) return json({e:"bad key"}, 400, req, env);
+        const v = await env.KV.get(key);
+        if(!v) return json({e:"not found"}, 404, req, env);
+        return new Response(v, {status:200,
+          headers:Object.assign({"Content-Type":"application/json; charset=utf-8",
+                                 "Cache-Control":"no-store"}, corsHeaders(req, env))});
       }
     }
 

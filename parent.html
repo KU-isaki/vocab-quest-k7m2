@@ -84,6 +84,11 @@ const CONF_KEY = "cqp-conf", PREFIX = "CQP1:";
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g,
   c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+/* 這頁的資料全部來自小孩那台裝置上傳的 JSON，Worker 不驗型別。
+   字串欄位有 esc()，但「看起來一定是數字」的欄位如果直接插進 HTML，
+   對方只要傳一個字串進來就能在家長的瀏覽器裡執行程式碼 ——
+   而這頁跟 App 同源，等於能讀走家長的鑰匙和密碼。一律強制轉成數字。 */
+const num = x => Number.isFinite(+x) ? +x : 0;
 function b64d(str){
   return decodeURIComponent(atob(str).split("").map(
     c => "%" + ("0" + c.charCodeAt(0).toString(16)).slice(-2)).join(""));
@@ -120,7 +125,9 @@ function setup(msg){
 
 /* 這頁只做三件事：這週有沒有在練 · 哪幾個字一直錯 · 送的獎勵有沒有效 */
 function dayStrip(sum){
-  const days = sum.days || {}, gifts = sum.gifts || [], coupons = sum.coupons || [];
+  const arr = x => Array.isArray(x) ? x : [];
+  const days = (sum.days && typeof sum.days === "object") ? sum.days : {};
+  const gifts = arr(sum.gifts), coupons = arr(sum.coupons);
   const marked = new Set([...gifts.map(g=>g.d), ...coupons.map(c=>c.on).filter(Boolean)]);
   const out = [];
   const t = new Date(); t.setHours(0,0,0,0);
@@ -129,7 +136,7 @@ function dayStrip(sum){
     const dt = new Date(t); dt.setDate(dt.getDate() - i);
     const k = dt.getFullYear() + "-" + String(dt.getMonth()+1).padStart(2,"0")
             + "-" + String(dt.getDate()).padStart(2,"0");
-    const n = (days[k] || {}).n || 0;
+    const n = num((days[k] || {}).n);
     if(n > max) max = n;
     out.push({k, n, gift:marked.has(k)});
   }
@@ -140,37 +147,40 @@ function dayStrip(sum){
     </div>`).join("") + `</div>`;
 }
 function giftList(sum){
-  const rows = [...(sum.gifts || []).map(g=>({d:g.d, t:"g", m:g.m, why:g.why})),
-                ...(sum.coupons || []).map(c=>({d:c.on || c.d, t:"c", used:!!c.on, why:c.why}))]
+  const arr = x => Array.isArray(x) ? x : [];
+  const rows = [...arr(sum.gifts).map(g=>({d:g.d, t:"g", m:g.m, why:g.why})),
+                ...arr(sum.coupons).map(c=>({d:c.on || c.d, t:"c", used:!!c.on, why:c.why}))]
                .sort((a,b)=>String(b.d).localeCompare(String(a.d))).slice(0, 12);
   if(!rows.length) return `<p class="muted">還沒有送過任何獎勵。</p>`;
   return `<ul class="g">` + rows.map(r=>{
     const tag = r.t === "c"
       ? `<span class="cp">${r.used ? "加倍券 ×2 用掉" : "加倍券（還沒用）"}</span>`
-      : (r.m > 0 ? `<span class="plus">送 ${r.m} 分鐘</span>` : `<span class="minus">沒收 ${-r.m} 分鐘</span>`);
+      : (num(r.m) > 0 ? `<span class="plus">送 ${num(r.m)} 分鐘</span>`
+                      : `<span class="minus">沒收 ${-num(r.m)} 分鐘</span>`);
     return `<li><span class="d2">${esc(md(r.d))}</span>${tag}　${esc(r.why || "")}</li>`;
   }).join("") + `</ul>`;
 }
 function weakList(sum){
-  const decks = sum.decks || {};
-  const ks = Object.keys(decks).filter(k=>(decks[k].weak || []).length);
+  const decks = (sum.decks && typeof sum.decks === "object") ? sum.decks : {};
+  const ks = Object.keys(decks).filter(k=>decks[k] && Array.isArray(decks[k].weak) && decks[k].weak.length);
   if(!ks.length) return `<p class="muted">目前沒有一直錯的字 🎉</p>`;
   return ks.map(k=>{
     const d = decks[k];
     return `<p class="muted" style="margin:10px 0 4px">${esc(d.label)}　`
-      + `已熟練 ${d.mastered}/${d.total}　答對率 ${d.done ? Math.round(d.right/d.done*100) : 0}%</p>`
+      + `已熟練 ${num(d.mastered)}/${num(d.total)}　`
+      + `答對率 ${num(d.done) ? Math.round(num(d.right)/num(d.done)*100) : 0}%</p>`
       + `<ul class="w">` + d.weak.slice(0, 8).map(w=>
           `<li><span class="en">${esc(w.w)}</span><span class="zh">${esc(w.zh)}</span>`
-          + `<span class="x">錯 ${w.x}</span></li>`).join("") + `</ul>`;
+          + `<span class="x">錯 ${num(w.x)}</span></li>`).join("") + `</ul>`;
   }).join("");
 }
 function card(c){
   const sum = c.sum;
   if(!sum) return `<div class="card"><p class="kid">${esc(c.child)}</p>
     <p class="muted">這台裝置傳上來的資料看不懂，可能是版本太舊。</p></div>`;
-  const days = sum.days || {};
-  const week = Object.keys(days).sort().slice(-7).reduce((a,k)=>a + (days[k].n || 0), 0);
-  const b = sum.bank || {};
+  const days = (sum.days && typeof sum.days === "object") ? sum.days : {};
+  const week = Object.keys(days).sort().slice(-7).reduce((a,k)=>a + num(days[k].n), 0);
+  const b = (sum.bank && typeof sum.bank === "object") ? sum.bank : {};
   return `<div class="card">
     <p class="kid">${esc(sum.who || c.child)}</p>
     <p class="when">最後同步 ${esc(ago(c.at))}　·　版本 ${esc(sum.v || "?")}</p>
@@ -178,9 +188,9 @@ function card(c){
     <h3>這兩週有沒有在練</h3>
     ${dayStrip(sum)}
     <div class="row">
-      <div class="stat"><b>${sum.streak || 0}</b><span>連續天數</span></div>
+      <div class="stat"><b>${num(sum.streak)}</b><span>連續天數</span></div>
       <div class="stat"><b>${week}</b><span>近 7 天題數</span></div>
-      <div class="stat"><b>${b.left || 0}</b><span>存摺剩餘（分）</span></div>
+      <div class="stat"><b>${num(b.left)}</b><span>存摺剩餘（分）</span></div>
     </div>
 
     <h3>哪幾個字一直錯</h3>
@@ -189,9 +199,9 @@ function card(c){
     <h3>送的獎勵有沒有效</h3>
     <p class="muted">🎁 標記的是有送獎勵的日子，看看那之後幾天的柱子有沒有變高。</p>
     <div class="row" style="margin-bottom:10px">
-      <div class="stat"><b>${(b.earned || 0) + (b.bonus || 0)}</b><span>練習賺到（分）</span></div>
-      <div class="stat"><b>${b.gift || 0}</b><span>爸媽送的（分）</span></div>
-      <div class="stat"><b>${b.used || 0}</b><span>已用掉（分）</span></div>
+      <div class="stat"><b>${num(b.earned) + num(b.bonus)}</b><span>練習賺到（分）</span></div>
+      <div class="stat"><b>${num(b.gift)}</b><span>爸媽送的（分）</span></div>
+      <div class="stat"><b>${num(b.used)}</b><span>已用掉（分）</span></div>
     </div>
     ${giftList(sum)}
   </div>`;

@@ -973,7 +973,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.02-c";
+const VERSION = "2026.09.02-d";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -5373,31 +5373,55 @@ function syncSummary(){
   };
 }
 
-let syncBusy = false, syncErr = "";
+let syncBusy = false, syncErr = "", syncDirty = false;
+/* keepalive 讓請求在關掉分頁之後仍能送完，但瀏覽器對它的 body 上限是 64KB
+   （而且是所有 keepalive 請求共用的配額）。實測練滿一個題庫加 400 天日曆就 41KB，
+   餘裕太小。門檻壓到 16KB：小份的照樣享受 keepalive，大份的走一般請求 ——
+   反正上傳時機是每輪結算，那時分頁本來就開著。 */
+const KEEPALIVE_MAX = 16 * 1024;
+
 function syncPush(){
   const c = syncConf();
   if(!c || syncBusy) return;
   const who = getWho();
   if(!who) return;                     // 沒填「這台是誰在用」就不知道要傳給誰
+
+  let body;
+  try{
+    body = JSON.stringify({code:exportCode(), sum:syncSummary()});
+  }catch(e){
+    syncErr = "資料組不出來"; renderSettings(); return;   // 不能讓 syncBusy 卡在 true
+  }
   syncBusy = true;
+  const done = () => { syncBusy = false; renderSettings(); };
+
   fetch(c.api.replace(/\/+$/, "") + "/s/" + encodeURIComponent(who), {
     method:"PUT",
     headers:{"Content-Type":"application/json", "Authorization":"Bearer " + c.code},
-    body: JSON.stringify({code:exportCode(), sum:syncSummary()}),
-    keepalive: true
+    body,
+    // 備份碼會長大。超過 64KB 時帶 keepalive 會被瀏覽器直接拒絕，
+    // 症狀是「永遠傳不出去」而且不會自己好 —— 大的就走一般請求。
+    keepalive: body.length < KEEPALIVE_MAX
   }).then(r=>{
-    syncBusy = false;
     if(r.ok){
-      syncErr = "";
+      syncErr = ""; syncDirty = false;
       try{ localStorage.setItem(SYNC_AT, String(nowSec())); }catch(e){}
-    }else syncErr = r.status === 401 ? "同步碼不對" : "雲端回了 " + r.status;
-    renderSettings();
+    }else{
+      syncDirty = true;
+      syncErr = r.status === 401 ? "同步碼不對" : "雲端回了 " + r.status;
+    }
+    done();
   }).catch(()=>{
-    syncBusy = false;
+    syncDirty = true;
     syncErr = "傳不出去（沒網路？）";
-    renderSettings();
+    done();
   });
 }
+/* 傳失敗只等下一輪的話，晚上最後一輪剛好斷網就要等到隔天。
+   回到線上、或把 App 切回前景時補傳一次。 */
+function syncRetry(){ if(syncDirty && syncConf()) syncPush(); }
+window.addEventListener("online", syncRetry);
+document.addEventListener("visibilitychange", () => { if(!document.hidden) syncRetry(); });
 function syncLine(){
   if(!syncConf()) return "未開啟";
   if(syncErr) return "⚠️ " + syncErr;

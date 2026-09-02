@@ -148,6 +148,54 @@ t.w.prompt = ()=>seq[i++];
 t.click(t.$("btnSync"));
 ok(!!t.ev("syncConf()"), "密碼正確才開得了");
 
+// ---------- ⑩ 備份碼變大時不得再用 keepalive ----------
+// 瀏覽器對 keepalive 請求的 body 上限是 64KB，超過會直接被拒絕，
+// 症狀是「永遠傳不出去」而且不會自己好。
+t = boot(seedOn);
+t.ev("syncPush()");
+await wait();
+ok(t.calls[0].opt.keepalive === true, "小份的照樣用 keepalive（關掉分頁也傳得完）");
+t = boot(seedOn);
+t.ev(`(()=>{                            // 灌成滿載的樣子
+  const o = {done:9, right:9, stats:{}};
+  DECKS.full.words.forEach(w=>{ o.stats[w.w] = {r:9, x:3, streak:1, due:"2026-12-31"}; });
+  localStorage.setItem("cq-vocab-v1:full", JSON.stringify(o));
+  for(let i=0;i<400;i++){ const d=new Date(2026,0,1); d.setDate(d.getDate()+i);
+    SHARED.days[dayKey(d)] = {n:50, r:45, paid:30}; }
+  saveShared();
+})()`);
+t.ev("syncPush()");
+await wait();
+const big = t.calls[t.calls.length - 1];
+ok(big.opt.body.length > 16 * 1024, `這份要夠大才測得到, 實得 ${big.opt.body.length} bytes`);
+ok(big.opt.keepalive === false, `大份的必須關掉 keepalive, 實得 ${big.opt.keepalive}`);
+
+// ---------- ⑪ 組不出資料時不得把自己鎖死 ----------
+t = boot(seedOn);
+t.ev("exportCode = () => { throw new Error('壞了'); };");
+t.ev("syncPush()");
+await wait();
+ok(t.calls.length === 0, "組不出來就不該送出");
+t.ev("exportCode = () => 'CQ4:ok';");
+t.ev("syncPush()");
+await wait();
+ok(t.calls.length === 1, "修好之後要能繼續傳（syncBusy 不得卡在 true）");
+
+// ---------- ⑫ 傳失敗要補傳，不能等到隔天 ----------
+let failing = true;
+t = boot(seedOn, () => failing ? {ok:false, status:503} : {ok:true, status:200});
+t.ev("syncPush()");
+await wait();
+ok(t.calls.length === 1 && /⚠️/.test(t.$("syncState").textContent), "失敗要標示出來");
+failing = false;
+t.w.dispatchEvent(new t.w.Event("online"));
+await wait();
+ok(t.calls.length === 2, `回到線上要補傳, 實得 ${t.calls.length}`);
+ok(/已開啟/.test(t.$("syncState").textContent), "補傳成功後狀態要恢復");
+t.w.dispatchEvent(new t.w.Event("online"));
+await wait();
+ok(t.calls.length === 2, "沒有待傳的東西時不得重複打");
+
 console.log(`\n通過 ${pass} / 失敗 ${fail}`);
 process.exit(fail ? 1 : 0);
 })();

@@ -115,6 +115,43 @@ await wait();
 ok(t.calls.length === 2, `重新整理要再讀一次, 實得 ${t.calls.length}`);
 ok(t.calls.every(c=>!c.opt.method || c.opt.method.toUpperCase() === "GET"), "每一次都必須是 GET");
 
+// ---------- ③ XSS：資料來自小孩那台裝置，Worker 不驗型別 ----------
+// 「看起來一定是數字」的欄位如果直接插進 HTML，小孩改一下就能在家長瀏覽器執行程式碼。
+// 而這頁跟 App 同源，等於能讀走家長的鑰匙和密碼。
+const BOOM = '<img src=x onerror="window.__pwned=1">';
+const EVIL = {children:[{child:"壞資料", dev:"x", at:1, sum:{
+  v:BOOM, who:BOOM, streak:BOOM,
+  days:{[D]:{n:BOOM, r:BOOM, m:BOOM}},
+  bank:{earned:BOOM, bonus:BOOM, used:BOOM, gift:BOOM, left:BOOM},
+  gifts:[{d:D, m:BOOM, why:BOOM}],
+  coupons:[{d:D, on:D, why:BOOM}],
+  decks:{summer:{label:BOOM, total:BOOM, done:BOOM, right:BOOM, mastered:BOOM,
+                 weak:[{w:BOOM, zh:BOOM, x:BOOM}]}}}}]};
+t = boot(seedConf, () => okRes(EVIL));
+await wait();
+ok(!t.w.__pwned, "小孩上傳的內容不得在家長瀏覽器裡執行");
+ok(t.d.querySelectorAll("img").length === 0, `不得注入出任何元素, 實得 ${t.d.querySelectorAll("img").length} 個 img`);
+// 字串欄位（原因、單字）本來就會原樣顯示，escape 過的文字出現在畫面上是對的；
+// 真正不能發生的是它變成「屬性」
+ok(t.d.querySelectorAll("[onerror],[onload],[onclick]").length === 0, "不得產生任何事件屬性");
+ok(t.d.querySelectorAll("script").length === 1, "不得多出 script 標籤");
+ok(/連續天數/.test(t.d.body.textContent), "擋掉之後畫面仍要正常渲染");
+ok(/>0</.test(t.d.body.innerHTML), "壞掉的數字要退回 0，不是印出原文");
+
+// 型別亂七八糟也不能整頁壞掉
+const MESS = {children:[
+  {child:"甲", dev:"x", at:1, sum:{days:"不是物件", gifts:"不是陣列", coupons:null,
+                                   bank:"不是物件", decks:[1,2,3], streak:null}},
+  {child:"乙", dev:"x", at:1, sum:null},
+  {child:"丙", dev:"x", at:1}
+]};
+t = boot(seedConf, () => okRes(MESS));
+await wait();
+ok(/甲/.test(t.d.body.textContent), "型別亂掉也要撐得住，不能整頁空白");
+ok(/乙/.test(t.d.body.textContent) && /丙/.test(t.d.body.textContent),
+  "沒有摘要的小孩也要列出來並說明");
+ok(!!t.d.getElementById("rf"), "壞資料之後重新整理鈕仍要在");
+
 console.log(`\n通過 ${pass} / 失敗 ${fail}`);
 process.exit(fail ? 1 : 0);
 })();
