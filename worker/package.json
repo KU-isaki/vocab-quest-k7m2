@@ -1,0 +1,5 @@
+{
+  "//": "只是為了讓 Node 知道 worker.js 是 ES module，別再每次跑測試都跳警告。根目錄的測試仍是 CommonJS。",
+  "type": "module",
+  "private": true
+}

@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>單字闖關 · 家長檢視</title>
+<style>
+:root{
+  --ground:#FBFAF9; --surface:#FFFFFF; --surface-2:#F1EFEA;
+  --ink:#172242; --ink-soft:#5A6484; --ink-faint:#9AA1B8; --line:#E2E0DA;
+  --brand:#1F4FA9; --brand-soft:#E7EDFA; --mark:#FFD84D;
+  --ok:#12855C; --no:#C8452F; --btn-fg:#fff;
+  --shadow:0 1px 2px rgba(23,34,66,.06), 0 8px 24px -12px rgba(23,34,66,.18);
+  --r:14px;
+  --font-zh:-apple-system,system-ui,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --ground:#101623; --surface:#18202F; --surface-2:#212A3B;
+    --ink:#E9ECF4; --ink-soft:#A3ADC6; --ink-faint:#6B7793; --line:#2A3446;
+    --brand:#7FA9F0; --brand-soft:#1E2C46; --mark:#F0C33C;
+    --ok:#4FCB96; --no:#F08A76; --btn-fg:#0E1524;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--ground); color:var(--ink); font-family:var(--font-zh);
+     font-size:15px; line-height:1.6; padding:16px; padding-bottom:40px}
+.wrap{max-width:640px; margin:0 auto}
+h1{font-size:19px; margin:4px 0 2px}
+.sub{color:var(--ink-faint); font-size:12.5px; margin:0 0 16px}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+      padding:16px; margin:0 0 14px; box-shadow:var(--shadow)}
+.kid{font-size:17px; font-weight:600; margin:0 0 2px}
+.when{color:var(--ink-faint); font-size:12px; margin:0 0 14px}
+h3{font-size:13px; color:var(--ink-soft); margin:18px 0 8px; font-weight:600}
+h3:first-of-type{margin-top:0}
+.strip{display:flex; gap:3px; overflow-x:auto; padding-bottom:4px}
+.d{flex:none; width:30px; text-align:center}
+.d .bar{height:44px; display:flex; align-items:flex-end; justify-content:center}
+.d .fill{width:16px; border-radius:4px 4px 0 0; background:var(--brand); min-height:2px}
+.d .lab{font-size:9.5px; color:var(--ink-faint); margin-top:3px; white-space:nowrap}
+.d.gift .lab{color:var(--mark); font-weight:700}
+.d.none .fill{background:var(--line)}
+.row{display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 0}
+.stat{flex:1 1 90px; background:var(--surface-2); border-radius:10px; padding:9px 10px}
+.stat b{display:block; font-size:19px; line-height:1.2}
+.stat span{font-size:11.5px; color:var(--ink-soft)}
+ul{margin:0; padding:0; list-style:none}
+.w li{display:flex; align-items:baseline; gap:8px; padding:4px 0; border-bottom:1px solid var(--line)}
+.w li:last-child{border-bottom:0}
+.w .en{font-weight:600; min-width:96px}
+.w .zh{color:var(--ink-soft); font-size:13px; flex:1}
+.w .x{color:var(--no); font-size:12px; font-variant-numeric:tabular-nums}
+.g li{padding:5px 0; border-bottom:1px solid var(--line); font-size:13.5px}
+.g li:last-child{border-bottom:0}
+.g .d2{color:var(--ink-faint); font-size:11.5px; margin-right:6px; font-variant-numeric:tabular-nums}
+.g .plus{color:var(--ok); font-weight:600}
+.g .minus{color:var(--no); font-weight:600}
+.g .cp{color:var(--mark); font-weight:600}
+.muted{color:var(--ink-faint); font-size:13px}
+button{font:inherit; font-size:14px; padding:11px 14px; border-radius:11px; cursor:pointer;
+       background:var(--brand); color:var(--btn-fg); border:1px solid transparent; width:100%}
+button.ghost{background:var(--surface); color:var(--ink); border-color:var(--line)}
+input{font:inherit; width:100%; padding:11px 12px; border-radius:11px; margin:0 0 10px;
+      border:1px solid var(--line); background:var(--surface); color:var(--ink)}
+.err{color:var(--no); font-size:13px; margin:8px 0 0}
+.ro{display:inline-block; font-size:11px; color:var(--ink-soft); background:var(--surface-2);
+    border-radius:999px; padding:2px 9px; margin-left:6px; vertical-align:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>單字闖關 · 家長檢視<span class="ro">唯讀</span></h1>
+  <p class="sub" id="sub">看兩個小孩練得怎麼樣。這頁只能看，改不了任何東西。</p>
+  <div id="app"></div>
+</div>
+<script>
+/* 家長儀表板 —— 這個檔案裡沒有任何寫入功能，而且不是「按鈕沒放出來」而已：
+   全檔只有 GET，連一個 PUT/POST 都沒有，而且家長那把鑰匙在 Worker 端
+   本來就進不了寫入路徑。就算有人打開開發者工具，也改不到小孩的紀錄。 */
+const CONF_KEY = "cqp-conf", PREFIX = "CQP1:";
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g,
+  c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function b64d(str){
+  return decodeURIComponent(atob(str).split("").map(
+    c => "%" + ("0" + c.charCodeAt(0).toString(16)).slice(-2)).join(""));
+}
+function conf(){
+  try{ const r = JSON.parse(localStorage.getItem(CONF_KEY)); return r && r.api && r.code ? r : null; }
+  catch(e){ return null; }
+}
+function ago(sec){
+  if(!sec) return "";
+  const d = Math.floor(Date.now()/1000) - sec;
+  return d < 90 ? "剛剛" : d < 3600 ? Math.round(d/60) + " 分鐘前"
+       : d < 86400 ? Math.round(d/3600) + " 小時前" : Math.round(d/86400) + " 天前";
+}
+const md = k => { const p = String(k).split("-"); return +p[1] + "/" + +p[2]; };
+
+function setup(msg){
+  $("app").innerHTML = `<div class="card">
+    <h3>第一次使用</h3>
+    <p class="muted">貼上家長設定碼（`+ PREFIX +`開頭），只要設定一次，這台裝置會記住。</p>
+    <input id="cc" placeholder="`+ PREFIX +`…" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <button id="go">開始看</button>
+    ${msg ? `<p class="err">${esc(msg)}</p>` : ""}</div>`;
+  $("go").onclick = () => {
+    const t = $("cc").value.trim();
+    if(!t.startsWith(PREFIX)) return setup("這段文字不是家長設定碼");
+    let c = null;
+    try{ c = JSON.parse(b64d(t.slice(PREFIX.length))); }catch(e){}
+    if(!c || !c.api || !c.code) return setup("設定碼看起來壞掉了");
+    localStorage.setItem(CONF_KEY, JSON.stringify({api:c.api, code:c.code}));
+    load();
+  };
+}
+
+/* 這頁只做三件事：這週有沒有在練 · 哪幾個字一直錯 · 送的獎勵有沒有效 */
+function dayStrip(sum){
+  const days = sum.days || {}, gifts = sum.gifts || [], coupons = sum.coupons || [];
+  const marked = new Set([...gifts.map(g=>g.d), ...coupons.map(c=>c.on).filter(Boolean)]);
+  const out = [];
+  const t = new Date(); t.setHours(0,0,0,0);
+  let max = 1;
+  for(let i = 13; i >= 0; i--){
+    const dt = new Date(t); dt.setDate(dt.getDate() - i);
+    const k = dt.getFullYear() + "-" + String(dt.getMonth()+1).padStart(2,"0")
+            + "-" + String(dt.getDate()).padStart(2,"0");
+    const n = (days[k] || {}).n || 0;
+    if(n > max) max = n;
+    out.push({k, n, gift:marked.has(k)});
+  }
+  return `<div class="strip">` + out.map(d=>`
+    <div class="d ${d.n ? "" : "none"} ${d.gift ? "gift" : ""}">
+      <div class="bar"><div class="fill" style="height:${d.n ? Math.max(6, d.n/max*44) : 2}px"></div></div>
+      <div class="lab">${d.gift ? "🎁" : md(d.k)}</div>
+    </div>`).join("") + `</div>`;
+}
+function giftList(sum){
+  const rows = [...(sum.gifts || []).map(g=>({d:g.d, t:"g", m:g.m, why:g.why})),
+                ...(sum.coupons || []).map(c=>({d:c.on || c.d, t:"c", used:!!c.on, why:c.why}))]
+               .sort((a,b)=>String(b.d).localeCompare(String(a.d))).slice(0, 12);
+  if(!rows.length) return `<p class="muted">還沒有送過任何獎勵。</p>`;
+  return `<ul class="g">` + rows.map(r=>{
+    const tag = r.t === "c"
+      ? `<span class="cp">${r.used ? "加倍券 ×2 用掉" : "加倍券（還沒用）"}</span>`
+      : (r.m > 0 ? `<span class="plus">送 ${r.m} 分鐘</span>` : `<span class="minus">沒收 ${-r.m} 分鐘</span>`);
+    return `<li><span class="d2">${esc(md(r.d))}</span>${tag}　${esc(r.why || "")}</li>`;
+  }).join("") + `</ul>`;
+}
+function weakList(sum){
+  const decks = sum.decks || {};
+  const ks = Object.keys(decks).filter(k=>(decks[k].weak || []).length);
+  if(!ks.length) return `<p class="muted">目前沒有一直錯的字 🎉</p>`;
+  return ks.map(k=>{
+    const d = decks[k];
+    return `<p class="muted" style="margin:10px 0 4px">${esc(d.label)}　`
+      + `已熟練 ${d.mastered}/${d.total}　答對率 ${d.done ? Math.round(d.right/d.done*100) : 0}%</p>`
+      + `<ul class="w">` + d.weak.slice(0, 8).map(w=>
+          `<li><span class="en">${esc(w.w)}</span><span class="zh">${esc(w.zh)}</span>`
+          + `<span class="x">錯 ${w.x}</span></li>`).join("") + `</ul>`;
+  }).join("");
+}
+function card(c){
+  const sum = c.sum;
+  if(!sum) return `<div class="card"><p class="kid">${esc(c.child)}</p>
+    <p class="muted">這台裝置傳上來的資料看不懂，可能是版本太舊。</p></div>`;
+  const days = sum.days || {};
+  const week = Object.keys(days).sort().slice(-7).reduce((a,k)=>a + (days[k].n || 0), 0);
+  const b = sum.bank || {};
+  return `<div class="card">
+    <p class="kid">${esc(sum.who || c.child)}</p>
+    <p class="when">最後同步 ${esc(ago(c.at))}　·　版本 ${esc(sum.v || "?")}</p>
+
+    <h3>這兩週有沒有在練</h3>
+    ${dayStrip(sum)}
+    <div class="row">
+      <div class="stat"><b>${sum.streak || 0}</b><span>連續天數</span></div>
+      <div class="stat"><b>${week}</b><span>近 7 天題數</span></div>
+      <div class="stat"><b>${b.left || 0}</b><span>存摺剩餘（分）</span></div>
+    </div>
+
+    <h3>哪幾個字一直錯</h3>
+    ${weakList(sum)}
+
+    <h3>送的獎勵有沒有效</h3>
+    <p class="muted">🎁 標記的是有送獎勵的日子，看看那之後幾天的柱子有沒有變高。</p>
+    <div class="row" style="margin-bottom:10px">
+      <div class="stat"><b>${(b.earned || 0) + (b.bonus || 0)}</b><span>練習賺到（分）</span></div>
+      <div class="stat"><b>${b.gift || 0}</b><span>爸媽送的（分）</span></div>
+      <div class="stat"><b>${b.used || 0}</b><span>已用掉（分）</span></div>
+    </div>
+    ${giftList(sum)}
+  </div>`;
+}
+
+function load(){
+  const c = conf();
+  if(!c) return setup("");
+  $("app").innerHTML = `<div class="card"><p class="muted">讀取中…</p></div>`;
+  fetch(c.api.replace(/\/+$/, "") + "/p/list", {
+    headers:{"Authorization":"Bearer " + c.code}
+  }).then(r=>{
+    if(r.status === 401) throw new Error("設定碼不對，或已經被換掉了");
+    if(!r.ok) throw new Error("雲端回了 " + r.status);
+    return r.json();
+  }).then(j=>{
+    const list = j.children || [];
+    $("app").innerHTML = (list.length
+        ? list.map(card).join("")
+        : `<div class="card"><p class="muted">雲端還沒有任何資料 ——
+             小孩那邊要先在設定頁開啟雲端備份，並且練完一輪才會傳上來。</p></div>`)
+      + `<button class="ghost" id="rf">重新整理</button>`;
+    $("rf").onclick = load;
+  }).catch(e=>{
+    $("app").innerHTML = `<div class="card"><p class="err">${esc(e.message)}</p>
+      <button class="ghost" id="rs">重新設定</button></div>`;
+    $("rs").onclick = () => { localStorage.removeItem(CONF_KEY); setup(""); };
+  });
+}
+load();
+</script>
+</body>
+</html>

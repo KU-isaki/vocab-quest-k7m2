@@ -1,0 +1,20 @@
+{
+  // 部署：在 worker/ 目錄下執行
+  //   npx wrangler kv namespace create VQ          ← 把回傳的 id 填到下面
+  //   npx wrangler secret put WRITE_CODE           ← 小孩裝置用的碼
+  //   npx wrangler secret put READ_CODE            ← 家長儀表板用的碼
+  //   npx wrangler deploy
+  "name": "english-api",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-01",
+  "observability": { "enabled": true },
+  "vars": {
+    "ALLOW_ORIGIN": "https://english.ku-ai.cc"
+  },
+  "kv_namespaces": [
+    { "binding": "KV", "id": "把 wrangler kv namespace create 回傳的 id 貼在這裡" }
+  ],
+  "routes": [
+    { "pattern": "english-api.ku-ai.cc", "custom_domain": true }
+  ]
+}

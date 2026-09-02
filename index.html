@@ -902,6 +902,17 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
         按「複製備份碼」會把兩個題庫的紀錄壓成一段文字，貼到 LINE 給自己留著，之後貼回來就能還原。</div>
     </details>
 
+    <div class="grouphead"><b>雲端備份</b><span id="syncState"></span></div>
+    <button class="btn ghost" id="btnSync">☁️ 設定雲端備份</button>
+    <details class="info"><summary>雲端備份會傳什麼出去？</summary>
+      <div class="info-in"><b>預設是關閉的</b>，沒開的話這個網頁一個請求都不會發出去。<br>
+        開啟之後，每練完一輪會自動把進度傳一份到爸媽的雲端空間，就不用再手動複製備份碼了。<br>
+        傳的是：<b>練習日曆、答對率、還要加強的字、遊戲時間存摺、爸媽送過什麼</b>。
+        沒有姓名以外的個人資料、沒有位置、沒有任何跟這個 App 無關的東西。<br>
+        爸媽那邊<b>只能看，不能改</b>——他們看到的頁面根本沒有寫入功能。<br>
+        開著的時候這裡會一直顯示「已開啟」和最後同步時間，不會偷偷傳。</div>
+    </details>
+
     <div class="grouphead"><b>清除紀錄</b><span>要家長密碼</span></div>
     <button class="btn quiet" id="btnReset">清除答題紀錄</button>
     <button class="btn quiet" id="btnResetShared">清除練習日曆與遊戲時間</button>
@@ -962,7 +973,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.02-b";
+const VERSION = "2026.09.02-c";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -4324,6 +4335,7 @@ function endRound(){
       + (weak.length > 15 ? `<em>… 還有 ${weak.length - 15} 字</em>` : "") + `</div>`
     : "";
   $("sumWeak").querySelectorAll("[data-say]").forEach(b=>b.onclick = ()=>say(b.dataset.say));
+  syncPush();                          // 一輪只傳一次，不是每題
 
   startReadBlock();
   refreshHeader(); renderDecks();
@@ -5022,6 +5034,8 @@ function renderBank(){
 function renderSettings(){
   $("pinState").textContent = getPin() ? "🔒 已設密碼" : "未設密碼";
   $("whoState").textContent = getWho() || "還沒填";
+  $("syncState").textContent = syncLine();
+  $("btnSync").textContent = syncConf() ? "☁️ 關閉雲端備份" : "☁️ 設定雲端備份";
 }
 $("btnWho").onclick = () => {
   const cur = getWho();
@@ -5300,6 +5314,122 @@ $("btnImport").onclick = () => {
   toast("✓ 進度已還原");
 };
 
+/* ================= 雲端備份（選用，預設關閉） =================
+   沒設定就一個請求都不發 —— 行為跟沒有這段程式碼時完全一樣，
+   README 的隱私聲明才站得住腳。開啟之後畫面上會明著標示，不偷偷傳。
+
+   上傳的是「備份碼原文 + 一份給家長看的摘要」。摘要另外算是為了讓家長那頁
+   不用重複實作一次解碼邏輯 —— 那份程式碼一份就夠了，抄兩份遲早會不一致。 */
+const SYNC_KEY = "cq-sync", SYNC_AT = "cq-sync-at", SYNC_PREFIX = "CQS1:";
+
+function syncConf(){
+  try{
+    const r = JSON.parse(localStorage.getItem(SYNC_KEY));
+    return r && r.api && r.code ? r : null;
+  }catch(e){ return null; }
+}
+function syncAt(){ try{ return +localStorage.getItem(SYNC_AT) || 0; }catch(e){ return 0; } }
+function ago(sec){
+  if(!sec) return "還沒傳過";
+  const d = nowSec() - sec;
+  return d < 90 ? "剛剛" : d < 3600 ? Math.round(d/60) + " 分鐘前"
+       : d < 86400 ? Math.round(d/3600) + " 小時前" : Math.round(d/86400) + " 天前";
+}
+
+/* 給家長看的摘要。刻意只放三個問題需要的東西：
+   這週有沒有在練 · 哪幾個字一直錯 · 送的獎勵有沒有效 */
+function syncSummary(){
+  const days = {};
+  Object.keys(SHARED.days).sort().slice(-30).forEach(k=>{
+    const d = SHARED.days[k];
+    days[k] = {n:d.n || 0, r:d.r || 0, m:paidOf(d)};
+  });
+  const decks = {};
+  Object.keys(DECKS).forEach(k=>{
+    let o = null;
+    try{ o = JSON.parse(localStorage.getItem("cq-vocab-v1:" + k)); }catch(e){}
+    if(!o || !o.stats) return;
+    const words = DECKS[k].words, st = w => o.stats[w] || {r:0, x:0, streak:0};
+    const all = Object.keys(o.stats).map(x=>o.stats[x]);
+    decks[k] = {
+      label: DECKS[k].label,
+      total: words.length,
+      done:  all.reduce((a,x)=>a + (x.r||0) + (x.x||0), 0),
+      right: all.reduce((a,x)=>a + (x.r||0), 0),
+      mastered: words.filter(w=>(st(w.w).streak||0) >= 2).length,
+      weak: words.filter(w=>st(w.w).x > 0 && (st(w.w).streak||0) < 2)
+                 .sort((a,b)=>st(b.w).x - st(a.w).x).slice(0, 15)
+                 .map(w=>({w:w.w, zh:w.zh, x:st(w.w).x}))
+    };
+  });
+  return {
+    v:VERSION, who:getWho(), dev:deviceId(), at:nowSec(),
+    days, streak:streakDays(), goalStreak:goalStreak(),
+    bank:{earned:SHARED.bank.earned, bonus:SHARED.bank.bonus, used:SHARED.bank.used,
+          gift:giftTotal(), left:bankLeft()},
+    gifts:(SHARED.gifts || []).slice(-30),
+    coupons:(SHARED.coupons || []).slice(-30),
+    decks
+  };
+}
+
+let syncBusy = false, syncErr = "";
+function syncPush(){
+  const c = syncConf();
+  if(!c || syncBusy) return;
+  const who = getWho();
+  if(!who) return;                     // 沒填「這台是誰在用」就不知道要傳給誰
+  syncBusy = true;
+  fetch(c.api.replace(/\/+$/, "") + "/s/" + encodeURIComponent(who), {
+    method:"PUT",
+    headers:{"Content-Type":"application/json", "Authorization":"Bearer " + c.code},
+    body: JSON.stringify({code:exportCode(), sum:syncSummary()}),
+    keepalive: true
+  }).then(r=>{
+    syncBusy = false;
+    if(r.ok){
+      syncErr = "";
+      try{ localStorage.setItem(SYNC_AT, String(nowSec())); }catch(e){}
+    }else syncErr = r.status === 401 ? "同步碼不對" : "雲端回了 " + r.status;
+    renderSettings();
+  }).catch(()=>{
+    syncBusy = false;
+    syncErr = "傳不出去（沒網路？）";
+    renderSettings();
+  });
+}
+function syncLine(){
+  if(!syncConf()) return "未開啟";
+  if(syncErr) return "⚠️ " + syncErr;
+  return "已開啟 · " + ago(syncAt());
+}
+$("btnSync").onclick = () => {
+  if(!checkPin()) return;
+  if(syncConf()){
+    if(confirm("要關閉雲端備份嗎？\n關掉之後就不會再傳任何東西出去，本機紀錄不受影響。")){
+      try{ localStorage.removeItem(SYNC_KEY); localStorage.removeItem(SYNC_AT); }catch(e){}
+      syncErr = ""; renderSettings(); toast("已關閉雲端備份");
+    }
+    return;
+  }
+  if(!getWho()){ toast("請先填「這台是誰在用」，雲端才知道這是誰的紀錄"); return; }
+  const t = prompt("貼上雲端備份設定碼：");
+  if(t === null) return;
+  const raw = String(t).trim();
+  if(!raw.startsWith(SYNC_PREFIX)){ toast("這段文字不是設定碼"); return; }
+  let conf = null;
+  try{ conf = JSON.parse(b64d(raw.slice(SYNC_PREFIX.length))); }catch(e){}
+  if(!conf || !conf.api || !conf.code){ toast("設定碼看起來壞掉了"); return; }
+  if(!/^https:\/\//.test(conf.api)){ toast("雲端網址必須是 https"); return; }
+  // 同步碼會放進 Authorization 標頭，而 HTTP 標頭只吃 ASCII。
+  // 含中文的話 fetch 會直接 throw，而且是無聲的 —— 在這裡先擋下來講清楚。
+  if(!/^[\x21-\x7e]+$/.test(conf.code)){ toast("同步碼只能用英數字，不能有中文或空白"); return; }
+  try{ localStorage.setItem(SYNC_KEY, JSON.stringify({api:conf.api, code:conf.code})); }catch(e){}
+  syncErr = ""; renderSettings();
+  toast(`已開啟雲端備份（${getWho()}），正在傳第一份…`);
+  syncPush();
+};
+
 /* ---- 家長密碼鎖：只防隨手亂按，密碼存在手機裡，會寫程式的人看得到 ---- */
 const PIN_KEY = "cq-pin";
 function getPin(){ try{ return localStorage.getItem(PIN_KEY) || ""; }catch(e){ return ""; } }
@@ -5348,7 +5478,7 @@ function giftFlow(sign){
     + `存摺會變成 ${after} 分鐘。`)) return;
 
   SHARED.gifts.push(stamp({d:dayKey(), m:sign * m, why}));
-  saveShared(); refreshHeader(); renderBank(); renderCal();
+  saveShared(); refreshHeader(); renderBank(); renderCal(); syncPush();
   toast(`🎁 已${verb} ${m} 分鐘（${why}），存摺剩 ${bankLeft()} 分鐘`);
 }
 $("btnGift").onclick = () => giftFlow(1);
@@ -5366,7 +5496,7 @@ $("btnCoupon").onclick = () => {
     + (stock ? `\n目前還有 ${stock} 張沒用掉。` : ""))) return;
 
   SHARED.coupons.push(stamp({d:dayKey(), on:null, why}));
-  saveShared(); refreshHeader(); renderBank(); renderCal();
+  saveShared(); refreshHeader(); renderBank(); renderCal(); syncPush();
   toast(`✨ 已發出加倍券（${why}），下次練習那天自動生效`);
 };
 

@@ -7,7 +7,7 @@
 
    CACHE 的版本號每次改版都要換，舊快取才會被清掉。 */
 
-const CACHE = "vocab-quest-v19";
+const CACHE = "vocab-quest-v20";
 const ASSETS = [
   "./",
   "./index.html",
@@ -46,7 +46,9 @@ self.addEventListener("fetch", e => {
           fetch(req, { cache: "no-store" }),
           new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 3000))
         ]);
-        if(res && res.status === 200) cache.put("./index.html", res.clone()).catch(() => {});
+        // 用 req 當 key，不能寫死 index.html —— 加了家長儀表板之後有兩個頁面，
+        // 寫死的話後開的那頁會把前一頁的快取蓋掉，離線時就拿到錯的頁面
+        if(res && res.status === 200) cache.put(req, res.clone()).catch(() => {});
         return res;
       }catch(err){
         return (await cache.match(req, { ignoreSearch: true }))
