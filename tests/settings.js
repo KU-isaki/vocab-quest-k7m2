@@ -32,7 +32,7 @@ ok(!$('vStats').classList.contains('on'),'進度頁要收起來');
 
 /* ---------- ② 設定類的東西都搬到設定頁 ---------- */
 const inSet=id=>{ const el=$(id); return !!el && $('vSet').contains(el); };
-['btnPin','btnExport','btnImport','btnReset','btnResetShared','pinState']
+['btnPin','btnGift','btnTake','btnCoupon','btnExport','btnImport','btnReset','btnResetShared','pinState']
   .forEach(id=>ok(inSet(id),`${id} 應該在設定頁`));
 ok($('vSet').querySelectorAll('[data-scale]').length===4,'字體大小四段要在設定頁');
 ok($('vSet').querySelectorAll('[data-theme-set]').length===3,'配色三段要在設定頁');

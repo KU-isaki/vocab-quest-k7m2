@@ -569,6 +569,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 .ghgrid .cell.l4{background:var(--brand)}
 /* 不能叫 .goal —— 會撞到每日目標區塊的 .goal{margin:16px 0 14px}，格子會被推歪 */
 .ghgrid .cell.met{border-color:var(--ok)}
+.ghgrid .cell.gift{box-shadow:inset 0 0 0 2px var(--mark)}
 .ghgrid .cell.today{outline:2px solid var(--ink); outline-offset:0}
 /* ---------- 月檢視（預設）：一個月剛好排得下，不用左右捲 ---------- */
 #calMonthView[hidden]{display:none}
@@ -596,9 +597,14 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
   border-radius:8px; padding:0; border:1px solid transparent;
   background:var(--surface-2); color:var(--ink-faint);
   font-size:12.5px; font-variant-numeric:tabular-nums;
-  display:grid; place-items:center;
+  display:grid; place-items:center; position:relative;
 }
 .mcell.pad{background:none; border:none; pointer-events:none}
+/* 有家長贈送/沒收的日子點一顆記號。格子只有 12px，放 🎁 會擠爆，用色點 */
+.mcell.gift::after{
+  content:""; position:absolute; top:3px; right:3px;
+  width:5px; height:5px; border-radius:50%; background:var(--mark);
+}
 .mcell.l1{background:color-mix(in srgb, var(--brand) 24%, var(--surface-2)); color:var(--ink-soft)}
 .mcell.l2{background:color-mix(in srgb, var(--brand) 48%, var(--surface-2)); color:var(--ink)}
 .mcell.l3{background:color-mix(in srgb, var(--brand) 74%, var(--surface-2)); color:var(--btn-fg)}
@@ -855,9 +861,26 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
     <div class="grouphead"><b>家長設定</b><span id="pinState"></span></div>
     <button class="btn ghost" id="btnPin">🔒 家長密碼</button>
+    <button class="btn ghost" id="btnGift" style="margin-top:8px">🎁 贈送遊戲時間</button>
+    <button class="btn quiet" id="btnTake" style="margin-top:8px">➖ 沒收遊戲時間</button>
+    <button class="btn ghost" id="btnCoupon" style="margin-top:8px">✨ 發一張加倍券</button>
+    <details class="info"><summary>加倍券是什麼？</summary>
+      <div class="info-in">發出去先存著，<b>小孩下一次練習的那天自動用掉</b>，那天賺到的分鐘 ×2
+        （一天上限也跟著變成 120 分鐘）。沒練就不會被用掉，不會白發。<br>
+        跟直接贈送不一樣的地方是：<b>券還是要練才拿得到</b>，所以「練習才有獎勵」這件事不會被稀釋。<br>
+        <b>答錯的倒扣也一樣加倍</b>——券的意思是「這天每一題都值雙倍」，
+        不然持券亂猜就變得划算了。一次一張，可以先發著存起來。</div>
+    </details>
+    <details class="info"><summary>贈送和沒收是怎麼算的？</summary>
+      <div class="info-in">贈送的分鐘<b>跟練習賺的完全分開記</b>，不會被當成「今天有練習」——
+        不算連續天數、不占一天最多 60 分鐘的上限、也不會被答錯倒扣。<br>
+        每一筆都要填原因（20字以內），日曆上那天會出現一個記號，點下去看得到送了幾分鐘、為什麼送。<br>
+        <b>送錯了不用刪</b>：用「沒收」記一筆負的沖銷掉就好，帳才查得出來歷。一次最多 60 分鐘。</div>
+    </details>
     <details class="info"><summary>家長密碼會保護什麼？</summary>
-      <div class="info-in">設一組 4 位數密碼之後，這三件事要輸入密碼才做得了：<br>
-        <b>兌換遊戲時間</b>　·　<b>清除題庫的答題紀錄</b>　·　<b>清除練習日曆與遊戲時間</b><br>
+      <div class="info-in">設一組 4 位數密碼之後，這幾件事要輸入密碼才做得了：<br>
+        <b>兌換遊戲時間</b>　·　<b>贈送／沒收遊戲時間</b>　·　<b>發加倍券</b>　·　
+        <b>清除題庫的答題紀錄</b>　·　<b>清除練習日曆與遊戲時間</b><br>
         都是誤觸會出事的操作。密碼只存在這台手機裡。</div>
     </details>
 
@@ -930,7 +953,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.08.23-c";
+const VERSION = "2026.09.02-a";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -3719,13 +3742,15 @@ const DECKS = {
    練習日曆和遊戲時間存摺是「習慣」與「獎勵」，不該分題庫各記各的 ——
    同一天在兩個題庫練的題數要合計，才算得出正確的每日進度。 */
 const SHARED_KEY = "cq-shared-v1";
-let SHARED = {days:{}, bank:{earned:0, used:0, bonus:0}};
+let SHARED = {days:{}, bank:{earned:0, used:0, bonus:0}, gifts:[], coupons:[]};
 
 function loadShared(){
   try{
     const r = JSON.parse(localStorage.getItem(SHARED_KEY));
     if(r && r.days){
-      SHARED = {days:r.days, bank:Object.assign({earned:0, used:0, bonus:0}, r.bank || {})};
+      SHARED = {days:r.days, bank:Object.assign({earned:0, used:0, bonus:0}, r.bank || {}),
+                gifts:Array.isArray(r.gifts) ? r.gifts : [],
+                coupons:Array.isArray(r.coupons) ? r.coupons : []};
       return;
     }
   }catch(e){}
@@ -3750,7 +3775,7 @@ function migrateShared(){        // 舊版把日曆與存摺存在各題庫裡�
       if(o.bank.until && o.bank.until > (bank.until || 0)) bank.until = o.bank.until;
     }
   });
-  SHARED = {days, bank};
+  SHARED = {days, bank, gifts:[], coupons:[]};
   saveShared();
 }
 function saveShared(){
@@ -3820,11 +3845,12 @@ function projAcc(day, k){              // 再答對 k 題之後，答對率會�
   const d = day || {}, n = d.n || 0, r = d.r || 0;
   return (n + k) ? (r + k) / (n + k) : 1;
 }
-function goalMinutes(net, mul){        // 淨題數 × 難度 × 答對率 → 分鐘，一天仍以 REWARD 為上限
-  return Math.min(REWARD, Math.round(tierMinutes(net) * mul));
+function goalMinutes(net, mul, x){     // 淨題數 × 難度 × 答對率 × 加倍券 → 分鐘
+  const k = x || 1;                    // 上限跟著加倍券一起放寬，否則券在練得多的日子等於沒送
+  return Math.min(REWARD * k, Math.round(tierMinutes(net) * mul * k));
 }
-function dayMinutes(day){              // 當天應得的分鐘（難度與答對率都算進去）
-  return goalMinutes(netOf(day), dayMul(day) * accMul(day));
+function dayMinutes(day, x){           // 當天應得的分鐘（難度、答對率、加倍券都算進去）
+  return goalMinutes(netOf(day), dayMul(day) * accMul(day), x);
 }
 function netOf(day){                   // 答對算 +1，答錯算 -1，最低算到 0
   const d = day || {n:0, r:0};
@@ -4268,7 +4294,7 @@ function endRound(){
     : pct === 1 ? (total < queue.length ? `答對的 ${total} 題全對 🎉` : "全對！太厲害了 🎉")
     : pct >= .8 ? "很不錯，快滿分了" : pct >= .5 ? "有進步空間，再來一輪" : "先看看下面這幾個字";
   const tday = SHARED.days[dayKey()] || {n:0, r:0};
-  const tnet = netOf(tday), tnx = nextStep(tday, tnet);
+  const tnet = netOf(tday), tnx = nextStep(tday, tnet, couponMul(dayKey()));
   $("sumText").textContent = (total && total < queue.length ? `這輪提早結束，只算答過的 ${total} 題　·　` : "")
     + `今天淨 ${tnet} 題 · ${paidOf(tday)} 分鐘`
     + (tnx ? `　再答對 ${tnx.k} 題 → ${tnx.m} 分鐘` : "　今日上限已滿 ✓");
@@ -4643,7 +4669,7 @@ function refreshHeader(){
   $("wrongCount").textContent = WORDS.filter(w=>stat(w.w).x > 0 && stat(w.w).streak < 2).length;
 
   const today = SHARED.days[dayKey()] || {n:0, r:0};
-  const net = netOf(today), got = paidOf(today), next = nextStep(today, net);
+  const net = netOf(today), got = paidOf(today), next = nextStep(today, net, couponMul(dayKey()));
 
   /* 頂端那條：直接講「還差幾題、換得到幾分鐘」。
      本來寫「今天 0/10 題」，但沒說 10 是什麼，而且門檻會跳（10→20→30→50→80），
@@ -4812,7 +4838,56 @@ $("sheetCopy").onclick = async () => {
 function segs(...parts){
   return parts.filter(Boolean).map(t=>`<span class="seg">${esc(t)}</span>`).join("");
 }
-function bankLeft(){ return Math.max(0, SHARED.bank.earned + SHARED.bank.bonus - SHARED.bank.used); }
+/* ---- 家長贈送 / 沒收：跟練習賺的分鐘完全分開的一本流水帳 ----
+   絕對不能寫進 day.paid，也不能加進 bank.earned：
+   - checkGoal 每答一題就拿 dayMinutes(day) 跟 day.paid 對帳，混進去的分鐘
+     會被當成「多發的」直接倒扣回去，家長剛送完小孩練一下就不見了；
+   - goalStreak 只看 day.paid，被送的日子會偽裝成達標日去領連續 7 天的紅利，
+     等於送一次賺兩次；
+   - bank.earned 是「練習賺到的」，摻進贈送之後存摺上那個數字就不再誠實。
+   帳本只增不改：送錯了記一筆負的沖銷掉，才查得出來歷。沒收也是同一本帳。 */
+const X2 = 2;                          // 加倍券的倍率
+const GIFT_MAX = 60;                   // 一次最多送/沒收幾分鐘，擋手滑打錯位數
+const WHY_MAX  = 20;                   // 原因限長，不要變成留言板
+function giftsOn(k){ return (SHARED.gifts || []).filter(g => g.d === k); }
+function giftSum(list){ return list.reduce((s, g) => s + (+g.m || 0), 0); }
+function giftTotal(){ return giftSum(SHARED.gifts || []); }
+function cleanWhy(s){                  // 備份碼用 | ~ ; : , = 當分隔符，原因裡不能有
+  return String(s || "").replace(/[|~;:,=]/g, " ").replace(/\s+/g, " ").trim().slice(0, WHY_MAX);
+}
+function giftLine(g){
+  return `${g.m > 0 ? "爸媽送" : "沒收"} ${Math.abs(g.m)} 分鐘（${g.why || "沒寫原因"}）`;
+}
+/* 先兌換、之後答錯被倒扣，餘額是會變成負的（等於欠著，之後賺的先拿去補）。
+   畫面上顯示 0 沒問題，但家長贈送時一定要看得到真實數字 ——
+   不然送了 30 分鐘卻只多出 12，會以為功能壞掉。 */
+function bankRaw(){
+  return SHARED.bank.earned + SHARED.bank.bonus + giftTotal() - SHARED.bank.used;
+}
+function bankLeft(){ return Math.max(0, bankRaw()); }
+
+/* ---- 加倍券：跟純贈送不同，這張券仍然要練才拿得到 ----
+   發出去先存著，小孩「下一次練習的那天」自動用掉，那天賺到的分鐘 ×X2、
+   上限也跟著放寬。答錯的倒扣算的是同一條公式，所以也會加倍 —— 這是刻意的：
+   券的語意是「這天每一題都值雙倍」，亂猜的代價要一起放大，才不會變成持券亂猜也划算。
+   券一樣是 append-only：發過的不刪，用掉只是補記用在哪一天。 */
+function couponStock(){ return (SHARED.coupons || []).filter(c => !c.on); }
+function couponOn(k){ return (SHARED.coupons || []).filter(c => c.on === k); }
+function couponMul(k){ return couponOn(k).length ? X2 : 1; }
+function useCoupon(k){                 // 當天第一題答完就把最早那張券用掉
+  if(couponOn(k).length) return;
+  /* 只吃「那天的第一題」。checkGoal 是拿倍率對整天重算、再補差額的，
+     半路吃券等於把當天已經賺到的回頭加倍 —— 已經練滿 60 分鐘的日子只要再答一題
+     （答錯也算）就白拿 60 分鐘，正是這套機制一直在防的刷法。
+     已經開練才發的券就留到下一天，跟「下一次練習那天才生效」的說法也一致。 */
+  const day = SHARED.days[k];
+  if(day && (day.n || 0) > 1) return;
+  const c = couponStock()[0];
+  if(!c) return;
+  c.on = k;
+  saveShared();
+  setTimeout(()=>toast(`✨ 用掉一張加倍券（${c.why}）：今天賺到的分鐘 ×${X2}`), 1400);
+}
 function paidOf(day){                  // 舊版存的是 true，換算成分鐘
   const p = (day || {}).paid;
   return p === true ? REWARD : (+p || 0);
@@ -4823,15 +4898,18 @@ function goalStreak(){                 // 連續達標幾天（今天還沒達�
   while(paidOf(SHARED.days[dayKey(t)])){ n++; t.setDate(t.getDate() - 1); }
   return n;
 }
-function nextStep(day, net){           // 下一階：還要答對幾題、到了大約幾分鐘（含難度與答對率）
-  const t = TIERS.find(x=>net < x.n);
+function nextStep(day, net, x){        // 下一階：還要答對幾題、到了大約幾分鐘（含難度、答對率、加倍券）
+  const t = TIERS.find(y=>net < y.n);
   if(!t) return null;
   const k = t.n - net;
-  return {k, m: goalMinutes(t.n, projMul(day, k) * accStep(projAcc(day, k)).m)};
+  return {k, m: goalMinutes(t.n, projMul(day, k) * accStep(projAcc(day, k)).m, x)};
 }
 function checkGoal(day){
+  const dk = dayKey();
+  useCoupon(dk);                       // 有券的話今天第一題答完就用掉
+  const x = couponMul(dk);
   const net = netOf(day);
-  const target = dayMinutes(day), got = paidOf(day);
+  const target = dayMinutes(day, x), got = paidOf(day);
   if(target === got) return;
   const first = got === 0 && target > 0;
   const down = target < got;                    // 答錯把淨題數或答對率拉低 → 倒扣
@@ -4841,7 +4919,7 @@ function checkGoal(day){
   const bonus = first && st > 0 && st % BONUS_EVERY === 0;
   if(bonus) SHARED.bank.bonus += STREAK_BONUS;
   save();
-  const nx = nextStep(day, net);
+  const nx = nextStep(day, net, x);
   setTimeout(()=>{
     if(down){
       const a = accStep(accOf(day));
@@ -4859,13 +4937,18 @@ function checkGoal(day){
 function renderBank(){
   const left = bankLeft(), st = goalStreak();
   const today = SHARED.days[dayKey()] || {n:0};
-  const net = netOf(today), got = paidOf(today), next = nextStep(today, net);
+  const x = couponMul(dayKey()), stock = couponStock().length;
+  const net = netOf(today), got = paidOf(today), next = nextStep(today, net, x);
   $("bankLeft").textContent = left;
-  $("bankDetail").textContent = `賺到 ${SHARED.bank.earned + SHARED.bank.bonus} 分鐘　已用 ${SHARED.bank.used} 分鐘`
+  const gt = giftTotal(), debt = bankRaw() < 0 ? -bankRaw() : 0;
+  $("bankDetail").textContent = `練習賺到 ${SHARED.bank.earned + SHARED.bank.bonus} 分鐘　已用 ${SHARED.bank.used} 分鐘`
+    + (gt ? `　爸媽${gt > 0 ? "送 " + gt : "沒收 " + -gt} 分鐘` : "")
+    + (debt ? `　⚠️ 欠 ${debt} 分鐘` : "")
     + (st > 0 ? `　連續 ${st} 天` : "");
-  $("bankStreak").textContent = next
-    ? `再答對 ${next.k} 題 → ${next.m} 分鐘`
-    : (st > 0 ? `再 ${BONUS_EVERY - st % BONUS_EVERY} 天有紅利` : "已達今日上限");
+  $("bankStreak").textContent = (x > 1 ? `✨ 加倍券生效中 ×${X2}　` : "")
+    + (next ? `再答對 ${next.k} 題 → ${next.m} 分鐘`
+            : (st > 0 ? `再 ${BONUS_EVERY - st % BONUS_EVERY} 天有紅利` : "已達今日上限"))
+    + (stock ? `　🎟️ 還有 ${stock} 張加倍券` : "");
   const ac = accStep(accOf(today));
   $("goalNum").innerHTML = segs(
     `今天對 ${today.r || 0}`,
@@ -4877,12 +4960,13 @@ function renderBank(){
   $("btnSpend").disabled = left < SPEND;
   $("btnSpend").textContent = left >= SPEND ? `兌換遊戲時間（一次至少 ${SPEND} 分鐘）` : `還差 ${SPEND - left} 分鐘才能兌換`;
   $("tierHint").innerHTML = "<b>答對 1 題 +1，答錯 1 題 -1</b>，算出來的淨題數換分鐘：<br>"
-    + TIERS.map(t=>`${t.n} 題 = ${goalMinutes(t.n, LV.mul * ac.m)} 分鐘`).join("　·　")
+    + TIERS.map(t=>`${t.n} 題 = ${goalMinutes(t.n, LV.mul * ac.m, x)} 分鐘`).join("　·　")
     + `<br>再乘兩個倍率：難度 ${LV.name} ×${LV.mul}　·　今日答對率 ×${ac.m}`
+    + (x > 1 ? `　·　<b>加倍券 ×${X2}</b>（答錯的倒扣也一樣加倍）` : "")
     + `<br>答對率：` + ACC.map((t,i)=> i === ACC.length - 1
         ? `不到 ${Math.round(ACC[i-1].p*100)}% ×${t.m}`
         : `${Math.round(t.p*100)}% 以上 ×${t.m}`).join("　·　")
-    + `<br>一天最多 ${REWARD} 分鐘，連續 ${BONUS_EVERY} 天多送 ${STREAK_BONUS} 分鐘`;
+    + `<br>一天最多 ${REWARD * x} 分鐘，連續 ${BONUS_EVERY} 天多送 ${STREAK_BONUS} 分鐘`;
   renderTimer();
 }
 
@@ -4908,9 +4992,12 @@ let calCursor = new Date();            // 月檢視現在看的是哪個月
 
 function dayNote(k, rec){              // 點格子 / 螢幕閱讀器都用同一句
   const [, mm, dd] = k.split("-");
-  return rec ? `${+mm}/${+dd} 練了 ${rec.n} 題，答對 ${rec.r || 0} 題`
-               + (paidOf(rec) ? `，賺到 ${paidOf(rec)} 分鐘` : "")
-             : `${+mm}/${+dd} 沒有練習紀錄`;
+  const gs = giftsOn(k), cp = couponOn(k);
+  return (rec ? `${+mm}/${+dd} 練了 ${rec.n} 題，答對 ${rec.r || 0} 題`
+                + (paidOf(rec) ? `，賺到 ${paidOf(rec)} 分鐘` : "")
+              : `${+mm}/${+dd} 沒有練習紀錄`)
+         + (cp.length ? `。用了加倍券 ×${X2}（${cp[0].why || "沒寫原因"}）` : "")
+         + (gs.length ? "。" + gs.map(giftLine).join("、") : "");
 }
 function bindDays(root){
   root.querySelectorAll("[data-day]").forEach(b=>{
@@ -4935,23 +5022,27 @@ function renderCalMonth(){
 
   let html = ["日","一","二","三","四","五","六"].map(x=>`<span class="wd">${x}</span>`).join("");
   for(let i = 0; i < lead; i++) html += `<span class="mcell pad"></span>`;
-  let sumDays = 0, sumN = 0, sumMin = 0;
+  let sumDays = 0, sumN = 0, sumMin = 0, sumGift = 0;
   for(let d = 1; d <= len; d++){
     const dt = new Date(y, m, d), k = dayKey(dt), rec = SHARED.days[k];
+    const gs = giftsOn(k), cp = couponOn(k);
     if(rec){ sumDays++; sumN += rec.n || 0; sumMin += paidOf(rec); }
+    sumGift += giftSum(gs);
     const cls = [
       "mcell",
       rec ? "l" + level(rec.n) : "",
       rec && paidOf(rec) ? "met" : "",
+      gs.length || cp.length ? "gift" : "",
       k === todayK ? "today" : ""
     ].filter(Boolean).join(" ");
     html += `<button class="${cls}" data-day="${k}" aria-label="${esc(dayNote(k, rec))}">${d}</button>`;
   }
   $("calTitle").textContent = `${y} 年 ${m + 1} 月`;
   $("calMonthGrid").innerHTML = html;
+  const giftNote = sumGift ? `，爸媽${sumGift > 0 ? "送 " + sumGift : "沒收 " + -sumGift} 分鐘` : "";
   $("calSum").textContent = sumDays
-    ? `這個月練了 ${sumDays} 天、${sumN} 題，賺到 ${sumMin} 分鐘`
-    : "這個月還沒有練習紀錄";
+    ? `這個月練了 ${sumDays} 天、${sumN} 題，賺到 ${sumMin} 分鐘${giftNote}`
+    : (sumGift ? `這個月還沒有練習紀錄${giftNote}` : "這個月還沒有練習紀錄");
   $("calNext").disabled = y === now.getFullYear() && m === now.getMonth();
   bindDays($("calMonthGrid"));
 }
@@ -4976,7 +5067,7 @@ function renderCalHalf(){
       if(cur > now){ cells += `<span class="cell pad"></span>`; }
       else{
         const rec = SHARED.days[k];
-        cells += `<button class="cell ${rec ? "l" + level(rec.n) : ""} ${rec && paidOf(rec) ? "met" : ""} ${k === todayK ? "today" : ""}"
+        cells += `<button class="cell ${rec ? "l" + level(rec.n) : ""} ${rec && paidOf(rec) ? "met" : ""} ${giftsOn(k).length || couponOn(k).length ? "gift" : ""} ${k === todayK ? "today" : ""}"
                   data-day="${k}" aria-label="${esc(dayNote(k, rec))}"></button>`;
       }
       cur.setDate(cur.getDate() + 1);
@@ -5004,7 +5095,19 @@ $("calNext").onclick = () => {
 
 /* ================= 備份與還原 =================
    把兩個題庫的紀錄壓成一段文字，可貼到 LINE 保存。純本機，不上傳。 */
-const BK_PREFIX = "CQ2:";
+const BK_PREFIX = "CQ3:";
+const BK_OLD    = "CQ2:";              // 舊碼還原得回來，長度一樣是 4
+/* btoa 只吃 Latin1，贈送原因是中文會直接 throw，整個匯出爆掉。
+   先用 encodeURIComponent 轉成 UTF-8 的 %XX，再一個位元組一個位元組餵給 btoa。
+   刻意不用 TextEncoder：這樣連 jsdom 那種沒有它的環境也跑得起來。 */
+function b64e(str){
+  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+    (_, h) => String.fromCharCode(parseInt(h, 16))));
+}
+function b64d(str){
+  return decodeURIComponent(atob(str).split("").map(
+    c => "%" + ("0" + c.charCodeAt(0).toString(16)).slice(-2)).join(""));
+}
 const sd = k => k ? k.replace(/-/g, "").slice(2) : "";        // 2026-08-16 → 260816
 const ld = s => s && s.length === 6 ? "20" + s.slice(0,2) + "-" + s.slice(2,4) + "-" + s.slice(4) : "";
 
@@ -5016,14 +5119,16 @@ function packDeck(o){                  // 緊湊格式，備份碼才貼得進�
   }).join(";");
   const dy = Object.keys(o.days || {}).map(k=>{
     const v = o.days[k];
-    return `${sd(k)}:${v.n||0},${v.r||0},${v.paid?1:0}`;
+    return `${sd(k)}:${v.n||0},${v.r||0},${paidOf(v)}`;      // 存實際分鐘，不是有沒有達標
   }).join(";");
-  return [o.done||0, o.right||0, b.earned||0, b.used||0, b.bonus||0, st, dy].join("|");
+  const gf = (o.gifts || []).map(g=>`${sd(g.d)}:${+g.m||0}:${g.why||""}`).join(";");
+  const cp = (o.coupons || []).map(c=>`${sd(c.d)}:${sd(c.on)}:${c.why||""}`).join(";");
+  return [o.done||0, o.right||0, b.earned||0, b.used||0, b.bonus||0, st, dy, gf, cp].join("|");
 }
-function unpackDeck(str){
+function unpackDeck(str, legacy){
   const p = String(str).split("|");
   if(p.length < 7) throw new Error("bad");
-  const o = {done:+p[0]||0, right:+p[1]||0, stats:{}, days:{},
+  const o = {done:+p[0]||0, right:+p[1]||0, stats:{}, days:{}, gifts:[], coupons:[],
              bank:{earned:+p[2]||0, used:+p[3]||0, bonus:+p[4]||0}};
   p[5].split(";").filter(Boolean).forEach(seg=>{
     const i = seg.lastIndexOf(":");                            // 單字本身可能含 . 但不含 :
@@ -5034,8 +5139,23 @@ function unpackDeck(str){
   p[6].split(";").filter(Boolean).forEach(seg=>{
     const [k, v] = seg.split(":"), n = v.split(",");
     const day = {n:+n[0]||0, r:+n[1]||0};
-    if(n[2] === "1") day.paid = true;
+    /* 舊碼只記了 1/0，真正的分鐘數已經失傳；用那天的題數與答對率回推，
+       總比一律當成一天上限 60 分鐘準。新碼直接存分鐘。 */
+    const pm = +n[2] || 0;
+    if(pm) day.paid = legacy ? dayMinutes(day) : pm;
     o.days[ld(k)] = day;
+  });
+  (p[7] || "").split(";").filter(Boolean).forEach(seg=>{
+    const i = seg.indexOf(":"), j = seg.indexOf(":", i + 1);
+    if(i < 0 || j < 0) return;
+    const d = ld(seg.slice(0, i)), m = +seg.slice(i + 1, j) || 0;
+    if(d && m) o.gifts.push({d, m, why:cleanWhy(seg.slice(j + 1)), ts:0});
+  });
+  (p[8] || "").split(";").filter(Boolean).forEach(seg=>{
+    const i = seg.indexOf(":"), j = seg.indexOf(":", i + 1);
+    if(i < 0 || j < 0) return;
+    const d = ld(seg.slice(0, i));
+    if(d) o.coupons.push({d, on:ld(seg.slice(i + 1, j)) || null, why:cleanWhy(seg.slice(j + 1)), ts:0});
   });
   return o;
 }
@@ -5047,19 +5167,21 @@ function exportCode(){
     }catch(e){ return ""; }
   }).filter(Boolean);
   parts.push("~shared=" + packDeck(SHARED));      // 日曆與存摺是共用的，另外存一份
-  return BK_PREFIX + btoa(parts.join("~"));
+  return BK_PREFIX + b64e(parts.join("~"));
 }
 function importCode(code){
   const t = String(code).trim().replace(/\s+/g, "");
-  if(!t.startsWith(BK_PREFIX)) return "這段文字不是備份碼";
+  const legacy = t.startsWith(BK_OLD);
+  if(!legacy && !t.startsWith(BK_PREFIX)) return "這段文字不是備份碼";
   let restored = 0;
   try{
-    atob(t.slice(BK_PREFIX.length)).split("~").filter(Boolean).forEach(chunk=>{
+    const body = t.slice(BK_PREFIX.length);
+    (legacy ? atob(body) : b64d(body)).split("~").filter(Boolean).forEach(chunk=>{
       const i = chunk.indexOf("=");
       const k = chunk.slice(0, i);
-      const o = unpackDeck(chunk.slice(i+1));
+      const o = unpackDeck(chunk.slice(i+1), legacy);
       if(k === "shared"){
-        SHARED = {days:o.days, bank:o.bank};
+        SHARED = {days:o.days, bank:o.bank, gifts:o.gifts || [], coupons:o.coupons || []};
         saveShared(); restored++; return;
       }
       if(!DECKS[k]) return;
@@ -5079,6 +5201,9 @@ $("btnExport").onclick = async e => {
   }else openSheet(code);
 };
 $("btnImport").onclick = () => {
+  // 還原是整包覆寫：小孩貼一張舊備份碼就能把被沒收的分鐘救回來、把用掉的券變回庫存。
+  // 破壞力跟「清除紀錄」同一級，所以同樣要家長密碼。
+  if(!checkPin()) return;
   const code = prompt("把備份碼貼在這裡：");
   if(code === null) return;
   const err = importCode(code);
@@ -5108,6 +5233,53 @@ $("btnPin").onclick = () => {
   try{ v ? localStorage.setItem(PIN_KEY, v) : localStorage.removeItem(PIN_KEY); }catch(e){}
   renderSettings();
   toast(v ? "已設定家長密碼" : "已取消家長密碼");
+};
+
+/* ---- 家長贈送 / 沒收 ---- */
+function giftFlow(sign){
+  if(!checkPin()) return;
+  const give = sign > 0, verb = give ? "贈送" : "沒收";
+  // 送不受一天 60 分鐘上限管（那是練習的上限）；沒收最多只能沒收到存摺歸零
+  const cap = give ? GIFT_MAX : Math.min(GIFT_MAX, bankLeft());
+  if(cap < 1){ toast("存摺沒有分鐘可以沒收"); return; }
+
+  const t = prompt(`要${verb}幾分鐘？（1～${cap} 分鐘）`);
+  if(t === null || String(t).trim() === "") return;
+  const m = Math.floor(+String(t).trim());
+  if(!Number.isFinite(m) || m < 1 || m > cap){ toast(`請輸入 1 到 ${cap} 之間的分鐘數`); return; }
+
+  const raw = prompt(`為什麼${verb}？（一定要填，${WHY_MAX} 字以內）`);
+  if(raw === null) return;
+  const why = cleanWhy(raw);
+  if(!why){ toast("要填原因才送得出去"); return; }
+
+  const debt = bankRaw() < 0 ? -bankRaw() : 0;      // 之前先兌換、後來答錯倒扣欠下的
+  const after = Math.max(0, bankRaw() + sign * m);
+  if(!confirm(`${verb} ${m} 分鐘\n原因：${why}\n\n`
+    + (debt ? `目前存摺欠著 ${debt} 分鐘（先兌換又答錯被倒扣），會先拿去補。\n` : "")
+    + `存摺會變成 ${after} 分鐘。`)) return;
+
+  SHARED.gifts.push({d:dayKey(), m:sign * m, why, ts:Date.now()});
+  saveShared(); refreshHeader(); renderBank(); renderCal();
+  toast(`🎁 已${verb} ${m} 分鐘（${why}），存摺剩 ${bankLeft()} 分鐘`);
+}
+$("btnGift").onclick = () => giftFlow(1);
+$("btnTake").onclick = () => giftFlow(-1);
+
+$("btnCoupon").onclick = () => {
+  if(!checkPin()) return;
+  const raw = prompt(`為什麼發加倍券？（一定要填，${WHY_MAX} 字以內）`);
+  if(raw === null) return;
+  const why = cleanWhy(raw);
+  if(!why){ toast("要填原因才發得出去"); return; }
+  const stock = couponStock().length;
+  if(!confirm(`發一張加倍券\n原因：${why}\n\n小孩下次練習那天會自動用掉，`
+    + `那天賺到的分鐘 ×${X2}（答錯的倒扣也加倍）。`
+    + (stock ? `\n目前還有 ${stock} 張沒用掉。` : ""))) return;
+
+  SHARED.coupons.push({d:dayKey(), on:null, why, ts:Date.now()});
+  saveShared(); refreshHeader(); renderBank(); renderCal();
+  toast(`✨ 已發出加倍券（${why}），下次練習那天自動生效`);
 };
 
 /* ---- 倒數計時：關掉網頁再回來也算得準（存的是結束時間） ---- */
@@ -5248,7 +5420,7 @@ function renderStats(){
 $("btnResetShared").onclick = () => {
   if(!confirm("確定要清除練習日曆和遊戲時間存摺嗎？\n（兩個題庫共用，單字的答題紀錄會保留）")) return;
   if(!checkPin()) return;
-  SHARED = {days:{}, bank:{earned:0, used:0, bonus:0}};
+  SHARED = {days:{}, bank:{earned:0, used:0, bonus:0}, gifts:[], coupons:[]};
   saveShared(); refreshHeader(); renderStats(); renderDecks();
   toast("練習日曆與存摺已清除");
 };

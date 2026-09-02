@@ -151,9 +151,18 @@ ok(JSON.stringify(round.stats[k0])===JSON.stringify(orig.stats[k0]),`往返後�
 const dk=Object.keys(orig.days)[0];
 ok(JSON.stringify(round.days[dk])===JSON.stringify(orig.days[dk]),`往返後日紀錄要一致: ${JSON.stringify(round.days[dk])} vs ${JSON.stringify(orig.days[dk])}`);
 // 含點與連字號的單字
-const tricky={done:1,right:1,stats:{"mr.":{r:1,x:0,streak:1,due:"2026-09-01"},"hard-working":{r:2,x:1,streak:0}},days:{"2026-08-16":{n:5,r:4,paid:true}},bank:{earned:15,used:0,bonus:30}};
+const tricky={done:1,right:1,stats:{"mr.":{r:1,x:0,streak:1,due:"2026-09-01"},"hard-working":{r:2,x:1,streak:0}},days:{"2026-08-16":{n:5,r:4,paid:15}},bank:{earned:15,used:0,bonus:30}};
 const t2=w.eval(`unpackDeck(packDeck(${JSON.stringify(tricky)}))`);
-ok(JSON.stringify(t2)===JSON.stringify(tricky),`含點/連字號的單字要能往返: ${JSON.stringify(t2)}`);
+ok(t2.done===tricky.done&&t2.right===tricky.right
+ &&JSON.stringify(t2.stats)===JSON.stringify(tricky.stats)
+ &&JSON.stringify(t2.days)===JSON.stringify(tricky.days)
+ &&JSON.stringify(t2.bank)===JSON.stringify(tricky.bank),
+ `含點/連字號的單字要能往返: ${JSON.stringify(t2)}`);
+// 每天要存回「實際賺到幾分鐘」，不是舊版那個 1/0（還原後每天都變成上限 60 分）
+const t3=w.eval('unpackDeck(packDeck({days:{"2026-08-16":{n:30,r:30,paid:18}}}))');
+ok(t3.days["2026-08-16"].paid===18,`每天要存回實際分鐘數, 實得 ${t3.days["2026-08-16"].paid}`);
+ok(w.eval('paidOf(unpackDeck(packDeck({days:{"2026-08-16":{n:30,r:30,paid:18}}})).days["2026-08-16"])')===18,
+  '還原後日曆顯示的分鐘不得虛胖成 60');
 ok(code.length<4000,'備份碼應壓到 4000 字元以內, 實得 '+code.length);
 
 // ⑧ 成績訊息含遊戲時間

@@ -76,7 +76,8 @@ ok(w4.eval('SHARED.bank.earned')===5,'存摺要用共用的那份, 實得 '+w4.e
 
 // ⑤ 備份碼要包含共用紀錄
 const code=w1.eval('exportCode()');
-ok(code.includes('shared'.length ? 'CQ2:' : '','備份碼格式正確'));
+ok(code.startsWith(w1.eval('BK_PREFIX')),'備份碼格式正確, 實得 '+code.slice(0,4));
+ok(code.includes('shared')===false,'備份碼是編碼過的，不該看得到明文');
 const w5=boot(()=>{});
 ok(w5.eval(`importCode(${JSON.stringify(code)})`)==='','還原備份不該報錯');
 ok(w5.eval('Object.keys(SHARED.days).length')===3,`還原後日曆要有 3 天, 實得 ${w5.eval('Object.keys(SHARED.days).length')}`);
