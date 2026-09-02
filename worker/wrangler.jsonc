@@ -4,6 +4,9 @@
   //   npx wrangler secret put WRITE_CODE           ← 小孩裝置用的碼
   //   npx wrangler secret put READ_CODE            ← 家長儀表板用的碼
   //   npx wrangler deploy
+  //
+  // 要自己架一份的話，改這三個地方：name、ALLOW_ORIGIN、routes 的 pattern，
+  // 然後重新跑一次上面的四行。密鑰不在這個檔案裡，也不該進 git。
   "name": "english-api",
   "main": "worker.js",
   "compatibility_date": "2026-09-01",
@@ -12,7 +15,7 @@
     "ALLOW_ORIGIN": "https://english.ku-ai.cc"
   },
   "kv_namespaces": [
-    { "binding": "KV", "id": "把 wrangler kv namespace create 回傳的 id 貼在這裡" }
+    { "binding": "KV", "id": "4b28b731087e4871bd43ace54addb0b5" }
   ],
   "routes": [
     { "pattern": "english-api.ku-ai.cc", "custom_domain": true }

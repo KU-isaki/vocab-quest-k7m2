@@ -231,6 +231,24 @@ npm test      # 1130+ 項端到端測試
 **上傳頻率是每輪一次，不是每題一次。** KV 免費方案每天 1000 次寫入，
 每題傳一次一定爆掉；而且家長也不需要看到即時的每一題。
 
+**自己架一份**（全部在 Cloudflare 免費額度內）：
+
+```bash
+cd worker
+npx wrangler login
+npx wrangler kv namespace create VQ     # 把回傳的 id 填進 wrangler.jsonc
+npx wrangler deploy                     # 順便綁自訂網域
+npx wrangler secret put WRITE_CODE      # 小孩裝置用的碼
+npx wrangler secret put READ_CODE       # 家長儀表板用的碼
+```
+
+`wrangler.jsonc` 裡要改的是 `name`、`ALLOW_ORIGIN`、`routes` 三處。
+小孩端和家長端貼的「設定碼」是 `CQS1:` / `CQP1:` 加上 `{"api":"…","code":"…"}` 的 base64。
+
+> **API 一定要放在 App 之外的另一個子網域。** 同網域的話，API 回應會掉進
+> service worker 那條「先給快取」的路徑，家長會讀到舊資料。
+> 另外 Cloudflare 免費憑證只涵蓋一層子網域，所以是 `x-api.你的網域` 而不是 `api.x.你的網域`。
+
 ### 其他
 
 - **頂端進度條**：每頁都看得到「再答對 6 題 → 17 分」，直接講還差幾題、換得到幾分鐘；到上限顯示「今日上限已滿 ✓」。長按可看今天實際答對／答錯幾題
