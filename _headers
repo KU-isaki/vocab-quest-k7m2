@@ -18,3 +18,9 @@
 
 /manifest.json
   Cache-Control: no-cache
+
+/parent
+  Cache-Control: no-cache
+
+/parent.html
+  Cache-Control: no-cache

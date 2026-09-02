@@ -66,6 +66,13 @@ button.ghost{background:var(--surface); color:var(--ink); border-color:var(--lin
 input{font:inherit; width:100%; padding:11px 12px; border-radius:11px; margin:0 0 10px;
       border:1px solid var(--line); background:var(--surface); color:var(--ink)}
 .err{color:var(--no); font-size:13px; margin:8px 0 0}
+.acts{display:flex; gap:8px; margin:16px 0 0}
+.acts button{width:auto; flex:1}
+.bk{margin:10px 0 0}
+.bk textarea{width:100%; height:82px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:11px; line-height:1.45; padding:9px; border-radius:10px; resize:vertical;
+  border:1px solid var(--line); background:var(--surface-2); color:var(--ink)}
+.bk .meta{font-size:11.5px; color:var(--ink-faint); margin:6px 0 8px}
 .ro{display:inline-block; font-size:11px; color:var(--ink-soft); background:var(--surface-2);
     border-radius:999px; padding:2px 9px; margin-left:6px; vertical-align:2px}
 </style>
@@ -204,7 +211,68 @@ function card(c){
       <div class="stat"><b>${num(b.used)}</b><span>已用掉（分）</span></div>
     </div>
     ${giftList(sum)}
+
+    <div class="acts"><button class="ghost" data-grab="${esc(c.child)}">⬇️ 取得備份碼</button></div>
+    <div class="bk" data-box="${esc(c.child)}" hidden></div>
   </div>`;
+}
+
+/* 取完整備份碼。走 /p/snap/:child —— 家長那把鑰匙在 Worker 端本來就只能 GET，
+   這裡也一樣只發 GET。拿到的字串一律放進 textarea 的 value，不碰 innerHTML。 */
+function bindGrab(){
+  document.querySelectorAll("[data-grab]").forEach(b=>{
+    b.onclick = () => {
+      const child = b.dataset.grab;
+      // 用 DOM 的親子關係找，不用選擇器 —— 名字可能含空白或標點，
+      // 拼進選擇器就得處理跳脫，沒必要
+      const card = b.closest(".card");
+      const box = card && card.querySelector(".bk");
+      const c = conf();
+      if(!c || !box) return;
+      b.disabled = true; b.textContent = "讀取中…";
+      const reset = () => { b.disabled = false; b.textContent = "⬇️ 取得備份碼"; box.hidden = false; };
+      fetch(c.api.replace(/\/+$/, "") + "/p/snap/" + encodeURIComponent(child), {
+        headers:{"Authorization":"Bearer " + c.code}
+      }).then(r=>{
+        if(!r.ok) throw new Error("拿不到（" + r.status + "）");
+        return r.json();
+      }).then(r=>{
+        reset();
+        box.innerHTML = `<p class="meta"></p>
+          <textarea readonly spellcheck="false"></textarea>
+          <div class="acts">
+            <button class="ghost" data-act="copy">📋 複製</button>
+            <button class="ghost" data-act="save">⬇️ 存成檔案</button>
+          </div>`;
+        const code = String(r.code || "");
+        box.querySelector("textarea").value = code;          // 不經過 innerHTML
+        box.querySelector(".meta").textContent =
+          `${code.length} 字元　·　${ago(r.at)}的進度　·　`
+          + `貼回小孩手機的「📥 貼上備份碼還原」就能救回來`;
+        box.querySelector('[data-act="copy"]').onclick = e => {
+          const ta = box.querySelector("textarea");
+          ta.select(); ta.setSelectionRange(0, code.length);
+          const done = () => { e.target.textContent = "✓ 已複製";
+                               setTimeout(()=>{ e.target.textContent = "📋 複製"; }, 1800); };
+          if(navigator.clipboard && navigator.clipboard.writeText)
+            navigator.clipboard.writeText(code).then(done, ()=>{ e.target.textContent = "請長按選取複製"; });
+          else done();
+        };
+        box.querySelector('[data-act="save"]').onclick = () => {
+          const d = new Date(), p2 = x => String(x).padStart(2, "0");
+          const name = `單字闖關-${child}-${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}.txt`;
+          const url = URL.createObjectURL(new Blob([code], {type:"text/plain;charset=utf-8"}));
+          const a = document.createElement("a");
+          a.href = url; a.download = name; a.click();
+          setTimeout(()=>URL.revokeObjectURL(url), 4000);
+        };
+      }).catch(e=>{
+        reset();
+        box.innerHTML = `<p class="err"></p>`;
+        box.querySelector(".err").textContent = e.message;
+      });
+    };
+  });
 }
 
 function load(){
@@ -225,6 +293,7 @@ function load(){
              小孩那邊要先在設定頁開啟雲端備份，並且練完一輪才會傳上來。</p></div>`)
       + `<button class="ghost" id="rf">重新整理</button>`;
     $("rf").onclick = load;
+    bindGrab();
   }).catch(e=>{
     $("app").innerHTML = `<div class="card"><p class="err">${esc(e.message)}</p>
       <button class="ghost" id="rs">重新設定</button></div>`;

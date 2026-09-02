@@ -71,5 +71,22 @@ ok($('fbTitle').textContent.includes('✗'),'選錯要判定錯誤');
 ok(w.eval(`S.stats[${JSON.stringify(W2.w)}].x`)===x0+1,'答錯要記進錯題統計');
 ok(right2.classList.contains('right')&&wrong2.classList.contains('wrong'),'要標出正解與錯選');
 
+/* 例句的中文不得重複 —— 兩個字共用同一句中文的話：
+   「看中文選英文句」會出現兩個選項的題目一模一樣（跟單字選擇題不得重複中文同一個道理），
+   而且測試也分不出題目問的是哪一個字，會變成偶發失敗。
+   （garbage / trash 就踩過這個坑，兩句都是「請把垃圾丟進垃圾桶。」） */
+{
+  const ex = w.eval('EXAMPLES'), byZh = {}, byEn = {};
+  for(const k in ex){
+    (byZh[ex[k][1]] = byZh[ex[k][1]] || []).push(k);
+    (byEn[ex[k][0]] = byEn[ex[k][0]] || []).push(k);
+  }
+  const dupZh = Object.entries(byZh).filter(([, v])=>v.length > 1);
+  const dupEn = Object.entries(byEn).filter(([, v])=>v.length > 1);
+  ok(dupZh.length === 0, '例句的中文不得重複: ' + dupZh.map(([z, v])=>v.join('/') + '→' + z).join('、'));
+  ok(dupEn.length === 0, '例句的英文不得重複: ' + dupEn.map(([e, v])=>v.join('/') + '→' + e).join('、'));
+  ok(Object.keys(ex).length > 1000, `例句數量檢查, 實得 ${Object.keys(ex).length}`);
+}
+
 console.log(`\n通過 ${pass} / 失敗 ${fail}`);
 process.exit(fail?1:0);

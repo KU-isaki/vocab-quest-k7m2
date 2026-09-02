@@ -12,8 +12,8 @@ const ok = (c, m) => { c ? pass++ : (fail++, console.log("  ✗ " + m)); };
 // ---------- ① 靜態檢查：整份檔案不得有任何寫入的痕跡 ----------
 ok(!/method\s*:\s*["'](PUT|POST|DELETE|PATCH)/i.test(html), "不得出現寫入用的 HTTP 方法");
 ok(!/\bXMLHttpRequest\b|\bsendBeacon\b|\bnavigator\.send/i.test(html), "不得有其他送資料的管道");
-ok((html.match(/fetch\(/g) || []).length === 1, "整份只該有一個 fetch（讀清單）");
-ok(!/\/s\//.test(html.replace(/https?:\/\//g, "")), "不得出現寫入端點 /s/");
+ok((html.match(/fetch\(/g) || []).length === 2, "只該有兩個 fetch（讀清單、取備份碼）");
+ok(!/["'`]\/s\/["'`+]|\+\s*"\/s\/"/.test(html), "不得出現寫入端點 /s/");
 
 // ---------- ② 行為 ----------
 const D = "2026-09-02", D2 = "2026-09-01";
@@ -151,6 +151,48 @@ ok(/甲/.test(t.d.body.textContent), "型別亂掉也要撐得住，不能整頁
 ok(/乙/.test(t.d.body.textContent) && /丙/.test(t.d.body.textContent),
   "沒有摘要的小孩也要列出來並說明");
 ok(!!t.d.getElementById("rf"), "壞資料之後重新整理鈕仍要在");
+
+// ---------- ④ 取得備份碼：一樣只有 GET ----------
+const CODE = "CQ4:" + "x".repeat(300);
+const route = u => /\/p\/snap\//.test(u)
+  ? okRes({child:"大寶", at:Math.floor(Date.now()/1000) - 60, code:CODE, sum:{}})
+  : okRes(LIST);
+t = boot(seedConf, route);
+await wait();
+const grab = t.d.querySelector('[data-grab="大寶"]');
+ok(!!grab, "每個小孩要有一顆取備份碼的鈕");
+ok(t.d.querySelectorAll("[data-grab]").length === 2, "兩個小孩各一顆");
+grab.dispatchEvent(new t.w.MouseEvent("click", {bubbles:true}));
+await wait();
+const snapCall = t.calls[t.calls.length - 1];
+ok(/\/p\/snap\//.test(snapCall.url), `要打 /p/snap/, 實得 ${snapCall.url}`);
+ok(!snapCall.opt.method || snapCall.opt.method.toUpperCase() === "GET",
+  `取備份碼也必須是 GET, 實得 ${snapCall.opt.method}`);
+ok(t.calls.every(c=>!c.opt.method || c.opt.method.toUpperCase() === "GET"), "全程只准 GET");
+const ta = t.d.querySelector('[data-box="大寶"] textarea');
+ok(!!ta && ta.value === CODE, "備份碼要完整顯示出來");
+ok(/貼上備份碼還原/.test(t.d.body.textContent), "要告訴家長這段怎麼用");
+ok(!!t.d.querySelector('[data-act="copy"]') && !!t.d.querySelector('[data-act="save"]'),
+  "要有複製與存檔兩個選項");
+
+// 備份碼是小孩傳上來的字串，一樣不能當 HTML 塞
+t = boot(seedConf, u => /\/p\/snap\//.test(u)
+  ? okRes({child:"大寶", at:1, code:'<img src=x onerror="window.__pwned2=1">', sum:{}})
+  : okRes(LIST));
+await wait();
+t.d.querySelector('[data-grab="大寶"]').dispatchEvent(new t.w.MouseEvent("click", {bubbles:true}));
+await wait();
+ok(!t.w.__pwned2, "備份碼的內容不得被當成 HTML 執行");
+ok(t.d.querySelectorAll('[data-box="大寶"] img').length === 0, "不得注入元素");
+
+// 取不到要講清楚，不能默默沒反應
+t = boot(seedConf, u => /\/p\/snap\//.test(u) ? errRes(404) : okRes(LIST));
+await wait();
+const g2 = t.d.querySelector('[data-grab="大寶"]');
+g2.dispatchEvent(new t.w.MouseEvent("click", {bubbles:true}));
+await wait();
+ok(/404/.test(t.d.body.textContent), "取不到要顯示原因");
+ok(!g2.disabled && /取得備份碼/.test(g2.textContent), "失敗後按鈕要能再按一次");
 
 console.log(`\n通過 ${pass} / 失敗 ${fail}`);
 process.exit(fail ? 1 : 0);
