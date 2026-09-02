@@ -859,6 +859,15 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
       </div>
     </div>
 
+    <div class="grouphead"><b>這台裝置</b><span id="whoState"></span></div>
+    <button class="btn ghost" id="btnWho">👤 這台是誰在用</button>
+    <details class="info"><summary>這個名字做什麼用？</summary>
+      <div class="info-in">只存在這台裝置裡，<b>不會傳到任何地方</b>，畫面上也只有這裡看得到，
+        填不填都不影響任何功能。<br>
+        先留著是為了以後：家裡不只一個小孩的話，之後要把兩個人的紀錄分開來看就需要它。
+        換手機時它會跟著備份碼一起搬過去。</div>
+    </details>
+
     <div class="grouphead"><b>家長設定</b><span id="pinState"></span></div>
     <button class="btn ghost" id="btnPin">🔒 家長密碼</button>
     <button class="btn ghost" id="btnGift" style="margin-top:8px">🎁 贈送遊戲時間</button>
@@ -953,7 +962,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.02-a";
+const VERSION = "2026.09.02-b";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -3751,6 +3760,7 @@ function loadShared(){
       SHARED = {days:r.days, bank:Object.assign({earned:0, used:0, bonus:0}, r.bank || {}),
                 gifts:Array.isArray(r.gifts) ? r.gifts : [],
                 coupons:Array.isArray(r.coupons) ? r.coupons : []};
+      fixStamp(SHARED.gifts, "old"); fixStamp(SHARED.coupons, "old");
       return;
     }
   }catch(e){}
@@ -4846,6 +4856,44 @@ function segs(...parts){
      等於送一次賺兩次；
    - bank.earned 是「練習賺到的」，摻進贈送之後存摺上那個數字就不再誠實。
    帳本只增不改：送錯了記一筆負的沖銷掉，才查得出來歷。沒收也是同一本帳。 */
+/* ---- 每筆事件的身分：哪台裝置、第幾號 ----
+   兩個小孩各自有裝置，日後要把紀錄合到一起時，「這兩筆是不是同一筆」只能靠
+   一組穩定的識別碼。時間戳不夠用（同一秒可能兩筆、備份碼繞一圈還會失真），
+   所以每筆事件都帶 dev + seq。序號從現有紀錄推回來，不另外存一個計數器，
+   這樣還原備份之後也不會跟已經存在的紀錄撞號。 */
+const DEV_KEY = "cq-device", WHO_KEY = "cq-profile";
+function deviceId(){
+  let d = "";
+  try{ d = localStorage.getItem(DEV_KEY) || ""; }catch(e){}
+  if(!/^[a-z0-9]{4,8}$/.test(d)){
+    d = Math.random().toString(36).slice(2, 8).padEnd(6, "0");
+    try{ localStorage.setItem(DEV_KEY, d); }catch(e){}
+  }
+  return d;
+}
+function nextSeq(){
+  const dev = deviceId();
+  let mx = 0;
+  (SHARED.gifts || []).concat(SHARED.coupons || []).forEach(e=>{
+    if(e.dev === dev && +e.seq > mx) mx = +e.seq;
+  });
+  return mx + 1;
+}
+const nowSec = () => Math.floor(Date.now() / 1000);   // 秒就夠，備份碼短 3 個字
+function stamp(o){ return Object.assign(o, {dev:deviceId(), seq:nextSeq(), ts:nowSec()}); }
+function fixStamp(list, tag){          // 舊紀錄沒有 dev/seq，補上才有身分
+  (list || []).forEach((e, i)=>{
+    if(!e.dev) e.dev = tag;
+    if(!e.seq) e.seq = i + 1;
+    if(+e.ts > 1e11) e.ts = Math.floor(e.ts / 1000);   // 早期存的是毫秒
+    if(!e.ts) e.ts = 0;
+  });
+}
+function getWho(){ try{ return localStorage.getItem(WHO_KEY) || ""; }catch(e){ return ""; } }
+function setWho(v){
+  try{ v ? localStorage.setItem(WHO_KEY, v) : localStorage.removeItem(WHO_KEY); }catch(e){}
+}
+
 const X2 = 2;                          // 加倍券的倍率
 const GIFT_MAX = 60;                   // 一次最多送/沒收幾分鐘，擋手滑打錯位數
 const WHY_MAX  = 20;                   // 原因限長，不要變成留言板
@@ -4973,7 +5021,16 @@ function renderBank(){
 /* 設定頁：目前只有密碼狀態要跟著資料變，其他都是按了就生效的開關 */
 function renderSettings(){
   $("pinState").textContent = getPin() ? "🔒 已設密碼" : "未設密碼";
+  $("whoState").textContent = getWho() || "還沒填";
 }
+$("btnWho").onclick = () => {
+  const cur = getWho();
+  const t = prompt(cur ? "改成誰在用？（留空 = 清掉）" : `這台裝置是誰在用？（${WHY_MAX} 字以內）`, cur);
+  if(t === null) return;
+  setWho(cleanWhy(t));
+  renderSettings();
+  toast(getWho() ? `這台裝置：${getWho()}` : "已清掉名字");
+};
 
 /* ================= 練習日曆 ================= */
 const CAL_WEEKS = 26;                  // 顯示最近半年
@@ -5095,8 +5152,13 @@ $("calNext").onclick = () => {
 
 /* ================= 備份與還原 =================
    把兩個題庫的紀錄壓成一段文字，可貼到 LINE 保存。純本機，不上傳。 */
-const BK_PREFIX = "CQ3:";
-const BK_OLD    = "CQ2:";              // 舊碼還原得回來，長度一樣是 4
+const BK_PREFIX = "CQ4:";
+const BK_OLD    = ["CQ2:", "CQ3:"];    // 舊碼都還原得回來，前綴一律 4 個字
+function bkVer(t){                     // 0 = 不是備份碼
+  if(t.startsWith(BK_PREFIX)) return 4;
+  const i = BK_OLD.indexOf(t.slice(0, 4));
+  return i < 0 ? 0 : i + 2;
+}
 /* btoa 只吃 Latin1，贈送原因是中文會直接 throw，整個匯出爆掉。
    先用 encodeURIComponent 轉成 UTF-8 的 %XX，再一個位元組一個位元組餵給 btoa。
    刻意不用 TextEncoder：這樣連 jsdom 那種沒有它的環境也跑得起來。 */
@@ -5107,6 +5169,17 @@ function b64e(str){
 function b64d(str){
   return decodeURIComponent(atob(str).split("").map(
     c => "%" + ("0" + c.charCodeAt(0).toString(16)).slice(-2)).join(""));
+}
+function cut(seg, n){                  // 切出前 n 段；最後一段是原因，可能含任何字
+  const out = [];
+  let i = 0;
+  for(let k = 0; k < n; k++){
+    const j = seg.indexOf(":", i);
+    if(j < 0) return null;
+    out.push(seg.slice(i, j)); i = j + 1;
+  }
+  out.push(seg.slice(i));
+  return out;
 }
 const sd = k => k ? k.replace(/-/g, "").slice(2) : "";        // 2026-08-16 → 260816
 const ld = s => s && s.length === 6 ? "20" + s.slice(0,2) + "-" + s.slice(2,4) + "-" + s.slice(4) : "";
@@ -5121,11 +5194,13 @@ function packDeck(o){                  // 緊湊格式，備份碼才貼得進�
     const v = o.days[k];
     return `${sd(k)}:${v.n||0},${v.r||0},${paidOf(v)}`;      // 存實際分鐘，不是有沒有達標
   }).join(";");
-  const gf = (o.gifts || []).map(g=>`${sd(g.d)}:${+g.m||0}:${g.why||""}`).join(";");
-  const cp = (o.coupons || []).map(c=>`${sd(c.d)}:${sd(c.on)}:${c.why||""}`).join(";");
+  const ev = e => `${e.dev || ""}:${+e.seq || 0}:${+e.ts || 0}`;   // 事件身分：哪台、第幾號、什麼時候
+  const gf = (o.gifts || []).map(g=>`${sd(g.d)}:${+g.m||0}:${ev(g)}:${g.why||""}`).join(";");
+  const cp = (o.coupons || []).map(c=>`${sd(c.d)}:${sd(c.on)}:${ev(c)}:${c.why||""}`).join(";");
   return [o.done||0, o.right||0, b.earned||0, b.used||0, b.bonus||0, st, dy, gf, cp].join("|");
 }
-function unpackDeck(str, legacy){
+function unpackDeck(str, ver){
+  const legacy = ver === 2;            // CQ2 的每天只記了「有沒有達標」，分鐘數已失傳
   const p = String(str).split("|");
   if(p.length < 7) throw new Error("bad");
   const o = {done:+p[0]||0, right:+p[1]||0, stats:{}, days:{}, gifts:[], coupons:[],
@@ -5145,17 +5220,26 @@ function unpackDeck(str, legacy){
     if(pm) day.paid = legacy ? dayMinutes(day) : pm;
     o.days[ld(k)] = day;
   });
-  (p[7] || "").split(";").filter(Boolean).forEach(seg=>{
-    const i = seg.indexOf(":"), j = seg.indexOf(":", i + 1);
-    if(i < 0 || j < 0) return;
-    const d = ld(seg.slice(0, i)), m = +seg.slice(i + 1, j) || 0;
-    if(d && m) o.gifts.push({d, m, why:cleanWhy(seg.slice(j + 1)), ts:0});
+  /* CQ3 的事件沒有身分欄位。還原時補一組從備份碼內容推出來的（"bk" + 名次），
+     同一張碼還原幾次都是同一組 id，之後做合併去重才不會把同一筆算成兩筆。 */
+  const wide = ver >= 4;
+  (p[7] || "").split(";").filter(Boolean).forEach((seg, i)=>{
+    const f = cut(seg, wide ? 5 : 2);
+    if(!f) return;
+    const d = ld(f[0]), m = +f[1] || 0;
+    if(!d || !m) return;
+    o.gifts.push(wide
+      ? {d, m, dev:f[2] || "bk", seq:+f[3] || i + 1, ts:+f[4] || 0, why:cleanWhy(f[5])}
+      : {d, m, dev:"bk", seq:i + 1, ts:0, why:cleanWhy(f[2])});
   });
-  (p[8] || "").split(";").filter(Boolean).forEach(seg=>{
-    const i = seg.indexOf(":"), j = seg.indexOf(":", i + 1);
-    if(i < 0 || j < 0) return;
-    const d = ld(seg.slice(0, i));
-    if(d) o.coupons.push({d, on:ld(seg.slice(i + 1, j)) || null, why:cleanWhy(seg.slice(j + 1)), ts:0});
+  (p[8] || "").split(";").filter(Boolean).forEach((seg, i)=>{
+    const f = cut(seg, wide ? 5 : 2);
+    if(!f) return;
+    const d = ld(f[0]);
+    if(!d) return;
+    o.coupons.push(wide
+      ? {d, on:ld(f[1]) || null, dev:f[2] || "bk", seq:+f[3] || i + 1, ts:+f[4] || 0, why:cleanWhy(f[5])}
+      : {d, on:ld(f[1]) || null, dev:"bk", seq:i + 1, ts:0, why:cleanWhy(f[2])});
   });
   return o;
 }
@@ -5167,21 +5251,25 @@ function exportCode(){
     }catch(e){ return ""; }
   }).filter(Boolean);
   parts.push("~shared=" + packDeck(SHARED));      // 日曆與存摺是共用的，另外存一份
+  const who = cleanWhy(getWho());
+  if(who) parts.push("who=" + who);              // 換手機時名字也跟著走
   return BK_PREFIX + b64e(parts.join("~"));
 }
 function importCode(code){
   const t = String(code).trim().replace(/\s+/g, "");
-  const legacy = t.startsWith(BK_OLD);
-  if(!legacy && !t.startsWith(BK_PREFIX)) return "這段文字不是備份碼";
+  const ver = bkVer(t);
+  if(!ver) return "這段文字不是備份碼";
   let restored = 0;
   try{
-    const body = t.slice(BK_PREFIX.length);
-    (legacy ? atob(body) : b64d(body)).split("~").filter(Boolean).forEach(chunk=>{
+    const body = t.slice(4);
+    (ver === 2 ? atob(body) : b64d(body)).split("~").filter(Boolean).forEach(chunk=>{
       const i = chunk.indexOf("=");
       const k = chunk.slice(0, i);
-      const o = unpackDeck(chunk.slice(i+1), legacy);
+      if(k === "who"){ setWho(cleanWhy(chunk.slice(i+1))); restored++; return; }
+      const o = unpackDeck(chunk.slice(i+1), ver);
       if(k === "shared"){
         SHARED = {days:o.days, bank:o.bank, gifts:o.gifts || [], coupons:o.coupons || []};
+        fixStamp(SHARED.gifts, "bk"); fixStamp(SHARED.coupons, "bk");
         saveShared(); restored++; return;
       }
       if(!DECKS[k]) return;
@@ -5259,7 +5347,7 @@ function giftFlow(sign){
     + (debt ? `目前存摺欠著 ${debt} 分鐘（先兌換又答錯被倒扣），會先拿去補。\n` : "")
     + `存摺會變成 ${after} 分鐘。`)) return;
 
-  SHARED.gifts.push({d:dayKey(), m:sign * m, why, ts:Date.now()});
+  SHARED.gifts.push(stamp({d:dayKey(), m:sign * m, why}));
   saveShared(); refreshHeader(); renderBank(); renderCal();
   toast(`🎁 已${verb} ${m} 分鐘（${why}），存摺剩 ${bankLeft()} 分鐘`);
 }
@@ -5277,7 +5365,7 @@ $("btnCoupon").onclick = () => {
     + `那天賺到的分鐘 ×${X2}（答錯的倒扣也加倍）。`
     + (stock ? `\n目前還有 ${stock} 張沒用掉。` : ""))) return;
 
-  SHARED.coupons.push({d:dayKey(), on:null, why, ts:Date.now()});
+  SHARED.coupons.push(stamp({d:dayKey(), on:null, why}));
   saveShared(); refreshHeader(); renderBank(); renderCal();
   toast(`✨ 已發出加倍券（${why}），下次練習那天自動生效`);
 };
