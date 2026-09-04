@@ -279,6 +279,25 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 .weakbox{margin:0 0 16px; padding:12px; border-radius:11px; background:var(--surface-2); font-size:13.5px; text-align:left}
 .weakbox .ws{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
 .weakbox .ws span{padding:5px 9px; border-radius:99px; background:var(--surface); border:1px solid var(--line); font-size:13px; letter-spacing:.08em}
+/* 典故猜成語（結算頁，不計分） */
+.story{margin:0 0 16px; padding:14px 15px; border-radius:12px; background:var(--surface-2); text-align:left}
+.story .eyebrow{margin-bottom:6px}
+.story p{margin:0 0 12px; font-size:14.5px; line-height:1.75; color:var(--ink)}
+.story .choices{gap:7px}
+.story .choice{padding:11px 13px; font-size:15px}
+.story .res{margin:10px 0 0; font-size:13.5px; color:var(--ink-soft)}
+/* 接龍 */
+.chain{margin-top:16px; padding:18px}
+.chain .head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:6px}
+.chain .head b{font-size:15.5px}
+.chain .head span{font-size:12px; color:var(--ink-faint); font-family:var(--font-num)}
+.chain .cur{text-align:center; padding:10px 0 14px}
+.chain .cur .c4{font-size:30px; letter-spacing:.14em}
+.chain .cur .c4 u{text-decoration:none; color:var(--brand); border-bottom:3px solid var(--brand)}
+.chain .cur .cue{font-size:13px; color:var(--ink-faint); margin-top:4px}
+.chain .choices{gap:7px}
+.chain .choice{padding:11px 13px}
+.chain .lock{padding:14px 0; text-align:center; color:var(--ink-faint); font-size:13.5px}
 [hidden]{display:none !important}   /* 這專案踩過三次 display:grid/flex 蓋掉 hidden 的坑，這頁直接鎖死 */
 
 </style>
@@ -320,6 +339,11 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
       <button class="btn quiet" id="btnWrongOnly">只考錯過的成語（<span id="wrongCount">0</span>）</button>
     </div>
 
+    <div class="card chain" id="chainCard">
+      <div class="head"><b>🔗 成語接龍</b><span id="chainScore"></span></div>
+      <div id="chainBody"></div>
+    </div>
+
     <div class="card q" id="qCard" hidden>
       <div class="q-head"><span class="q-kind" id="qKind"></span><span class="q-count" id="qCount"></span></div>
       <div class="prompt" id="qPrompt" aria-live="polite"></div>
@@ -340,6 +364,12 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
       <p id="sumText"></p>
       <ul class="misslist" id="sumMiss"></ul>
       <div class="weakbox" id="sumWeak" hidden></div>
+      <div class="story" id="storyBox" hidden>
+        <div class="eyebrow">典故猜成語 · 不計分</div>
+        <p id="storyText"></p>
+        <div class="choices" id="storyChoices"></div>
+        <div class="res" id="storyRes"></div>
+      </div>
       <button class="btn" id="btnAgain">再來一輪</button>
       <button class="btn quiet" id="btnBackHome">回主畫面</button>
     </div>
@@ -395,7 +425,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 
 <script>
 /* 版本標示：每次改版都更新，跟單字闖關同一套規矩 */
-const IDIOM_VERSION = "2026.09.05-a";
+const IDIOM_VERSION = "2026.09.05-b";
 
 /* ================= 成語題庫 =================
    格式：["成語", "注音（四組，空格分開）", "解釋", "例句", 級, {選填}]
@@ -1016,7 +1046,7 @@ const byC = {}; IDIOMS.forEach(i=>{ byC[i.c] = i; });
 const shuffle = a => { const b = a.slice(); for(let i=b.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [b[i],b[j]]=[b[j],b[i]]; } return b; };
 const isDue = c => { const s = stat(c); return !s.due || s.due <= dayKey(); };
 
-let pickLv = new Set([1]), pickN = 30, pickDiff = "std", DIFF = DIFFS[1];
+let pickLv = new Set([3, 4]), pickN = 30, pickDiff = "std", DIFF = DIFFS[1];   // 預設三、四級：兩個小孩都是國中生
 try{
   const lv = JSON.parse(localStorage.getItem("cq-idiom-lv") || "null");
   if(Array.isArray(lv) && lv.length) pickLv = new Set(lv.filter(x=>[1,2,3,4].includes(x)));
@@ -1114,7 +1144,7 @@ function startRound(useWrong){
   const src = wrongMode ? IDIOMS.filter(i=>stat(i.c).x > 0 && stat(i.c).streak < 2) : pool();
   if(!src.length){ toast("目前沒有錯過的成語，先做一般練習吧！"); return; }
   queue = drawRound(src, wrongMode ? Math.min(pickN, src.length) : pickN); idx = 0; roundRight = 0; missed = [];
-  $("startCard").hidden = true; $("sumCard").hidden = true; $("qCard").hidden = false;
+  $("startCard").hidden = true; $("sumCard").hidden = true; $("chainCard").hidden = true; $("qCard").hidden = false;
   showQ(); window.scrollTo(0,0);
 }
 function showQ(){
@@ -1260,12 +1290,71 @@ function endRound(){
   $("sumWeak").hidden = !weak.length;
   $("sumWeak").innerHTML = weak.length ? `<b>還要加強 ${weak.length} 條　連對 2 次就畢業</b><div class="ws">${weak.slice(0, 12).map(i=>`<span class="zh-serif">${esc(i.c)}</span>`).join("")}${weak.length > 12 ? `<em>… 還有 ${weak.length - 12} 條</em>` : ""}</div>` : "";
   renderPickers();
+  showStory();
   window.scrollTo(0,0);
 }
+/* ================= 典故猜成語：放在結算頁，純練習 =================
+   跟單字闖關的閱讀題組一樣：完全不寫進 S、飼料、日曆，避免跟防刷機制打架。 */
+const STORY_KEY = "cq-idiom-story";
+function showStory(){
+  const box = $("storyBox");
+  const pool = IDIOMS.filter(i=>i.story);
+  if(pool.length < 4){ box.hidden = true; return; }
+  let last = ""; try{ last = localStorage.getItem(STORY_KEY) || ""; }catch(e){}
+  const cands = pool.filter(i=>i.c !== last);
+  const ans = cands[Math.floor(Math.random() * cands.length)];
+  try{ localStorage.setItem(STORY_KEY, ans.c); }catch(e){}
+  const dis = shuffle(pool.filter(i=>i.c !== ans.c)).slice(0, 3);
+  box.hidden = false;
+  $("storyText").textContent = ans.story;
+  $("storyRes").textContent = "";
+  const C = $("storyChoices");
+  delete C.dataset.done;
+  C.innerHTML = shuffle([ans, ...dis]).map((o, k)=>`<button class="choice" data-s="${esc(o.c)}"><i>${"ABCD"[k]}</i><span class="c4 zh-serif">${esc(o.c)}</span></button>`).join("");
+  C.querySelectorAll(".choice").forEach(b=>b.onclick = ()=>{
+    if(C.dataset.done) return;
+    C.dataset.done = "1";
+    C.querySelectorAll(".choice").forEach(x=>{ x.disabled = true; if(x.dataset.s === ans.c) x.classList.add("right"); else if(x === b) x.classList.add("wrong"); });
+    $("storyRes").textContent = (b.dataset.s === ans.c ? "✓ 就是" : "✗ 是") + `「${ans.c}」：${ans.m}`;
+  });
+}
+
+/* ================= 成語接龍：陪貓玩用的小遊戲（第二階接心情） =================
+   只從已熟練的成語出題；接的那一個可以是題庫裡任何一條。不給飼料。 */
+let chainCur = null, chainN = 0;
+function chainNext(from){
+  const heads = {};
+  IDIOMS.forEach(i=>{ (heads[i.c[0]] = heads[i.c[0]] || []).push(i); });
+  const done = IDIOMS.filter(i=>mastered(i.c));
+  if(done.length < 8){ $("chainBody").innerHTML = `<div class="lock">熟練 8 條以上就能玩接龍（現在 ${done.length} 條）</div>`; $("chainScore").textContent = ""; return; }
+  const canGo = i => (heads[i.c[3]] || []).some(x=>x.c !== i.c);
+  let start = from;
+  if(!start || !canGo(start)){
+    // 剛接上的那條是死路（沒有成語用它的尾字開頭）：不是小孩的錯，連鎖不歸零，換一條熟練的繼續
+    const ok = shuffle(done).filter(canGo);
+    if(!ok.length){ $("chainBody").innerHTML = `<div class="lock">熟練的成語還接不起來，再多練幾條</div>`; return; }
+    start = ok[0];
+  }
+  chainCur = start;
+  const ch = start.c[3];
+  // 正解優先挑「還接得下去」的，讓連鎖能一直走
+  const nexts = heads[ch].filter(x=>x.c !== start.c);
+  const ans = shuffle(nexts.filter(canGo))[0] || shuffle(nexts)[0];
+  const dis = shuffle(IDIOMS.filter(x=>x.c[0] !== ch && x.c !== start.c)).slice(0, 3);
+  $("chainScore").textContent = chainN ? `已接 ${chainN} 條` : "";
+  $("chainBody").innerHTML = `<div class="cur"><div class="c4 zh-serif">${esc(start.c.slice(0,3))}<u>${esc(ch)}</u></div><div class="cue">下一個成語要用「${esc(ch)}」開頭</div></div>
+    <div class="choices">${shuffle([ans, ...dis]).map((o, k)=>`<button class="choice" data-n="${esc(o.c)}"><i>${"ABCD"[k]}</i><span class="c4 zh-serif">${esc(o.c)}</span></button>`).join("")}</div>`;
+  $("chainBody").querySelectorAll(".choice").forEach(b=>b.onclick = ()=>{
+    const pick = byC[b.dataset.n];
+    if(pick.c[0] === ch){ chainN++; toast(`接上了！${pick.c}`); chainNext(pick); }
+    else{ b.classList.add("wrong"); $("chainBody").querySelectorAll(".choice").forEach(x=>{ x.disabled = true; if(x.dataset.n === ans.c) x.classList.add("right"); }); chainN = 0; toast(`要用「${ch}」開頭才接得上`); setTimeout(()=>chainNext(null), 1400); }
+  });
+}
+
 $("btnStart").onclick = ()=>startRound(false);
 $("btnWrongOnly").onclick = ()=>startRound(true);
 $("btnAgain").onclick = ()=>startRound(wrongMode);
-$("btnBackHome").onclick = ()=>{ $("sumCard").hidden = true; $("startCard").hidden = false; renderPickers(); refreshHeader(); window.scrollTo(0,0); };
+$("btnBackHome").onclick = ()=>{ $("sumCard").hidden = true; $("startCard").hidden = false; $("chainCard").hidden = false; renderPickers(); refreshHeader(); chainNext(null); window.scrollTo(0,0); };
 $("btnQuit").onclick = ()=>{
   const n = roundDone();
   if(n < queue.length){
@@ -1335,7 +1424,7 @@ function refreshHeader(){
 loadShared(); loadS();
 $("heroVer").textContent = "版本 " + IDIOM_VERSION;
 $("verline").textContent = "成語ㄚ喵 · 版本 " + IDIOM_VERSION + " · 題庫 " + IDIOMS.length + " 條";
-renderPickers(); refreshHeader(); renderList(); renderStats();
+renderPickers(); refreshHeader(); renderList(); renderStats(); chainNext(null);
 
 /* ================= 離線（service worker） =================
    註冊的是同一支 sw.js（同一個 scope），所以裝成 App 之後兩頁互跳都在同一個殼裡。 */

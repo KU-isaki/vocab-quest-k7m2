@@ -24,3 +24,9 @@
 
 /parent.html
   Cache-Control: no-cache
+
+/idiom
+  Cache-Control: no-cache
+
+/idiom.html
+  Cache-Control: no-cache

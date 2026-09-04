@@ -126,6 +126,15 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 .btn:disabled:active{transform:none; filter:none}
 
 /* ---------- deck picker ---------- */
+.idiomlink{
+  display:flex; align-items:center; gap:12px; margin-top:12px; padding:13px 15px;
+  text-decoration:none; color:inherit; border-color:color-mix(in srgb, var(--mark) 55%, var(--line));
+}
+.idiomlink .ic{font-size:26px; line-height:1}
+.idiomlink .tx{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px}
+.idiomlink .tx b{font-size:15.5px}
+.idiomlink .tx small{font-size:12px; color:var(--ink-faint); line-height:1.5}
+.idiomlink .ar{color:var(--ink-faint); font-size:18px}
 .decks{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px}
 .decks[hidden]{display:none}   /* display:grid 會蓋掉 hidden 屬性 */
 .deck{
@@ -704,6 +713,12 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
       <button class="btn quiet" id="btnWrongOnly">只考錯過的字（<span id="wrongCount">0</span>）</button>
     </div>
 
+    <a class="card idiomlink" id="idiomLink" href="idiom.html">
+      <span class="ic">🐈</span>
+      <span class="tx"><b>成語ㄚ喵</b><small>練成語賺飼料、養一隻會長大的貓。跟這裡共用存摺與日曆。</small></span>
+      <span class="ar">→</span>
+    </a>
+
     <div class="card q" id="qCard" hidden>
       <div class="q-head">
         <span class="q-kind" id="qKind"></span>
@@ -973,7 +988,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.02-f";
+const VERSION = "2026.09.05-a";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -5065,11 +5080,15 @@ let calView = "month";
 try{ calView = localStorage.getItem("cq-cal") === "half" ? "half" : "month"; }catch(e){}
 let calCursor = new Date();            // 月檢視現在看的是哪個月
 
+function dayTotal(rec){               // 英文 + 成語，日曆的深淺與「有沒有練」看合計
+  return rec ? (rec.n || 0) + ((rec.i && rec.i.n) || 0) : 0;
+}
 function dayNote(k, rec){              // 點格子 / 螢幕閱讀器都用同一句
   const [, mm, dd] = k.split("-");
   const gs = giftsOn(k), cp = couponOn(k);
-  return (rec ? `${+mm}/${+dd} 練了 ${rec.n} 題，答對 ${rec.r || 0} 題`
-                + (paidOf(rec) ? `，賺到 ${paidOf(rec)} 分鐘` : "")
+  const en = rec && rec.n ? `英文 ${rec.n} 題，答對 ${rec.r || 0} 題` + (paidOf(rec) ? `，賺到 ${paidOf(rec)} 分鐘` : "") : "";
+  const zh = rec && rec.i && rec.i.n ? `成語 ${rec.i.n} 題，答對 ${rec.i.r || 0} 題` + (+rec.i.paid ? `，賺到 ${rec.i.paid} 顆飼料` : "") : "";
+  return (rec && dayTotal(rec) ? `${+mm}/${+dd} ` + [en, zh].filter(Boolean).join("；")
               : `${+mm}/${+dd} 沒有練習紀錄`)
          + (cp.length ? `。用了加倍券 ×${X2}（${cp[0].why || "沒寫原因"}）` : "")
          + (gs.length ? "。" + gs.map(giftLine).join("、") : "");
@@ -5097,15 +5116,15 @@ function renderCalMonth(){
 
   let html = ["日","一","二","三","四","五","六"].map(x=>`<span class="wd">${x}</span>`).join("");
   for(let i = 0; i < lead; i++) html += `<span class="mcell pad"></span>`;
-  let sumDays = 0, sumN = 0, sumMin = 0, sumGift = 0;
+  let sumDays = 0, sumN = 0, sumMin = 0, sumGift = 0, sumZh = 0;
   for(let d = 1; d <= len; d++){
     const dt = new Date(y, m, d), k = dayKey(dt), rec = SHARED.days[k];
     const gs = giftsOn(k), cp = couponOn(k);
-    if(rec){ sumDays++; sumN += rec.n || 0; sumMin += paidOf(rec); }
+    if(rec){ sumDays++; sumN += rec.n || 0; sumZh += (rec.i && rec.i.n) || 0; sumMin += paidOf(rec); }
     sumGift += giftSum(gs);
     const cls = [
       "mcell",
-      rec ? "l" + level(rec.n) : "",
+      rec ? "l" + level(dayTotal(rec)) : "",
       rec && paidOf(rec) ? "met" : "",
       gs.length || cp.length ? "gift" : "",
       k === todayK ? "today" : ""
@@ -5116,7 +5135,7 @@ function renderCalMonth(){
   $("calMonthGrid").innerHTML = html;
   const giftNote = sumGift ? `，爸媽${sumGift > 0 ? "送 " + sumGift : "沒收 " + -sumGift} 分鐘` : "";
   $("calSum").textContent = sumDays
-    ? `這個月練了 ${sumDays} 天、${sumN} 題，賺到 ${sumMin} 分鐘${giftNote}`
+    ? `這個月練了 ${sumDays} 天、英文 ${sumN} 題${sumZh ? `、成語 ${sumZh} 題` : ""}，賺到 ${sumMin} 分鐘${giftNote}`
     : (sumGift ? `這個月還沒有練習紀錄${giftNote}` : "這個月還沒有練習紀錄");
   $("calNext").disabled = y === now.getFullYear() && m === now.getMonth();
   bindDays($("calMonthGrid"));
@@ -5142,7 +5161,7 @@ function renderCalHalf(){
       if(cur > now){ cells += `<span class="cell pad"></span>`; }
       else{
         const rec = SHARED.days[k];
-        cells += `<button class="cell ${rec ? "l" + level(rec.n) : ""} ${rec && paidOf(rec) ? "met" : ""} ${giftsOn(k).length || couponOn(k).length ? "gift" : ""} ${k === todayK ? "today" : ""}"
+        cells += `<button class="cell ${rec ? "l" + level(dayTotal(rec)) : ""} ${rec && paidOf(rec) ? "met" : ""} ${giftsOn(k).length || couponOn(k).length ? "gift" : ""} ${k === todayK ? "today" : ""}"
                   data-day="${k}" aria-label="${esc(dayNote(k, rec))}"></button>`;
       }
       cur.setDate(cur.getDate() + 1);
