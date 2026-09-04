@@ -3,25 +3,311 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#172242">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>成語ㄚ喵</title>
 <style>
-:root{--ground:#FBFAF9; --ink:#172242; --ink-soft:#5A6484; --line:#E2E0DA}
-@media (prefers-color-scheme:dark){ :root{--ground:#101623; --ink:#E9ECF4; --ink-soft:#A3ADC6; --line:#2A3446} }
-body{margin:0; background:var(--ground); color:var(--ink); font-family:-apple-system,system-ui,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif; padding:32px 20px}
-.wrap{max-width:560px; margin:0 auto}
-h1{font-size:22px; margin:0 0 8px}
-p{color:var(--ink-soft); margin:0 0 12px; line-height:1.7}
-a{color:inherit}
+:root{
+  --ground:#FBFAF9;
+  --surface:#FFFFFF;
+  --surface-2:#F1EFEA;
+  --ink:#172242;
+  --ink-soft:#5A6484;
+  --ink-faint:#9AA1B8;
+  --line:#E2E0DA;
+  --brand:#1F4FA9;
+  --brand-soft:#E7EDFA;
+  --mark:#FFD84D;
+  --ok:#12855C;
+  --ok-soft:#E2F3EB;
+  --no:#C8452F;
+  --no-soft:#FBE9E5;
+  --btn-fg:#FFFFFF;
+  --shadow:0 1px 2px rgba(23,34,66,.06), 0 8px 24px -12px rgba(23,34,66,.18);
+  --r:14px;
+  --font-en:ui-rounded,"SF Pro Rounded","Hiragino Maru Gothic ProN",-apple-system,system-ui,sans-serif;
+  --font-zh:-apple-system,system-ui,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+  --font-num:ui-rounded,"SF Pro Rounded",-apple-system,system-ui,sans-serif;
+  --scale:1;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#101623;
+    --surface:#18202F;
+    --surface-2:#212A3B;
+    --ink:#E9ECF4;
+    --ink-soft:#A3ADC6;
+    --ink-faint:#6B7793;
+    --line:#2A3446;
+    --brand:#7FA9F0;
+    --brand-soft:#1E2C46;
+    --mark:#F0C33C;
+    --ok:#4FCB96;
+    --ok-soft:#153229;
+    --no:#F08A76;
+    --no-soft:#38201C;
+    --btn-fg:#0E1524;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#101623; --surface:#18202F; --surface-2:#212A3B;
+  --ink:#E9ECF4; --ink-soft:#A3ADC6; --ink-faint:#6B7793; --line:#2A3446;
+  --brand:#7FA9F0; --brand-soft:#1E2C46; --mark:#F0C33C;
+  --ok:#4FCB96; --ok-soft:#153229; --no:#F08A76; --no-soft:#38201C;
+  --btn-fg:#0E1524;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:var(--font-zh); font-size:1rem; line-height:1.6;
+  -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent;
+}
+button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
+:focus-visible{outline:2px solid var(--brand); outline-offset:2px; border-radius:6px}
+.shell{max-width:520px; margin:0 auto; padding:0 16px 108px}
+.top{
+  position:sticky; top:0; z-index:20; background:var(--ground);
+  padding:14px 0 10px; border-bottom:1px solid var(--line);
+}
+.top-row{display:flex; align-items:center; justify-content:space-between; gap:12px}
+.brandmark{display:flex; align-items:baseline; gap:8px; min-width:0}
+.brandmark b{font-size:17px; font-weight:700; letter-spacing:.02em; white-space:nowrap}
+.brandmark span{font-size:11px; color:var(--ink-faint); letter-spacing:.08em}
+.score{font-family:var(--font-num); font-variant-numeric:tabular-nums; font-size:13px; color:var(--ink-soft); white-space:nowrap}
+.score b{color:var(--ink); font-size:16px}
+.bar{height:5px; border-radius:99px; background:var(--surface-2); margin-top:10px; overflow:hidden}
+.bar>i{display:block; height:100%; width:0; border-radius:99px; background:var(--brand); transition:width .35s ease}
+.card{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+  box-shadow:var(--shadow);
+}
+.eyebrow{
+  font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink-faint); font-weight:600;
+}
+.btn{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; padding:15px 16px; border-radius:12px; border:1px solid transparent;
+  background:var(--brand); color:var(--btn-fg); font-weight:600; font-size:16.5px;
+  transition:transform .1s ease, filter .15s ease;
+}
+.btn:active{transform:scale(.985); filter:brightness(.94)}
+.btn.ghost{background:var(--surface); color:var(--ink); border-color:var(--line); font-weight:500}
+.btn.quiet{background:transparent; color:var(--ink-soft); border-color:transparent; font-size:14.5px; padding:10px}
+.btn.done{background:var(--ok); color:var(--btn-fg); border-color:var(--ok); font-weight:600}
+.btn:disabled{
+  background:var(--surface-2); color:var(--ink-faint); border-color:var(--line);
+  font-weight:500; cursor:default;
+}
+.btn:disabled:active{transform:none; filter:none}
+.chipbox{max-height:186px; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:2px}
+.todaybox{margin:16px 0 14px; text-align:left}
+.todaybox .bar{height:8px}
+.todaybox .bar>i{background:linear-gradient(90deg, var(--brand), color-mix(in srgb, var(--ok) 70%, var(--brand)))}
+.hero{margin-top:12px; padding:22px 18px; text-align:center}
+.hero h1{margin:6px 0 4px; font-size:26px; line-height:1.25; text-wrap:balance; letter-spacing:.01em}
+.hero .mark{background:linear-gradient(transparent 62%, var(--mark) 62%); padding:0 3px}
+.hero p{margin:0 0 18px; color:var(--ink-soft); font-size:14.5px}
+.pickers{display:flex; flex-direction:column; gap:8px; margin:16px 0}
+.chiprow{display:flex; flex-wrap:wrap; gap:7px; justify-content:center}
+.chip{
+  padding:8px 13px; border-radius:99px; border:1px solid var(--line);
+  background:var(--surface); font-size:13.5px; color:var(--ink-soft);
+}
+.chip[aria-pressed="true"]{background:var(--brand-soft); border-color:var(--brand); color:var(--brand); font-weight:600}
+.chip:disabled{opacity:.4}
+.matrix{display:grid; grid-template-columns:repeat(3,1fr); gap:7px}
+.matrix .chip{
+  padding:9px 4px; border-radius:11px; text-align:center; line-height:1.3;
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+}
+.matrix .chip small{display:block; font-size:10.5px; color:var(--ink-faint); font-weight:400}
+.matrix .chip[aria-pressed="true"] small{color:var(--brand)}
+.toast{
+  position:fixed; left:50%; bottom:86px; transform:translateX(-50%);
+  max-width:calc(100% - 40px); z-index:50;
+  padding:11px 16px; border-radius:99px; background:var(--ink); color:var(--ground);
+  font-size:13.5px; box-shadow:var(--shadow); opacity:0; pointer-events:none;
+  transition:opacity .25s ease;
+}
+.toast.on{opacity:1}
+.grouphead{
+  display:flex; align-items:baseline; gap:8px; margin:22px 0 8px; padding-bottom:6px;
+  border-bottom:2px solid var(--ink);
+}
+.grouphead b{font-size:15.5px}
+.grouphead span{font-size:12px; color:var(--ink-faint); font-family:var(--font-num)}
+.info{border:1px solid var(--line); border-radius:11px; margin:10px 0; background:var(--surface-2)}
+.info>summary{
+  cursor:pointer; padding:10px 13px; font-size:13px; color:var(--ink-soft);
+  display:flex; align-items:center; gap:6px; list-style:none;
+}
+.info>summary::-webkit-details-marker{display:none}
+.info>summary::after{content:"⌄"; margin-left:auto; font-size:15px; line-height:1; transition:transform .15s}
+.info[open]>summary::after{transform:rotate(180deg)}
+.info .info-in{padding:0 13px 12px; font-size:12.5px; line-height:1.8; color:var(--ink-faint)}
+.info .info-in b{color:var(--ink-soft)}
+.segbtns{display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end}
+.segbtns button{
+  border:1px solid var(--line); background:var(--surface); color:var(--ink-soft);
+  font-size:13px; padding:7px 12px; border-radius:9px;
+}
+.segbtns button[aria-pressed="true"]{
+  background:var(--brand-soft); border-color:var(--brand); color:var(--brand); font-weight:700;
+}
+.nav{
+  position:fixed; left:0; right:0; bottom:0; z-index:30;
+  background:color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter:saturate(1.6) blur(12px);
+  border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.nav-in{max-width:520px; margin:0 auto; display:grid; grid-template-columns:repeat(4,1fr)}
+.nav button{
+  background:none; border:0; padding:10px 4px 12px; display:flex; flex-direction:column;
+  align-items:center; gap:3px; font-size:11px; color:var(--ink-faint); font-weight:500;
+}
+.nav button em{font-style:normal; font-size:19px; line-height:1}
+.nav button[aria-current="true"]{color:var(--brand); font-weight:700}
+.view{display:none}
+.view.on{display:block}
+.foot{margin-top:26px; text-align:center; font-size:11.5px; color:var(--ink-faint); line-height:1.7}
+*{box-sizing:border-box}
+button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
+/* ===== 成語ㄚ喵自己的 ===== */
+/* 成語用系統內建的宋體／明體，不載外部字型：這頁跟單字闖關一樣，預設一個外部請求都不發 */
+.zh-serif{font-family:"Songti TC","Noto Serif TC","Noto Serif CJK TC","PMingLiU",var(--font-zh); font-weight:700}
+.back{font-size:12.5px; color:var(--ink-faint); text-decoration:none; white-space:nowrap}
+.back:hover{color:var(--ink-soft)}
+.lvrow{display:grid; grid-template-columns:repeat(4,1fr); gap:7px}
+.lvrow .chip{padding:9px 4px; border-radius:11px; text-align:center; line-height:1.3; display:flex; flex-direction:column; align-items:center; gap:1px}
+.lvrow .chip small{font-size:10.5px; color:var(--ink-faint); font-weight:400}
+.lvrow .chip[aria-pressed="true"] small{color:var(--brand)}
+.wip{margin:16px 0 0; padding:14px 16px; border-radius:var(--r); background:var(--surface-2); color:var(--ink-soft); font-size:13.5px; line-height:1.7}
+.wip b{color:var(--ink)}
+.search{width:100%; padding:11px 13px; border-radius:11px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:inherit; margin:0 0 10px}
+.lvhead{display:flex; align-items:baseline; gap:8px; margin:18px 2px 6px; font-size:12px; color:var(--ink-faint); letter-spacing:.08em}
+.lvhead b{font-size:14px; color:var(--ink-soft); letter-spacing:0}
+details.irow{border-bottom:1px solid var(--line)}
+details.irow>summary{list-style:none; cursor:pointer; display:flex; align-items:baseline; gap:10px; padding:11px 4px}
+details.irow>summary::-webkit-details-marker{display:none}
+details.irow .c{font-size:19px; letter-spacing:.12em}
+details.irow .zy{font-size:12px; color:var(--ink-faint); letter-spacing:.05em; flex:1; min-width:0}
+details.irow .lv{font-size:10.5px; color:var(--ink-faint); font-family:var(--font-num)}
+details.irow .in{padding:0 4px 12px 4px; display:grid; gap:5px; font-size:13.5px}
+details.irow .in .r{display:grid; grid-template-columns:36px 1fr; gap:8px}
+details.irow .in .r b{font-weight:500; font-size:12px; color:var(--ink-faint); padding-top:2px}
+details.irow .in .r .x{color:var(--no); font-weight:700}
+details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
+.empty{padding:22px 0; text-align:center; color:var(--ink-faint); font-size:13.5px}
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px}
+.stat{background:var(--surface-2); border-radius:11px; padding:10px 10px}
+.stat b{display:block; font-size:21px; line-height:1.2; font-family:var(--font-num); font-variant-numeric:tabular-nums}
+.stat span{font-size:11.5px; color:var(--ink-soft)}
+.lvbars{display:grid; gap:8px; margin-top:14px}
+.lvbar{display:grid; grid-template-columns:56px 1fr 60px; gap:10px; align-items:center; font-size:13px}
+.lvbar span:last-child{text-align:right; color:var(--ink-soft); font-family:var(--font-num); font-variant-numeric:tabular-nums}
+.nav button[aria-disabled="true"]{opacity:.38; cursor:default}
+[hidden]{display:none !important}   /* 這專案踩過三次 display:grid/flex 蓋掉 hidden 的坑，這頁直接鎖死 */
+
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>成語ㄚ喵</h1>
-  <p>施工中。這一頁還不能用，目前只有題庫資料在裡面。</p>
-  <p><a href="./">← 回單字闖關</a></p>
+<div class="shell">
+
+  <header class="top">
+    <div class="top-row">
+      <div class="brandmark">
+        <b>成語ㄚ喵</b><a class="back" href="./">← 單字闖關</a>
+      </div>
+      <div class="score" id="hScore">🍖 <b id="hFeed">0</b> 顆　<span id="hStreak"></span></div>
+    </div>
+    <div class="bar"><i id="hBar"></i></div>
+  </header>
+
+  <!-- ================= 練習 ================= -->
+  <section class="view on" id="vQuiz">
+    <div class="card hero" id="startCard">
+      <div class="eyebrow" id="heroVer"></div>
+      <h1>看解釋<span class="mark zh-serif">拼成語</span><br>抓錯字<span class="mark zh-serif">辨用法</span></h1>
+      <p id="heroSub">練成語賺飼料，飼料拿來養貓</p>
+
+      <div class="pickers">
+        <div class="eyebrow" style="text-align:left">範圍</div>
+        <div class="lvrow" id="lvChips" role="group" aria-label="成語級距"></div>
+        <div class="eyebrow" style="text-align:left">題數 × 難度</div>
+        <div class="matrix" id="sizeRow" role="group" aria-label="題數"></div>
+        <div class="matrix" id="lvRow" role="group" aria-label="難度"></div>
+      </div>
+
+      <div class="todaybox">
+        <div class="goal-head"><span id="heroGoal">今天還沒練成語</span><span id="heroReward"></span></div>
+        <div class="bar"><i id="heroBar"></i></div>
+      </div>
+
+      <button class="btn" id="btnStart" disabled>出題器施工中（第一階 E2）</button>
+      <div class="wip"><b>骨架先蓋好。</b>範圍、題數、難度可以先選，但還不能開始——出題器是下一項。
+        這頁跟單字闖關<b>共用同一本存摺、同一份日曆</b>，上面的連續天數就是從那裡讀來的。</div>
+    </div>
+  </section>
+
+  <!-- ================= 成語表 ================= -->
+  <section class="view" id="vList">
+    <div class="card" style="margin-top:12px; padding:16px 16px 6px">
+      <input class="search" id="search" type="search" placeholder="搜尋成語、注音或解釋" aria-label="搜尋成語" autocomplete="off">
+      <div id="listBody"></div>
+    </div>
+  </section>
+
+  <!-- ================= 進度 ================= -->
+  <section class="view" id="vStats">
+    <div class="card" style="margin-top:12px; padding:16px">
+      <div class="grouphead" style="margin-top:0"><b>飼料</b><span>跟單字闖關分開算</span></div>
+      <div class="stats">
+        <div class="stat"><b id="stFeed">0</b><span>飼料（顆）</span></div>
+        <div class="stat"><b id="stStreak">0</b><span>連續天數</span></div>
+        <div class="stat"><b id="stMastered">0</b><span>已熟練</span></div>
+      </div>
+      <div class="grouphead"><b>各級熟練</b><span>連對 2 次算熟練</span></div>
+      <div class="lvbars" id="lvBars"></div>
+      <details class="info"><summary>連續天數為什麼跟單字闖關一樣？</summary>
+        <div class="info-in">練習日曆是兩個 App 共用的：<b>不管練英文還是成語，今天都算「有練」</b>。
+          但獎勵分開——英文賺遊戲時間、成語賺飼料——各自的達標紀錄互不影響。</div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================= 貓（第二階） ================= -->
+  <section class="view" id="vCat">
+    <div class="card" style="margin-top:12px; padding:22px 18px; text-align:center">
+      <div class="eyebrow">第二階</div>
+      <h2 style="margin:8px 0 6px">貓還在路上</h2>
+      <p style="color:var(--ink-soft); font-size:14px; margin:0">先把成語練習做好、飼料存起來。貓來的時候飼料就派得上用場。</p>
+    </div>
+  </section>
+
+  <p class="foot" id="verline"></p>
 </div>
+
+<nav class="nav">
+  <div class="nav-in">
+    <button data-view="vQuiz" aria-current="true"><em>✏️</em>練習</button>
+    <button data-view="vList" aria-current="false"><em>📖</em>成語表</button>
+    <button data-view="vStats" aria-current="false"><em>📊</em>進度</button>
+    <button data-view="vCat" aria-current="false" aria-disabled="true" title="第二階才有"><em>🐈</em>貓</button>
+  </div>
+</nav>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <script>
+/* 版本標示：每次改版都更新，跟單字闖關同一套規矩 */
+const IDIOM_VERSION = "2026.09.02-a";
+
 /* ================= 成語題庫 =================
    格式：["成語", "注音（四組，空格分開）", "解釋", "例句", 級, {選填}]
    選填：
@@ -118,6 +404,174 @@ const IDIOM_ROWS = [
 /* 整理成物件。四字成語的每個字另外拆出來，拼成語題要用。 */
 const IDIOMS = IDIOM_ROWS.map(([c, zy, m, ex, lv, o]) => Object.assign(
   {c, zy, m, ex, lv, chars:[...c], near:[], anti:[]}, o || {}));
+
+const LEVELS = [
+  {lv:1, name:"一級", sub:"國小低年級"},
+  {lv:2, name:"二級", sub:"國小中年級"},
+  {lv:3, name:"三級", sub:"國小高年級"},
+  {lv:4, name:"四級", sub:"國中"}
+];
+const SIZES  = [{n:10, tag:"暖身"}, {n:30, tag:"標準一輪"}, {n:50, tag:"衝刺"}];
+const DIFFS  = [
+  {id:"easy", name:"🌱 輕鬆", mul:0.8, note:"辨認題多"},
+  {id:"std",  name:"⚖️ 標準", mul:1,   note:"各種題型平均"},
+  {id:"hard", name:"🔥 挑戰", mul:1.5, note:"抓錯字、辨用法多"}
+];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg; t.classList.add("on");
+  clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove("on"), 2600);
+}
+
+/* ================= 跟單字闖關共用的紀錄 =================
+   同一個 localStorage 鑰匙、同一個形狀。這裡刻意只讀不遷移：舊資料的搬家是單字闖關的事，
+   它做完才會有這把鑰匙。所以這頁若讀不到，就用空的顯示，也不會寫回去蓋掉什麼。
+   tests/idiom-shell.js 有一個測試同時開兩頁，確認兩邊讀到的是同一份。 */
+const SHARED_KEY = "cq-shared-v1";
+let SHARED = {days:{}, bank:{earned:0, used:0, bonus:0}, gifts:[], coupons:[]};
+let sharedOK = false;                  // 讀到真的紀錄才准寫回去
+function loadShared(){
+  try{
+    const r = JSON.parse(localStorage.getItem(SHARED_KEY));
+    if(r && r.days){
+      SHARED = Object.assign(SHARED, r, {
+        bank:Object.assign({earned:0, used:0, bonus:0}, r.bank || {}),
+        gifts:Array.isArray(r.gifts) ? r.gifts : [],
+        coupons:Array.isArray(r.coupons) ? r.coupons : []
+      });
+      sharedOK = true;
+    }
+  }catch(e){}
+}
+function saveShared(){
+  if(!sharedOK) return;                // 從沒開過單字闖關的裝置：不要憑空造一份出來
+  try{ localStorage.setItem(SHARED_KEY, JSON.stringify(SHARED)); }catch(e){}
+}
+function dayKey(dt){
+  const t = dt || new Date();
+  return t.getFullYear() + "-" + String(t.getMonth()+1).padStart(2,"0") + "-" + String(t.getDate()).padStart(2,"0");
+}
+function streakDays(){                 // 跟單字闖關同一條：今天還沒練不算中斷
+  let n = 0, t = new Date();
+  if(!SHARED.days[dayKey(t)]) t.setDate(t.getDate() - 1);
+  while(SHARED.days[dayKey(t)]){ n++; t.setDate(t.getDate() - 1); }
+  return n;
+}
+function feedLeft(){                   // 飼料帳是第一階 W1，先讀著；沒有就是 0
+  const f = SHARED.feed || {earned:0, used:0, bonus:0};
+  return Math.max(0, (f.earned || 0) + (f.bonus || 0) - (f.used || 0));
+}
+
+/* ================= 成語的答題紀錄（跟英文題庫同一種格式） ================= */
+const KEY = "cq-vocab-v1:idiom";
+let S = {done:0, right:0, stats:{}};
+function loadS(){
+  try{ const r = JSON.parse(localStorage.getItem(KEY)); if(r && r.stats) S = r; }catch(e){}
+}
+const stat = c => S.stats[c] || {r:0, x:0, streak:0};
+const mastered = c => (stat(c).streak || 0) >= 2 && !(stat(c).due && stat(c).due <= dayKey());
+
+/* ================= 分頁 ================= */
+document.querySelectorAll(".nav button").forEach(b=>{
+  b.onclick = () => {
+    if(b.getAttribute("aria-disabled") === "true"){ toast("貓是第二階才有的，先把飼料存起來 🐾"); return; }
+    document.querySelectorAll(".nav button").forEach(x=>x.setAttribute("aria-current", x===b));
+    document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on", v.id===b.dataset.view));
+    if(b.dataset.view === "vStats") renderStats();
+    if(b.dataset.view === "vList") renderList();
+    window.scrollTo(0,0);
+  };
+});
+
+/* ================= 練習頁：先把選擇做起來，出題是 E2 ================= */
+let pickLv = new Set([1]), pickN = 30, pickDiff = "std";
+const countLv = lv => IDIOMS.filter(i=>i.lv === lv).length;
+function renderPickers(){
+  $("lvChips").innerHTML = LEVELS.map(l=>{
+    const n = countLv(l.lv);
+    return `<button class="chip" data-lv="${l.lv}" aria-pressed="${pickLv.has(l.lv)}" ${n ? "" : "disabled"}>
+      ${l.name}<small>${n ? l.sub + " " + n : "還沒有"}</small></button>`;
+  }).join("");
+  $("lvChips").querySelectorAll("[data-lv]").forEach(b=>b.onclick = ()=>{
+    const lv = +b.dataset.lv;
+    if(pickLv.has(lv)){ if(pickLv.size > 1) pickLv.delete(lv); }
+    else pickLv.add(lv);
+    renderPickers();
+  });
+  $("sizeRow").innerHTML = SIZES.map(s=>`<button class="chip" data-n="${s.n}" aria-pressed="${pickN === s.n}">${s.n} 題<small>${s.tag}</small></button>`).join("");
+  $("sizeRow").querySelectorAll("[data-n]").forEach(b=>b.onclick = ()=>{ pickN = +b.dataset.n; renderPickers(); });
+  $("lvRow").innerHTML = DIFFS.map(d=>`<button class="chip" data-diff="${d.id}" aria-pressed="${pickDiff === d.id}">${d.name}<small>${d.note}</small></button>`).join("");
+  $("lvRow").querySelectorAll("[data-diff]").forEach(b=>b.onclick = ()=>{ pickDiff = b.dataset.diff; renderPickers(); });
+}
+
+/* ================= 成語表 ================= */
+function renderList(){
+  const q = ($("search").value || "").trim();
+  const hit = IDIOMS.filter(i => !q || i.c.includes(q) || i.zy.includes(q) || i.m.includes(q));
+  if(!hit.length){ $("listBody").innerHTML = `<div class="empty">找不到「${esc(q)}」</div>`; return; }
+  let html = "";
+  LEVELS.forEach(l=>{
+    const rows = hit.filter(i=>i.lv === l.lv);
+    if(!rows.length) return;
+    html += `<div class="lvhead"><b>${l.name}</b>${l.sub} · ${rows.length} 條</div>`;
+    html += rows.map(i=>`<details class="irow">
+      <summary><span class="c zh-serif">${esc(i.c)}</span><span class="zy">${esc(i.zy)}</span>${mastered(i.c) ? `<span class="lv">✓ 熟練</span>` : ""}</summary>
+      <div class="in">
+        <div class="r"><b>解釋</b><span>${esc(i.m)}</span></div>
+        <div class="r"><b>例句</b><span>${esc(i.ex)}</span></div>
+        ${i.x ? `<div class="r"><b>易錯</b><span><span class="x">${esc(i.x)}</span>　<span class="why">${esc(i.xw || "")}</span></span></div>` : ""}
+        ${i.near.length ? `<div class="r"><b>近義</b><span>${i.near.map(esc).join("、")}</span></div>` : ""}
+        ${i.anti.length ? `<div class="r"><b>反義</b><span>${i.anti.map(esc).join("、")}</span></div>` : ""}
+      </div></details>`).join("");
+  });
+  $("listBody").innerHTML = html;
+}
+$("search").addEventListener("input", renderList);
+
+/* ================= 進度 ================= */
+function renderStats(){
+  $("stFeed").textContent = feedLeft();
+  $("stStreak").textContent = streakDays();
+  $("stMastered").textContent = IDIOMS.filter(i=>mastered(i.c)).length;
+  $("lvBars").innerHTML = LEVELS.map(l=>{
+    const all = countLv(l.lv), m = IDIOMS.filter(i=>i.lv === l.lv && mastered(i.c)).length;
+    return `<div class="lvbar"><span>${l.name}</span><div class="bar" style="margin:0"><i style="width:${all ? m/all*100 : 0}%"></i></div><span>${m} / ${all || "—"}</span></div>`;
+  }).join("");
+}
+
+/* ================= 頂端 ================= */
+function refreshHeader(){
+  const st = streakDays();
+  $("hFeed").textContent = feedLeft();
+  $("hStreak").textContent = st ? `連續 ${st} 天` : "";
+  $("hBar").style.width = "0%";
+}
+
+/* ================= 顯示設定：跟單字闖關讀同一組鑰匙，小孩在那邊選的字級配色這邊照用 ================= */
+(function initDisplay(){
+  let s = "1", t = "auto";
+  try{ s = localStorage.getItem("cq-scale") || "1"; t = localStorage.getItem("cq-theme") || "auto"; }catch(e){}
+  document.documentElement.style.setProperty("--scale", s);
+  if(t === "auto") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", t);
+})();
+
+/* ================= 啟動 ================= */
+loadShared(); loadS();
+$("heroVer").textContent = "版本 " + IDIOM_VERSION;
+$("verline").textContent = "成語ㄚ喵 · 版本 " + IDIOM_VERSION + " · 題庫 " + IDIOMS.length + " 條";
+renderPickers(); refreshHeader(); renderList(); renderStats();
+
+/* ================= 離線（service worker） =================
+   註冊的是同一支 sw.js（同一個 scope），所以裝成 App 之後兩頁互跳都在同一個殼裡。 */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
 </script>
 </body>
 </html>

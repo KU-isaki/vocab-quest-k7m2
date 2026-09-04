@@ -973,7 +973,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.02-e";
+const VERSION = "2026.09.02-f";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -3768,9 +3768,13 @@ function loadShared(){
   try{
     const r = JSON.parse(localStorage.getItem(SHARED_KEY));
     if(r && r.days){
-      SHARED = {days:r.days, bank:Object.assign({earned:0, used:0, bonus:0}, r.bank || {}),
-                gifts:Array.isArray(r.gifts) ? r.gifts : [],
-                coupons:Array.isArray(r.coupons) ? r.coupons : []};
+      // 從 r 整份接過來再正規化，而不是只挑四個欄位重建 ——
+      // 成語ㄚ喵（idiom.html）會往同一份裡加 feed、pet 這些欄位，
+      // 只挑欄位重建的話，這裡下一次 saveShared() 就把它們靜默洗掉了。
+      SHARED = Object.assign({}, r, {
+        days:r.days, bank:Object.assign({earned:0, used:0, bonus:0}, r.bank || {}),
+        gifts:Array.isArray(r.gifts) ? r.gifts : [],
+        coupons:Array.isArray(r.coupons) ? r.coupons : []});
       fixStamp(SHARED.gifts, "old"); fixStamp(SHARED.coupons, "old");
       return;
     }
