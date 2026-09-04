@@ -213,6 +213,72 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 .lvbar{display:grid; grid-template-columns:56px 1fr 60px; gap:10px; align-items:center; font-size:13px}
 .lvbar span:last-child{text-align:right; color:var(--ink-soft); font-family:var(--font-num); font-variant-numeric:tabular-nums}
 .nav button[aria-disabled="true"]{opacity:.38; cursor:default}
+/* ===== 答題 ===== */
+.q{margin-top:16px; padding:20px 18px}
+.q-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px}
+.q-kind{font-size:12px; font-weight:700; letter-spacing:.06em; color:var(--brand); background:var(--brand-soft); padding:4px 10px; border-radius:99px}
+.q-count{font-family:var(--font-num); font-variant-numeric:tabular-nums; font-size:12.5px; color:var(--ink-faint)}
+.prompt{text-align:center; padding:6px 0 18px}
+.prompt .big{font-size:34px; letter-spacing:.14em; line-height:1.3}
+.prompt .zy{font-size:13px; color:var(--ink-faint); letter-spacing:.06em; margin-top:2px}
+.prompt .m{font-size:19px; font-weight:600; line-height:1.5; letter-spacing:.02em}
+.prompt .sen{font-size:18px; line-height:1.7; text-align:left; padding:0 4px}
+.prompt .sen .blank{display:inline-block; min-width:4.4em; border-bottom:2px solid var(--brand); margin:0 3px; letter-spacing:.14em; font-weight:700; color:var(--brand); text-align:center}
+.prompt .cue{font-size:13px; color:var(--ink-faint); margin-top:8px}
+.choices{display:grid; gap:9px}
+.choice{width:100%; text-align:left; padding:13px 14px; border-radius:12px; border:1px solid var(--line); background:var(--surface); font-size:16.5px; line-height:1.4; display:flex; align-items:center; gap:11px}
+.choice i{flex:none; width:22px; height:22px; border-radius:7px; background:var(--surface-2); font-style:normal; font-size:12px; font-weight:700; color:var(--ink-faint); display:grid; place-items:center; font-family:var(--font-num)}
+.choice .c4{letter-spacing:.14em; font-size:20px}
+.choice.sel{background:var(--brand-soft); border-color:var(--brand); color:var(--brand); font-weight:600}
+.choice.sel i{background:var(--brand); color:var(--btn-fg)}
+.choice.right{background:var(--ok-soft); border-color:var(--ok); color:var(--ok); font-weight:600}
+.choice.right i{background:var(--ok); color:var(--surface)}
+.choice.wrong{background:var(--no-soft); border-color:var(--no); color:var(--no)}
+.choice.wrong i{background:var(--no); color:var(--surface)}
+.choice:disabled{opacity:1}
+.slots{display:flex; gap:8px; justify-content:center; align-items:flex-end; min-height:60px; margin-bottom:16px}
+.slot{width:52px; height:56px; border-bottom:3px solid var(--ink-faint); border-radius:4px; display:grid; place-items:center; font-size:30px; background:transparent}
+.slot.filled{border-bottom-color:var(--brand); background:var(--brand-soft)}
+.slots.right .slot{border-bottom-color:var(--ok); background:var(--ok-soft); color:var(--ok)}
+.slots.wrong .slot{border-bottom-color:var(--no); background:var(--no-soft); color:var(--no)}
+.tiles{display:grid; grid-template-columns:repeat(4,1fr); gap:9px; max-width:280px; margin:0 auto}
+.tile{height:58px; border-radius:12px; border:1px solid var(--line); background:var(--surface-2); font-size:28px}
+.tile:active{background:var(--brand-soft)}
+.tile.used{opacity:.22; pointer-events:none}
+.spellbar{display:flex; gap:8px; margin-top:30px}   /* 離字塊遠一點，避免誤按 */
+.spellbar .btn{padding:12px}
+.ox{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px}
+.ox .btn{font-size:30px; padding:18px}
+.ox .btn.sel{background:var(--brand-soft); color:var(--brand); border-color:var(--brand)}
+.ox .btn.right{background:var(--ok-soft); color:var(--ok); border-color:var(--ok)}
+.ox .btn.wrong{background:var(--no-soft); color:var(--no); border-color:var(--no)}
+.xrow{display:grid; grid-template-columns:repeat(4,1fr); gap:9px; max-width:300px; margin:0 auto}
+.xrow .tile{height:64px; font-size:32px}
+.xrow .tile.pick{border-color:var(--brand); background:var(--brand-soft); color:var(--brand)}
+.xrow .tile.hit{border-color:var(--no); background:var(--no-soft); color:var(--no)}
+.fb{margin-top:16px; padding:14px 15px; border-radius:12px; display:none}
+.fb.on{display:block}
+.fb.ok{background:var(--ok-soft)} .fb.no{background:var(--no-soft)}
+.fb-title{font-weight:700; font-size:15px; display:flex; align-items:center; gap:7px}
+.fb.ok .fb-title{color:var(--ok)} .fb.no .fb-title{color:var(--no)}
+.fb-answer{margin-top:6px; font-size:26px; letter-spacing:.14em}
+.fb-zh{font-size:14.5px; color:var(--ink-soft); margin-top:2px; line-height:1.6}
+.fb-use{margin:11px 0 0; padding:11px 12px; border-radius:10px; background:color-mix(in srgb, var(--surface) 75%, transparent); font-size:13.5px; line-height:1.65; color:var(--ink)}
+.fb-use::before{content:attr(data-label) "　"; font-weight:700; color:var(--ink-faint); font-size:11.5px; letter-spacing:.1em}
+.fb .btn{margin-top:13px}
+#btnQuit{width:auto; margin:26px auto 0; padding:10px 20px}
+.summary{margin-top:16px; padding:26px 20px; text-align:center}
+.summary .big{font-family:var(--font-num); font-size:52px; font-weight:700; line-height:1; letter-spacing:-.02em}
+.summary .big span{font-size:22px; color:var(--ink-faint)}
+.summary h2{margin:14px 0 6px; font-size:20px}
+.summary p{margin:0 0 18px; color:var(--ink-soft); font-size:14.5px}
+.misslist{list-style:none; margin:0 0 14px; padding:0; text-align:left}
+.misslist li{display:flex; align-items:baseline; gap:10px; padding:8px 2px; border-bottom:1px solid var(--line)}
+.misslist .w{font-size:20px; letter-spacing:.12em}
+.misslist .z{font-size:13.5px; color:var(--ink-soft); flex:1}
+.weakbox{margin:0 0 16px; padding:12px; border-radius:11px; background:var(--surface-2); font-size:13.5px; text-align:left}
+.weakbox .ws{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+.weakbox .ws span{padding:5px 9px; border-radius:99px; background:var(--surface); border:1px solid var(--line); font-size:13px; letter-spacing:.08em}
 [hidden]{display:none !important}   /* 這專案踩過三次 display:grid/flex 蓋掉 hidden 的坑，這頁直接鎖死 */
 
 </style>
@@ -250,9 +316,32 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
         <div class="bar"><i id="heroBar"></i></div>
       </div>
 
-      <button class="btn" id="btnStart" disabled>出題器施工中（第一階 E2）</button>
-      <div class="wip"><b>骨架先蓋好。</b>範圍、題數、難度可以先選，但還不能開始——出題器是下一項。
-        這頁跟單字闖關<b>共用同一本存摺、同一份日曆</b>，上面的連續天數就是從那裡讀來的。</div>
+      <button class="btn" id="btnStart">開始練習</button>
+      <button class="btn quiet" id="btnWrongOnly">只考錯過的成語（<span id="wrongCount">0</span>）</button>
+    </div>
+
+    <div class="card q" id="qCard" hidden>
+      <div class="q-head"><span class="q-kind" id="qKind"></span><span class="q-count" id="qCount"></span></div>
+      <div class="prompt" id="qPrompt" aria-live="polite"></div>
+      <div id="qBody"></div>
+      <div class="fb" id="qFb">
+        <div class="fb-title" id="fbTitle"></div>
+        <div class="fb-answer zh-serif" id="fbAnswer"></div>
+        <div class="fb-zh" id="fbZh"></div>
+        <div class="fb-use" id="fbUse" data-label="提醒" hidden></div>
+        <button class="btn" id="btnNext">下一題</button>
+      </div>
+      <button class="btn quiet" id="btnQuit">結束這輪</button>
+    </div>
+
+    <div class="card summary" id="sumCard" hidden>
+      <div class="big"><span id="sumScore">0</span><span id="sumTotal">/0</span></div>
+      <h2 id="sumTitle"></h2>
+      <p id="sumText"></p>
+      <ul class="misslist" id="sumMiss"></ul>
+      <div class="weakbox" id="sumWeak" hidden></div>
+      <button class="btn" id="btnAgain">再來一輪</button>
+      <button class="btn quiet" id="btnBackHome">回主畫面</button>
     </div>
   </section>
 
@@ -306,7 +395,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 
 <script>
 /* 版本標示：每次改版都更新，跟單字闖關同一套規矩 */
-const IDIOM_VERSION = "2026.09.02-a";
+const IDIOM_VERSION = "2026.09.05-a";
 
 /* ================= 成語題庫 =================
    格式：["成語", "注音（四組，空格分開）", "解釋", "例句", 級, {選填}]
@@ -486,26 +575,333 @@ document.querySelectorAll(".nav button").forEach(b=>{
   };
 });
 
-/* ================= 練習頁：先把選擇做起來，出題是 E2 ================= */
-let pickLv = new Set([1]), pickN = 30, pickDiff = "std";
+/* ================= 獎勵：飼料 =================
+   整套從單字闖關的 checkGoal 照搬，只換單位。規則的理由都寫在 README「設計取捨」：
+   答對 +1 答錯 -1 → 淨題數換飼料；再乘難度與答對率倍率；一天有上限；答錯即時倒扣。
+   難度倍率是「當天實際作答的平均」（mw 累加），不是切換當下的值。 */
+const GAPS = [1, 3, 7, 14, 30];
+function addDays(n){ const t = new Date(); t.setDate(t.getDate() + n); return dayKey(t); }
+const FEED_TIERS = [{n:10, m:2}, {n:20, m:5}, {n:30, m:10}, {n:50, m:20}, {n:80, m:30}];
+const FEED_CAP = FEED_TIERS[FEED_TIERS.length-1].m;   // 一天最多幾顆
+const FULLGOAL = FEED_TIERS[FEED_TIERS.length-1].n;
+const FEED_STREAK_EVERY = 7;                            // 連續達標幾天送一張轉蛋券
+const ACC = [
+  {p:.95, m:1.2, name:"幾乎全對"}, {p:.85, m:1.1, name:"很穩"}, {p:.70, m:1, name:"及格"},
+  {p:.50, m:.85, name:"要小心"}, {p:0, m:.7, name:"太多錯"}
+];
+const netOf = d => Math.max(0, ((d||{}).r || 0) - (((d||{}).n || 0) - ((d||{}).r || 0)));
+const accOf = d => (d && d.n) ? (d.r || 0) / d.n : 1;
+const accStep = a => ACC.find(t=>a >= t.p) || ACC[ACC.length-1];
+const accMul = d => accStep(accOf(d)).m;
+function dayMul(d){ const n = (d||{}).n || 0; if(!n) return DIFF.mul; return ((d.mw === undefined ? n : d.mw) / n); }
+function projMul(d, k){ const n = (d||{}).n || 0, mw = (d && d.mw !== undefined) ? d.mw : n; return (n + k) ? (mw + k * DIFF.mul) / (n + k) : DIFF.mul; }
+function projAcc(d, k){ const n = (d||{}).n || 0, r = (d||{}).r || 0; return (n + k) ? (r + k) / (n + k) : 1; }
+function feedTier(net){ let m = 0; for(const t of FEED_TIERS) if(net >= t.n) m = t.m; return m; }
+function feedFor(net, mul){ return Math.min(FEED_CAP, Math.round(feedTier(net) * mul)); }
+function dayFeed(d){ return feedFor(netOf(d), dayMul(d) * accMul(d)); }
+function todayI(){ const d = SHARED.days[dayKey()]; return (d && d.i) || {n:0, r:0}; }
+function nextStep(d, net){
+  const t = FEED_TIERS.find(x=>net < x.n); if(!t) return null;
+  const k = t.n - net; return {k, m:feedFor(t.n, projMul(d, k) * accStep(projAcc(d, k)).m)};
+}
+function feedStreak(){                 // 成語連續達標幾天（今天還沒達標不算中斷）；跟英文的 goalStreak 分開算
+  const paid = k => { const d = SHARED.days[k]; return d && d.i && +d.i.paid > 0; };
+  let n = 0, t = new Date();
+  if(!paid(dayKey(t))) t.setDate(t.getDate() - 1);
+  while(paid(dayKey(t))){ n++; t.setDate(t.getDate() - 1); }
+  return n;
+}
+function feedLedger(){ return SHARED.feed || (SHARED.feed = {earned:0, used:0, bonus:0, tickets:0}); }
+function checkFeed(di){
+  const net = netOf(di), target = dayFeed(di), got = +di.paid || 0;
+  if(target === got) return;
+  const first = got === 0 && target > 0, down = target < got;
+  di.paid = target;
+  const F = feedLedger();
+  F.earned += target - got;
+  const st = first ? feedStreak() : 0;
+  const ticket = first && st > 0 && st % FEED_STREAK_EVERY === 0;
+  if(ticket) F.tickets = (F.tickets || 0) + 1;
+  saveShared();
+  const nx = nextStep(di, net);
+  setTimeout(()=>{
+    if(down){ toast(`⚠️ 答錯扣抵，今天剩 ${target} 顆` + (nx ? `　再答對 ${nx.k} 題可以拿回 ${nx.m} 顆` : "")); return; }
+    toast(ticket ? `🎉 連續 ${st} 天達標！多一張轉蛋券，飼料共 ${feedLeft()} 顆`
+                 : `🍖 淨 ${net} 題達標！今天共 ${target} 顆` + (nx ? `，再答對 ${nx.k} 題可以升到 ${nx.m} 顆` : `，飼料共 ${feedLeft()} 顆`));
+  }, 900);
+}
+
+/* ================= 出題 ================= */
+const KIND_LABEL = {m2c:"看解釋選成語", c2m:"看成語選解釋", syn:"近義反義", tile:"拼成語", cloze:"例句填空", wrong:"抓錯字", usage:"用法對不對"};
+/* 難度只調配方，不調題數：越難，抓錯字與辨用法越多、干擾項越像。
+   recog = 辨認（4-5 / 4-6 / 4-7）、build = 拼（4-1 / 4-4）、catch = 抓（4-2 / 4-3） */
+const MIX = {
+  easy: {recog:.6, build:.3, catch:.1},
+  std:  {recog:.4, build:.4, catch:.2},
+  hard: {recog:.2, build:.4, catch:.4}
+};
+const byC = {}; IDIOMS.forEach(i=>{ byC[i.c] = i; });
+const shuffle = a => { const b = a.slice(); for(let i=b.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [b[i],b[j]]=[b[j],b[i]]; } return b; };
+const isDue = c => { const s = stat(c); return !s.due || s.due <= dayKey(); };
+
+let pickLv = new Set([1]), pickN = 30, pickDiff = "std", DIFF = DIFFS[1];
+try{
+  const lv = JSON.parse(localStorage.getItem("cq-idiom-lv") || "null");
+  if(Array.isArray(lv) && lv.length) pickLv = new Set(lv.filter(x=>[1,2,3,4].includes(x)));
+  const nn = +localStorage.getItem("cq-idiom-n"); if(SIZES.some(z=>z.n === nn)) pickN = nn;
+  const dd = localStorage.getItem("cq-idiom-diff"); if(DIFFS.some(z=>z.id === dd)){ pickDiff = dd; DIFF = DIFFS.find(z=>z.id === dd); }
+}catch(e){}
+function savePick(){ try{ localStorage.setItem("cq-idiom-lv", JSON.stringify([...pickLv])); localStorage.setItem("cq-idiom-n", pickN); localStorage.setItem("cq-idiom-diff", pickDiff); }catch(e){} }
+
 const countLv = lv => IDIOMS.filter(i=>i.lv === lv).length;
+function pool(){ const p = IDIOMS.filter(i=>pickLv.has(i.lv)); return p.length ? p : IDIOMS; }
+function weight(i){                    // 錯得多、沒考過的優先；熟練的到複習日才回鍋
+  const s = stat(i.c);
+  if(s.streak >= 2) return isDue(i.c) ? 3 : 0.15;
+  return 1 + s.x*3 + (s.r + s.x === 0 ? 1 : 0);
+}
+function pickKind(i){
+  const m = MIX[pickDiff], r = Math.random();
+  const group = r < m.recog ? "recog" : r < m.recog + m.build ? "build" : "catch";
+  const cands = {
+    recog: ["m2c", "c2m"].concat(i.near.length || i.anti.length ? ["syn"] : []),
+    build: ["tile", "cloze"],
+    catch: [].concat(i.x ? ["wrong"] : [], i.bad ? ["usage"] : [])
+  };
+  let list = cands[group];
+  if(!list.length) list = cands.build;                 // 沒原料的題型退回拼字
+  const last = (S.stats[i.c] || {}).k;                 // 同一個成語換輪要換題型
+  const fresh = list.filter(k=>k !== last);
+  const pick = fresh.length ? fresh : list;
+  return pick[Math.floor(Math.random() * pick.length)];
+}
+function drawRound(source, size){
+  const N = Math.min(size, source.length), bag = [];
+  source.forEach(i=>{ const n = Math.max(1, Math.round(weight(i)*2)); for(let k=0;k<n;k++) bag.push(i); });
+  const picked = [];
+  for(const i of shuffle(bag)){ if(picked.length >= N) break; if(!picked.includes(i)) picked.push(i); }
+  while(picked.length < N){ const i = source[Math.floor(Math.random()*source.length)]; if(!picked.includes(i)) picked.push(i); }
+  return shuffle(picked).map(i=>({i, kind:pickKind(i)}));
+}
+/* 干擾項跟著難度走：輕鬆挑意思差很遠的（避開近義）、標準混一個近義、挑戰近義加上「有同一個字」的 */
+function distractors(i, n){
+  const near = i.near, avoid = new Set([i.c]);
+  let pref = [];
+  if(pickDiff === "std") pref = shuffle(near).slice(0, 1);
+  if(pickDiff === "hard"){
+    pref = shuffle(near).slice(0, 2);
+    const sim = IDIOMS.filter(x=>x.c !== i.c && !near.includes(x.c) && !i.anti.includes(x.c) && [...x.c].some(ch=>i.c.includes(ch)));
+    pref = pref.concat(shuffle(sim).slice(0, 1).map(x=>x.c));
+  }
+  const out = pref.map(c=>byC[c]); pref.forEach(c=>avoid.add(c));
+  if(pickDiff === "easy") near.forEach(c=>avoid.add(c));
+  for(const x of shuffle(IDIOMS)){ if(out.length >= n) break; if(avoid.has(x.c)) continue; avoid.add(x.c); out.push(x); }
+  return out.slice(0, n);
+}
+function tileSet(i){                   // 4 個正確的字 + 4 個干擾字；有易錯字一定混進去
+  const need = [...i.c], used = new Set(need), dis = [];
+  if(i.x) [...i.x].forEach((ch, k)=>{ if(ch !== i.c[k] && !used.has(ch)){ used.add(ch); dis.push(ch); } });
+  const rest = shuffle([...new Set(IDIOMS.flatMap(x=>[...x.c]))].filter(ch=>!used.has(ch)));
+  while(dis.length < 4 && rest.length){ const ch = rest.pop(); used.add(ch); dis.push(ch); }
+  return shuffle(need.concat(dis));
+}
+
+/* ================= 一輪 ================= */
+let queue = [], idx = 0, roundRight = 0, missed = [], answered = false, wrongMode = false;
+let sel = null, picked = [], tiles = [], xStep = 0, xPos = -1;
+function save(){
+  try{
+    const out = {done:S.done, right:S.right, stats:{}};
+    for(const k in S.stats){ const v = S.stats[k]; if(v.r || v.x) out.stats[k] = v; }
+    localStorage.setItem(KEY, JSON.stringify(out));
+  }catch(e){}
+  saveShared();
+}
 function renderPickers(){
   $("lvChips").innerHTML = LEVELS.map(l=>{
     const n = countLv(l.lv);
-    return `<button class="chip" data-lv="${l.lv}" aria-pressed="${pickLv.has(l.lv)}" ${n ? "" : "disabled"}>
-      ${l.name}<small>${n ? l.sub + " " + n : "還沒有"}</small></button>`;
+    return `<button class="chip" data-lv="${l.lv}" aria-pressed="${pickLv.has(l.lv)}" ${n ? "" : "disabled"}>${l.name}<small>${n ? l.sub + " " + n : "還沒有"}</small></button>`;
   }).join("");
   $("lvChips").querySelectorAll("[data-lv]").forEach(b=>b.onclick = ()=>{
     const lv = +b.dataset.lv;
-    if(pickLv.has(lv)){ if(pickLv.size > 1) pickLv.delete(lv); }
-    else pickLv.add(lv);
-    renderPickers();
+    if(pickLv.has(lv)){ if(pickLv.size > 1) pickLv.delete(lv); } else pickLv.add(lv);
+    savePick(); renderPickers();
   });
-  $("sizeRow").innerHTML = SIZES.map(s=>`<button class="chip" data-n="${s.n}" aria-pressed="${pickN === s.n}">${s.n} 題<small>${s.tag}</small></button>`).join("");
-  $("sizeRow").querySelectorAll("[data-n]").forEach(b=>b.onclick = ()=>{ pickN = +b.dataset.n; renderPickers(); });
-  $("lvRow").innerHTML = DIFFS.map(d=>`<button class="chip" data-diff="${d.id}" aria-pressed="${pickDiff === d.id}">${d.name}<small>${d.note}</small></button>`).join("");
-  $("lvRow").querySelectorAll("[data-diff]").forEach(b=>b.onclick = ()=>{ pickDiff = b.dataset.diff; renderPickers(); });
+  $("sizeRow").innerHTML = SIZES.map(z=>`<button class="chip" data-n="${z.n}" aria-pressed="${pickN === z.n}">${z.n} 題<small>${z.tag}</small></button>`).join("");
+  $("sizeRow").querySelectorAll("[data-n]").forEach(b=>b.onclick = ()=>{ pickN = +b.dataset.n; savePick(); renderPickers(); });
+  $("lvRow").innerHTML = DIFFS.map(d=>`<button class="chip" data-diff="${d.id}" aria-pressed="${pickDiff === d.id}">${d.name}<small>×${d.mul} 飼料</small></button>`).join("");
+  $("lvRow").querySelectorAll("[data-diff]").forEach(b=>b.onclick = ()=>{
+    pickDiff = b.dataset.diff; DIFF = DIFFS.find(z=>z.id === pickDiff); savePick(); renderPickers(); refreshHeader();
+    toast(`難度：${DIFF.name}　${DIFF.note}　飼料 ×${DIFF.mul}`);
+  });
+  $("btnStart").textContent = `開始練習　${pickN} 題 · ${DIFF.name}`;
+  $("wrongCount").textContent = IDIOMS.filter(i=>stat(i.c).x > 0 && stat(i.c).streak < 2).length;
 }
+function startRound(useWrong){
+  wrongMode = !!useWrong;
+  const src = wrongMode ? IDIOMS.filter(i=>stat(i.c).x > 0 && stat(i.c).streak < 2) : pool();
+  if(!src.length){ toast("目前沒有錯過的成語，先做一般練習吧！"); return; }
+  queue = drawRound(src, wrongMode ? Math.min(pickN, src.length) : pickN); idx = 0; roundRight = 0; missed = [];
+  $("startCard").hidden = true; $("sumCard").hidden = true; $("qCard").hidden = false;
+  showQ(); window.scrollTo(0,0);
+}
+function showQ(){
+  answered = false; sel = null; picked = []; xStep = 0; xPos = -1;
+  const q = queue[idx], i = q.i;
+  $("qKind").textContent = KIND_LABEL[q.kind];
+  $("qCount").textContent = `第 ${idx+1} / ${queue.length} 題`;
+  $("qFb").className = "fb";
+  const P = $("qPrompt"), B = $("qBody");
+  const opt = (list, cls, html) => `<div class="choices">` + list.map((o, k)=>`<button class="choice ${cls}" data-c="${esc(o.c)}"><i>${"ABCD"[k]}</i>${html(o)}</button>`).join("") + `</div>
+    <div class="spellbar"><button class="btn" id="btnCheck" disabled>檢查</button></div>`;
+  const bindChoice = () => {
+    B.querySelectorAll(".choice").forEach(b=>b.onclick = ()=>{
+      if(answered) return;
+      B.querySelectorAll(".choice").forEach(x=>x.classList.remove("sel"));
+      b.classList.add("sel"); sel = b.dataset.c; $("btnCheck").disabled = false;
+    });
+    $("btnCheck").onclick = ()=>{ if(answered || sel === null) return; markChoices(i.c === sel ? sel : null, i.c); grade(sel === i.c); };
+  };
+  if(q.kind === "m2c"){
+    P.innerHTML = `<div class="m">${esc(i.m)}</div><div class="cue">哪一個成語是這個意思？</div>`;
+    B.innerHTML = opt(shuffle([i, ...distractors(i, 3)]), "", o=>`<span class="c4 zh-serif">${esc(o.c)}</span>`); bindChoice();
+  }else if(q.kind === "c2m"){
+    P.innerHTML = `<div class="big zh-serif">${esc(i.c)}</div><div class="zy">${esc(i.zy)}</div><div class="cue">這個成語是什麼意思？</div>`;
+    B.innerHTML = opt(shuffle([i, ...distractors(i, 3)]), "", o=>esc(o.m)); bindChoice();
+  }else if(q.kind === "syn"){
+    const askNear = i.near.length && (!i.anti.length || Math.random() < .5);
+    const ans = byC[shuffle(askNear ? i.near : i.anti)[0]];
+    q.ans = ans.c; q.askNear = !!askNear;
+    const avoid = new Set([i.c, ...i.near, ...i.anti]);
+    let dis = [];
+    if(pickDiff === "hard"){ const trap = askNear ? i.anti : i.near; if(trap.length) dis.push(byC[shuffle(trap)[0]]); }
+    for(const x of shuffle(IDIOMS)){ if(dis.length >= 3) break; if(avoid.has(x.c) || dis.includes(x)) continue; dis.push(x); }
+    P.innerHTML = `<div class="big zh-serif">${esc(i.c)}</div><div class="cue">哪一個是它的<b>${askNear ? "近義" : "反義"}</b>成語？</div>`;
+    B.innerHTML = opt(shuffle([ans, ...dis]), "", o=>`<span class="c4 zh-serif">${esc(o.c)}</span>`);
+    B.querySelectorAll(".choice").forEach(b=>b.onclick = ()=>{
+      if(answered) return;
+      B.querySelectorAll(".choice").forEach(x=>x.classList.remove("sel"));
+      b.classList.add("sel"); sel = b.dataset.c; $("btnCheck").disabled = false;
+    });
+    $("btnCheck").onclick = ()=>{ if(answered || sel === null) return; markChoices(ans.c === sel ? sel : null, ans.c); grade(sel === ans.c); };
+  }else if(q.kind === "tile" || q.kind === "cloze"){
+    P.innerHTML = q.kind === "tile"
+      ? `<div class="m">${esc(i.m)}</div><div class="cue">點四個字，拼出這個成語</div>`
+      : `<div class="sen">${esc(i.ex).replace(esc(i.c), `<span class="blank" id="blank">　　　　</span>`)}</div><div class="cue">把空格的成語拼出來</div>`;
+    tiles = tileSet(i);
+    B.innerHTML = `<div class="slots" id="slots">${[0,1,2,3].map(()=>`<div class="slot"></div>`).join("")}</div>
+      <div class="tiles">${tiles.map((ch, k)=>`<button class="tile zh-serif" data-k="${k}" data-ch="${esc(ch)}">${esc(ch)}</button>`).join("")}</div>
+      <div class="spellbar"><button class="btn ghost" id="btnBack">← 退一格</button><button class="btn" id="btnCheck" disabled>檢查</button></div>`;
+    const paint = () => {
+      B.querySelectorAll(".slot").forEach((sl, k)=>{ sl.textContent = picked[k] ? picked[k].ch : ""; sl.classList.toggle("filled", !!picked[k]); });
+      B.querySelectorAll(".tile").forEach(t=>t.classList.toggle("used", picked.some(p=>p.k === +t.dataset.k)));
+      $("btnCheck").disabled = picked.length < 4;                 // 沒拼滿不能按
+      if(q.kind === "cloze") $("blank").textContent = picked.map(p=>p.ch).join("") || "　　　　";
+    };
+    B.querySelectorAll(".tile").forEach(t=>t.onclick = ()=>{ if(answered || picked.length >= 4) return; picked.push({k:+t.dataset.k, ch:t.dataset.ch}); paint(); });
+    $("btnBack").onclick = ()=>{ if(answered) return; picked.pop(); paint(); };
+    $("btnCheck").onclick = ()=>{
+      if(answered || picked.length < 4) return;
+      const got = picked.map(p=>p.ch).join(""), ok = got === i.c;
+      $("slots").classList.add(ok ? "right" : "wrong");
+      grade(ok, got);
+    };
+    paint();
+  }else if(q.kind === "wrong"){
+    P.innerHTML = `<div class="cue">這個成語有一個字寫錯了，先點出<b>錯的那個字</b></div>`;
+    B.innerHTML = `<div class="xrow" id="xrow">${[...i.x].map((ch, k)=>`<button class="tile zh-serif" data-pos="${k}">${esc(ch)}</button>`).join("")}</div><div id="xfix"></div>`;
+    B.querySelectorAll("[data-pos]").forEach(b=>b.onclick = ()=>{
+      if(answered || xStep !== 0) return;
+      const k = +b.dataset.pos; xPos = k;
+      B.querySelectorAll("[data-pos]").forEach(x=>x.classList.remove("pick")); b.classList.add("pick");
+      if(i.x[k] === i.c[k]){ b.classList.add("wrong"); grade(false); return; }   // 點到對的字：這題就錯了
+      xStep = 1; b.classList.add("hit");
+      const wrongCh = i.x[k], rightCh = i.c[k];
+      const cand = shuffle([...new Set(IDIOMS.flatMap(x=>[...x.c]))].filter(ch=>ch !== wrongCh && ch !== rightCh)).slice(0, 1);
+      const opts = shuffle([rightCh, wrongCh, ...cand]);
+      $("xfix").innerHTML = `<div class="cue" style="margin:16px 0 8px">正確的字是哪一個？</div><div class="xrow">${opts.map(ch=>`<button class="tile zh-serif" data-fix="${esc(ch)}">${esc(ch)}</button>`).join("")}</div>`;
+      $("xfix").querySelectorAll("[data-fix]").forEach(f=>f.onclick = ()=>{
+        if(answered) return;
+        const ok = f.dataset.fix === rightCh;
+        f.classList.add(ok ? "pick" : "hit");
+        grade(ok);
+      });
+    });
+  }else if(q.kind === "usage"){
+    const useBad = Math.random() < .5;
+    q.sent = useBad ? i.bad : i.ex; q.right = !useBad;
+    P.innerHTML = `<div class="sen">${esc(q.sent)}</div><div class="cue">這句話裡的「${esc(i.c)}」用得對嗎？</div>`;
+    B.innerHTML = `<div class="ox"><button class="btn ghost" id="btnO" aria-label="用得對">○</button><button class="btn ghost" id="btnX" aria-label="用錯了">✕</button></div>`;
+    const pickOX = v => { if(answered) return; const ok = v === q.right; $(v ? "btnO" : "btnX").classList.add(ok ? "right" : "wrong"); if(!ok) $(q.right ? "btnO" : "btnX").classList.add("right"); grade(ok); };
+    $("btnO").onclick = ()=>pickOX(true); $("btnX").onclick = ()=>pickOX(false);
+  }
+  $("btnNext").textContent = idx + 1 >= queue.length ? "看本輪成績" : "下一題";
+}
+function markChoices(selC, ansC){
+  $("qBody").querySelectorAll(".choice").forEach(b=>{
+    b.disabled = true;
+    if(b.dataset.c === ansC) b.classList.add("right");
+    else if(b.classList.contains("sel")) b.classList.add("wrong");
+  });
+}
+function grade(ok, got){
+  answered = true;
+  const q = queue[idx], i = q.i, s = S.stats[i.c] || (S.stats[i.c] = {r:0, x:0, streak:0});
+  if(ok){ s.r++; s.streak++; roundRight++; S.right++; s.due = addDays(GAPS[Math.min(s.streak - 1, GAPS.length - 1)]); }
+  else{ s.x++; s.streak = 0; s.due = dayKey(); missed.push(i); }
+  s.k = q.kind; S.done++;
+  const dk = dayKey(), day = SHARED.days[dk] || (SHARED.days[dk] = {n:0, r:0});
+  const di = day.i || (day.i = {n:0, r:0});
+  const mw = (di.mw === undefined ? di.n : di.mw) + DIFF.mul;   // 難度倍率累加，之後除以題數才是當天平均
+  di.n++; if(ok) di.r++; di.mw = Math.round(mw * 100) / 100;
+  checkFeed(di);
+  save(); refreshHeader();
+
+  const fb = $("qFb");
+  fb.className = "fb on " + (ok ? "ok" : "no");
+  $("fbTitle").textContent = ok ? "✓ 答對了！" : "✗ 再記一次";
+  $("fbAnswer").textContent = i.c;
+  $("fbZh").textContent = i.zy + "　" + i.m;
+  let note = "", label = "提醒";
+  if(!ok && q.kind === "usage" && !q.right){ note = i.badw; label = "為什麼錯"; }
+  else if(!ok && (q.kind === "wrong" || (got && i.x && got === i.x))){ note = i.xw; label = "易錯字"; }
+  else if(!ok && i.x && q.kind !== "usage"){ note = `常見錯字：${i.x}。${i.xw}`; label = "易錯字"; }
+  else if(!ok) note = `例句：${i.ex}`;
+  $("fbUse").hidden = !note; $("fbUse").textContent = note; $("fbUse").dataset.label = label;
+  fb.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+$("btnNext").onclick = ()=>{ idx++; if(idx >= queue.length) endRound(); else { showQ(); window.scrollTo({top:0, behavior:"smooth"}); } };
+function roundDone(){ return Math.min(idx + (answered ? 1 : 0), queue.length); }
+function endRound(){
+  $("qCard").hidden = true; $("sumCard").hidden = false;
+  const total = roundDone(), pct = total ? roundRight / total : 0;
+  $("sumScore").textContent = roundRight; $("sumTotal").textContent = "/" + total;
+  $("sumTitle").textContent = !total ? "這輪還沒作答" : pct === 1 ? "全對！太厲害了 🎉" : pct >= .8 ? "很不錯，快滿分了" : pct >= .5 ? "有進步空間，再來一輪" : "先看看下面這幾個成語";
+  const di = todayI(), net = netOf(di), nx = nextStep(di, net);
+  $("sumText").textContent = (total && total < queue.length ? `這輪提早結束，只算答過的 ${total} 題　·　` : "")
+    + `今天淨 ${net} 題 · ${+di.paid || 0} 顆飼料` + (nx ? `　再答對 ${nx.k} 題 → ${nx.m} 顆` : "　今日上限已滿 ✓")
+    + (sharedOK ? "" : "　·　⚠️ 這台還沒開過單字闖關，飼料要開過一次才存得住");
+  $("sumMiss").innerHTML = missed.length
+    ? missed.map(i=>`<li><span class="w zh-serif">${esc(i.c)}</span><span class="z">${esc(i.m)}</span></li>`).join("")
+    : `<li><span class="z">這一輪沒有錯 👏</span></li>`;
+  const weak = IDIOMS.filter(i=>stat(i.c).x > 0 && stat(i.c).streak < 2).sort((a,b)=>stat(b.c).x - stat(a.c).x);
+  $("sumWeak").hidden = !weak.length;
+  $("sumWeak").innerHTML = weak.length ? `<b>還要加強 ${weak.length} 條　連對 2 次就畢業</b><div class="ws">${weak.slice(0, 12).map(i=>`<span class="zh-serif">${esc(i.c)}</span>`).join("")}${weak.length > 12 ? `<em>… 還有 ${weak.length - 12} 條</em>` : ""}</div>` : "";
+  renderPickers();
+  window.scrollTo(0,0);
+}
+$("btnStart").onclick = ()=>startRound(false);
+$("btnWrongOnly").onclick = ()=>startRound(true);
+$("btnAgain").onclick = ()=>startRound(wrongMode);
+$("btnBackHome").onclick = ()=>{ $("sumCard").hidden = true; $("startCard").hidden = false; renderPickers(); refreshHeader(); window.scrollTo(0,0); };
+$("btnQuit").onclick = ()=>{
+  const n = roundDone();
+  if(n < queue.length){
+    const msg = n ? `要提早結束這一輪嗎？\n已答的 ${n} 題會照算。` : "還沒作答，要結束這一輪嗎？";
+    if(!confirm(msg)) return;
+  }
+  endRound();
+};
 
 /* ================= 成語表 ================= */
 function renderList(){
@@ -544,10 +940,14 @@ function renderStats(){
 
 /* ================= 頂端 ================= */
 function refreshHeader(){
-  const st = streakDays();
+  const st = streakDays(), di = todayI(), net = netOf(di), nx = nextStep(di, net);
   $("hFeed").textContent = feedLeft();
-  $("hStreak").textContent = st ? `連續 ${st} 天` : "";
-  $("hBar").style.width = "0%";
+  $("hStreak").textContent = nx ? `再答對 ${nx.k} 題 → ${nx.m} 顆` : "今日上限已滿 ✓";
+  $("hBar").style.width = Math.min(100, net / FULLGOAL * 100) + "%";
+  $("heroGoal").textContent = di.n ? `今天對 ${di.r || 0}、錯 ${di.n - (di.r || 0)}、淨 ${net} 題` : "今天還沒練成語";
+  $("heroReward").textContent = (+di.paid || 0) ? `${di.paid} 顆` : "";
+  $("heroBar").style.width = Math.min(100, net / FULLGOAL * 100) + "%";
+  document.querySelectorAll(".stat b#stStreak").forEach(b=>b.textContent = st);
 }
 
 /* ================= 顯示設定：跟單字闖關讀同一組鑰匙，小孩在那邊選的字級配色這邊照用 ================= */

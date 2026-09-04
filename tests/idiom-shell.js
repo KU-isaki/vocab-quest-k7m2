@@ -103,7 +103,8 @@ ok(b.ev("SHARED.bank.earned") === a.ev("SHARED.bank.earned"), "存摺數字要�
 ok(b.ev("streakDays()") === a.ev("streakDays()") && b.ev("streakDays()") === 2, `連續天數要一樣（都是 2）, 成語頁 ${b.ev("streakDays()")} / 單字 ${a.ev("streakDays()")}`);
 ok(b.ev("Object.keys(SHARED.days).length") === 2, "日曆要讀到同樣的天");
 ok(b.ev("SHARED.gifts.length") === 1 && b.ev("SHARED.gifts[0].why") === "幫忙洗碗", "贈送紀錄也要在（雖然這頁不顯示）");
-ok(/連續 2 天/.test(b.$("hStreak").textContent), `頂端要顯示連續天數, 實得「${b.$("hStreak").textContent}」`);
+ok(b.$("stStreak").textContent === "2", `進度頁要顯示連續天數 2, 實得「${b.$("stStreak").textContent}」`);
+ok(/再答對 \d+ 題 → \d+ 顆/.test(b.$("hStreak").textContent), `頂端要講還差幾題換幾顆（跟單字闖關同一個語氣）, 實得「${b.$("hStreak").textContent}」`);
 // 反方向：成語頁存回去的，單字闖關要讀得回來且一個欄位都不掉
 b.ev("SHARED.feed = {earned:5, used:0, bonus:0}; saveShared();");
 const rawFromIdiom = b.w.localStorage.getItem("cq-shared-v1");
@@ -121,7 +122,7 @@ ok(afterIndexSave.feed && afterIndexSave.feed.earned === 5, "單字闖關存檔�
 const e = boot(idiomHtml, "idiom.html");
 e.ev("SHARED.feed = {earned:1}; saveShared();");
 ok(e.w.localStorage.getItem("cq-shared-v1") === null, "沒有存摺時成語頁不得自己寫一份（會擋掉單字闖關的舊資料搬家）");
-ok(e.$("hFeed").textContent === "0" && e.$("hStreak").textContent === "", "沒有紀錄時畫面要是空的而不是壞的");
+ok(e.$("hFeed").textContent === "0" && e.$("stStreak").textContent === "0" && /再答對/.test(e.$("hStreak").textContent), "沒有紀錄時畫面要是空的而不是壞的");
 
 // ---------- ⑦ 版本標示 ----------
 ok(/版本 \d{4}\.\d{2}\.\d{2}-[a-z]/.test(t.$("heroVer").textContent), "要有版本標示");
