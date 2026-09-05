@@ -67,7 +67,7 @@ input{font:inherit; width:100%; padding:11px 12px; border-radius:11px; margin:0 
       border:1px solid var(--line); background:var(--surface); color:var(--ink)}
 .err{color:var(--no); font-size:13px; margin:8px 0 0}
 .lvbars{display:grid; gap:6px; margin:4px 0 0}
-.lvb{display:grid; grid-template-columns:40px 1fr 64px; gap:8px; align-items:center; font-size:12.5px; color:var(--ink-soft)}
+.lvb{display:grid; grid-template-columns:64px 1fr 72px; gap:8px; align-items:center; font-size:12.5px; color:var(--ink-soft)}
 .lvb .bar{height:8px; background:var(--surface-2); border-radius:99px; overflow:hidden}
 .lvb .bar div{height:100%; background:var(--brand); border-radius:99px}
 .lvb span:last-child{text-align:right; font-variant-numeric:tabular-nums}
@@ -192,10 +192,10 @@ function idiomSection(sum){
   const F = (sum.feed && typeof sum.feed === "object") ? sum.feed : null;
   if(!I && !F) return "";
   const byLv = (I && I.byLv && typeof I.byLv === "object") ? I.byLv : {};
-  const names = {1:"一級", 2:"二級", 3:"三級", 4:"四級"};
-  const bars = Object.keys(names).map(lv=>{
-    const b = byLv[lv] || {}, m = num(b.m), tot = num(b.total);
-    return `<div class="lvb"><span>${names[lv]}</span><div class="bar"><div style="width:${tot ? Math.min(100, m/tot*100) : 0}%"></div></div><span>${m} / ${tot || "—"}</span></div>`;
+  const names = {exam:"會考重點", all:"全部"};
+  const bars = Object.keys(names).map(k=>{
+    const b = byLv[k] || {}, m = num(b.m), tot = num(b.total);
+    return `<div class="lvb"><span>${names[k]}</span><div class="bar"><div style="width:${tot ? Math.min(100, m/tot*100) : 0}%"></div></div><span>${m} / ${tot || "—"}</span></div>`;
   }).join("");
   const weak = Array.isArray(I && I.weak) ? I.weak.slice(0, 8) : [];
   const left = F ? Math.max(0, num(F.earned) + num(F.bonus) - num(F.used)) : 0;

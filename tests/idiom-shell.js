@@ -79,7 +79,7 @@ t = boot(idiomHtml, "idiom.html");
 t.click(nav("vList"));
 const rows = t.d.querySelectorAll("#listBody details.irow");
 ok(rows.length === t.ev("IDIOMS.length"), `成語表要列出全部, ${rows.length} vs ${t.ev("IDIOMS.length")}`);
-ok(/ㄧ ㄒㄧㄣ ㄧ ㄧˋ/.test(rows[0].textContent), "每一條要有注音");
+ok([...rows].some(r=>/ㄧ ㄒㄧㄣ ㄧ ㄧˋ/.test(r.textContent)), "有注音的條目要顯示注音");
 ok(disp(t, rows[0].querySelector(".in")) === "none" || !rows[0].open, "解釋預設要收起來");
 t.$("search").value = "刺骨"; t.$("search").dispatchEvent(new t.w.Event("input"));
 ok(t.d.querySelectorAll("#listBody details.irow").length === 1, "搜尋要縮到符合的那幾條");

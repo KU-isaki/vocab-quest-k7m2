@@ -12,7 +12,7 @@ const ok = (c, m) => { c ? pass++ : (fail++, console.log("  ✗ " + m)); };
 
 const L = w.eval("IDIOMS");
 const byC = {}; L.forEach(i => { byC[i.c] = i; });
-const TARGET = {1:80, 2:120, 3:120, 4:129};     // 每級的條數（四級起草時多寫了 9 條，都保留）；還沒開始做的級可以是 0
+const TARGET = {1:80, 2:120, 3:120, 4:129, 5:458};   // 每級的條數；五級是歷屆會考（外部來源），沒有例句與完整注音
 const CJK = /^[一-鿿]{4}$/;
 // 一組注音：聲母/韻母 + 可有可無的聲調。輕聲「˙」教育部放在前面，也接受放後面。
 const ZY = /^(˙?[ㄅ-ㄩ]+[ˊˇˋ]?|[ㄅ-ㄩ]+˙)$/;
@@ -34,27 +34,38 @@ const dup = (arr, name) => {
 };
 dup(L.map(i => i.c), "成語");
 dup(L.map(i => i.m), "解釋");
-dup(L.map(i => i.ex), "例句");
-dup(L.map(i => i.zy), "注音");
+dup(L.filter(i => i.ex).map(i => i.ex), "例句");
+dup(L.filter(i => i.zy).map(i => i.zy), "注音");
 
 // ---------- 每一條 ----------
 L.forEach(i => {
   const tag = `「${i.c}」`;
   ok(CJK.test(i.c), `${tag}必須剛好四個中文字（拼成語題靠 8 格機制，第一階只收四字）`);
   ok(Array.isArray(i.chars) && i.chars.length === 4 && i.chars.join("") === i.c, `${tag}拆字要對`);
-  ok([1,2,3,4].includes(i.lv), `${tag}級要是 1～4，實得 ${i.lv}`);
+  ok([1,2,3,4,5].includes(i.lv), `${tag}級要是 1～5，實得 ${i.lv}`);
+  const exam = i.lv === 5;                 // 會考級：來源沒有完整注音與例句，但有的話一樣要對
 
-  const zy = String(i.zy || "").trim().split(/\s+/);
-  ok(zy.length === 4, `${tag}注音要剛好四組（用空格分開），實得 ${zy.length} 組：${i.zy}`);
-  zy.forEach((g, k) => ok(ZY.test(g), `${tag}第 ${k+1} 組注音有怪字：${g}`));
+  if(!exam || String(i.zy || "").trim()){
+    const zy = String(i.zy || "").trim().split(/\s+/);
+    ok(zy.length === 4, `${tag}注音要剛好四組（用空格分開），實得 ${zy.length} 組：${i.zy}`);
+    zy.forEach((g, k) => ok(ZY.test(g), `${tag}第 ${k+1} 組注音有怪字：${g}`));
+  }
+  // 特殊注音（破音字）：「字：注音」用全形逗號分開，字要在成語裡
+  if(i.pz !== undefined){
+    const parts = String(i.pz).split("，");
+    ok(parts.length >= 1 && parts.every(p=>/^[一-鿿]：.+$/.test(p)), `${tag}特殊注音格式要是「字：注音」：${i.pz}`);
+    parts.forEach(p=>{ const [ch, z] = p.split("："); ok(i.c.includes(ch), `${tag}特殊注音的「${ch}」不在成語裡`); ok(ZY.test(z || ""), `${tag}特殊注音有怪字：${z}`); });
+  }
 
   ok(typeof i.m === "string" && i.m.length >= 4, `${tag}解釋太短或沒有`);
   ok(!i.m.includes(i.c), `${tag}解釋裡不能直接寫出成語本身（那就不用猜了）`);
   ok(/[。！？]$/.test(i.m), `${tag}解釋要以句號結尾`);
 
-  ok(typeof i.ex === "string" && i.ex.includes(i.c), `${tag}例句裡一定要有這個成語（挖空題才挖得掉）：${i.ex}`);
-  ok(i.ex.length >= 6 && i.ex.length <= 40, `${tag}例句長度要在 6～40 字，實得 ${i.ex.length}`);
-  ok(/[。！？」]$/.test(i.ex), `${tag}例句要以標點結尾`);
+  if(!exam || i.ex){
+    ok(typeof i.ex === "string" && i.ex.includes(i.c), `${tag}例句裡一定要有這個成語（挖空題才挖得掉）：${i.ex}`);
+    ok(i.ex.length >= 6 && i.ex.length <= 40, `${tag}例句長度要在 6～40 字，實得 ${i.ex.length}`);
+    ok(/[。！？」]$/.test(i.ex), `${tag}例句要以標點結尾`);
+  }
 
   // 易錯字：抓錯字題的原料
   if(i.x !== undefined){
@@ -86,8 +97,8 @@ L.forEach(i => {
   ok(overlap.length === 0, `${tag}同一個成語不能既是近義又是反義：${overlap.join("、")}`);
 
   // 三級以上一定要有易錯字；四級一定要有誤用例句（那兩個題型的原料）
-  if(i.lv >= 3) ok(i.x !== undefined, `${tag}三級以上每條都要有易錯字`);
-  if(i.lv >= 4) ok(i.bad !== undefined, `${tag}四級每條都要有誤用例句`);
+  if(i.lv === 3 || i.lv === 4) ok(i.x !== undefined, `${tag}三、四級每條都要有易錯字`);
+  if(i.lv === 4) ok(i.bad !== undefined, `${tag}四級每條都要有誤用例句`);
 });
 
 // 近義／反義要對稱：A 說 B 是近義，B 也該知道 A（否則 4-7 題只有單向可出）

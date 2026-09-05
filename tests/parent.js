@@ -27,7 +27,7 @@ const LIST = {children:[
     decks:{summer:{label:"暑假版", total:114, done:200, right:170, mastered:60,
                    weak:[{w:"honest", zh:"誠實的", x:4}, {w:"nurse", zh:"護士", x:2}]}},
     feed:{earned:14, used:3, bonus:0, tickets:1},
-    idiom:{byLv:{1:{m:20, total:80}, 2:{m:5, total:120}, 3:{m:0, total:120}, 4:{m:0, total:129}},
+    idiom:{byLv:{exam:{m:20, total:810}, all:{m:25, total:909}},
            weak:[{c:"守株待兔", m:"死守老方法，只想等好運。", x:3}], done:60, right:50, streak:2, at:1},
     pet:{name:"小橘", breed:"orange", xp:180, hunger:64, clean:22, stage:"少年貓", adopted:"2026-09-01", away:null, box:false,
          diary:[{d:"2026-09-01", text:"領養了小橘"}, {d:D, text:"小橘長成少年貓了"}]}}},
@@ -98,9 +98,9 @@ ok(/2026\.09\.02-b/.test(txt), "要看得到小孩那台的版本");
 // 成語ㄚ喵
 ok(/成語ㄚ喵/.test(txt), "要有成語ㄚ喵這一段");
 ok(/守株待兔/.test(txt) && /錯 3/.test(txt), "要列出一直錯的成語");
-ok(/20 \/ 80/.test(txt), "各級熟練要顯示");
+ok(/20 \/ 810/.test(txt), "會考重點熟練要顯示");
 ok(/>11</.test(t.d.body.innerHTML), "飼料剩餘要算對（14+0-3）");
-ok(t.d.querySelectorAll(".lvb").length === 4, "四級都要有一條");
+ok(t.d.querySelectorAll(".lvb").length === 2, "會考重點與全部各一條");
 // 貓
 ok(/貓：小橘/.test(txt), "要有貓卡");
 ok(/少年貓/.test(txt) && /貓砂該清了/.test(txt), `貓卡要講狀態（清潔 22 → 該清了）`);

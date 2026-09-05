@@ -173,10 +173,10 @@ const wait = ms => new Promise(r=>setTimeout(r, ms));
   ok(t.ev("SHARED.pet.cats.length") === 1, "先有一隻");
   ok(!!t.$("btnMore") && t.$("btnMore").disabled, "第 2 隻的槽要出現但鎖住");
   t.click(t.$("btnMore"));
-  ok(t.ev("SHARED.pet.cats.length") === 1 && /三級/.test(t.$("toast").textContent), "沒達門檻不得抽，要講門檻");
-  // 三級熟練 50 條 → 開第 2 隻
-  t.ev(`IDIOMS.filter(i=>i.lv === 3).slice(0, 50).forEach(i=>{ S.stats[i.c] = {r:3, x:0, streak:3, due:"2099-01-01"}; }); save(); renderPet();`);
-  ok(!t.$("btnMore").disabled, "三級熟練 50 條要開第 2 隻");
+  ok(t.ev("SHARED.pet.cats.length") === 1 && /會考重點/.test(t.$("toast").textContent), "沒達門檻不得抽，要講門檻");
+  // 會考重點熟練 100 條 → 開第 2 隻
+  t.ev(`IDIOMS.filter(i=>inScope(i, "exam")).slice(0, 100).forEach(i=>{ S.stats[i.c] = {r:3, x:0, streak:3, due:"2099-01-01"}; }); save(); renderPet();`);
+  ok(!t.$("btnMore").disabled, "會考重點熟練 100 條要開第 2 隻");
   // 用固定花色抽，避免重複
   t.ev(`rollBreed = () => BREED[SHARED.pet.cats[0].breed === "black" ? "white" : "black"];`);
   t.w.prompt = ()=>"小黑";
@@ -190,12 +190,12 @@ const wait = ms => new Promise(r=>setTimeout(r, ms));
   const h2 = t.ev("SHARED.pet.cats[1].hunger");
   t.click(t.$("btnFeed"));
   ok(Math.round(t.ev("SHARED.pet.cats[1].hunger")) === Math.round(h2), "餵一隻不得影響另一隻");
-  // 第 3 隻：四級 50 條 + 挑戰模式近 7 天 85%
+  // 第 3 隻：會考重點 250 條 + 挑戰模式近 7 天 85%
   ok(t.$("btnMore").disabled, "第 3 隻要鎖住");
-  t.ev(`IDIOMS.filter(i=>i.lv === 4).slice(0, 50).forEach(i=>{ S.stats[i.c] = {r:3, x:0, streak:3, due:"2099-01-01"}; }); save(); renderPet();`);
-  ok(t.$("btnMore").disabled, "只有四級 50 條還不夠，挑戰模式答對率也要");
+  t.ev(`IDIOMS.filter(i=>inScope(i, "exam")).slice(0, 250).forEach(i=>{ S.stats[i.c] = {r:3, x:0, streak:3, due:"2099-01-01"}; }); save(); renderPet();`);
+  ok(t.$("btnMore").disabled, "只有 250 條還不夠，挑戰模式答對率也要");
   t.ev(`SHARED.days[dayKey()].i.hn = 40; SHARED.days[dayKey()].i.hr = 36; renderPet();`);
-  ok(!t.$("btnMore").disabled, "四級 50 條 + 挑戰 90% 要開第 3 隻");
+  ok(!t.$("btnMore").disabled, "250 條 + 挑戰 90% 要開第 3 隻");
   t.ev(`SHARED.days[dayKey()].i.hn = 20; SHARED.days[dayKey()].i.hr = 20; renderPet();`);
   ok(t.$("btnMore").disabled, "挑戰模式不到 30 題不算");
   t.ev(`SHARED.days[dayKey()].i.hn = 40; SHARED.days[dayKey()].i.hr = 36; renderPet();`);

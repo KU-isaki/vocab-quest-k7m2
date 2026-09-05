@@ -14,7 +14,7 @@ function boot(seed){
     beforeParse(win){
       // 假裝這台開過單字闖關：有一份存摺，飼料才存得住
       win.localStorage.setItem("cq-shared-v1", JSON.stringify({days:{}, bank:{earned:40, used:5, bonus:0}, gifts:[], coupons:[]}));
-      win.localStorage.setItem("cq-idiom-lv", "[1,2,3,4]");     // 測試用全範圍（預設是三、四級）
+      win.localStorage.setItem("cq-idiom-scope", "all");        // 測試用全範圍（預設是會考重點）
       if(seed) seed(win.localStorage);
     }});
   const w = dom.window, d = w.document;
@@ -26,8 +26,8 @@ function boot(seed){
   // 依題型作答；correct=false 時故意答錯
   function answer(correct){
     const k = kind(), i = cur();
-    if(k === "m2c" || k === "c2m" || k === "syn"){
-      const ans = k === "syn" ? ev("queue[idx].ans") : i.c;
+    if(k === "m2c" || k === "c2m" || k === "syn" || k === "read"){
+      const ans = (k === "syn" || k === "read") ? ev("queue[idx].ans") : i.c;
       const bs = [...d.querySelectorAll("#qBody .choice")];
       click(correct ? bs.find(b=>b.dataset.c === ans) : bs.find(b=>b.dataset.c !== ans));
       click($("btnCheck"));
@@ -107,8 +107,8 @@ function playRound(t, n, correct = true){
   t.next(); const c2 = t.cur().c; t.answer(false);
   ok(t.ev(`S.stats[${JSON.stringify(c2)}].due`) === today, "答錯要立刻排回來");
   t.click(t.$("btnQuit"));
-  // 錯得多的要優先出現（範圍縮到一級 80 條，門檻才算得準）
-  t.ev(`pickLv = new Set([1]); savePick(); renderPickers();`);
+  // 錯得多的要優先出現（池子縮到 80 條，門檻才算得準；畫面已不分級，直接蓋掉 pool）
+  t.ev(`pool = ()=>IDIOMS.slice(0, 80);`);
   t.ev(`IDIOMS.slice(0, 10).forEach(i=>{ S.stats[i.c] = {r:0, x:5, streak:0}; }); save();`);
   // 80 條裡只有 10 條錯過，均勻抽 10 題平均只會抽到 1.25 條；加權後理論值約 5。
   // 門檻放 3.5：明顯高於均勻、又不會因為抽樣抖動而偶發失敗。
@@ -196,7 +196,7 @@ function playRound(t, n, correct = true){
 {
   const t = boot();
   // 四級每條都有易錯字與誤用例句，是這兩種題型的原料
-  t.ev(`pickLv = new Set([4]); savePick(); renderPickers();`);
+  t.ev(`pickScope = "all"; savePick(); renderPickers();`);
   pickDiff(t, "hard");
   const forKindC = (want, c) => { for(let r = 0; r < 60; r++){ pickN(t, 50); t.start(); for(let k = 0; k < 50; k++){ if(t.kind() === want && (!c || t.cur().c === c)) return true; t.answer(true); t.next(); } t.click(t.$("btnQuit")); } return false; };
   ok(forKindC("wrong"), "要找得到抓錯字的題");
@@ -236,6 +236,34 @@ function playRound(t, n, correct = true){
   for(let r = 0; r < 60; r++){ t.ev(`queue = [{i: byC["屢見不鮮"], kind:"usage"}]; idx = 0; showQ();`); if(t.ev("queue[0].right")) o++; }
   ok(o > 18 && o < 42, `○✕ 要各半左右, ○ ${o}/60`);
   ok(t.$("qPrompt").textContent.includes("屢見不鮮"), "用法題的句子裡要有那個成語");
+}
+
+// ================= 會考重點：沒例句、沒完整注音、有破音字 =================
+{
+  const t = boot();
+  t.ev(`pickScope = "exam"; savePick(); renderPickers();`);
+  const poolN = t.ev("pool().length");
+  ok(poolN === t.ev("IDIOMS.filter(i=>i.exam || i.lv===5).length"), `會考重點 = 打標籤的 + 會考級, 實得 ${poolN}`);
+  ok(poolN >= 500, `會考重點要有五百多條, 實得 ${poolN}`);
+  ok(/會考重點/.test(t.$("lvChips").textContent) && /全部/.test(t.$("lvChips").textContent), "範圍鈕要是「會考重點」「全部」");
+  ok(!/國小|國中|一級|四級/.test(t.$("lvChips").textContent), "畫面上不得出現國小國中的分級");
+  pickDiff(t, "hard");
+  let cloze = 0, readQ = null, tileNoEx = null;
+  for(let r = 0; r < 12 && !(readQ && tileNoEx); r++){ pickN(t, 50); t.start(); for(let k = 0; k < 50; k++){ const i = t.cur(), kd = t.kind(); if(kd === "cloze" && !i.ex) cloze++; if(kd === "read" && !readQ) readQ = {i, opts:[...t.d.querySelectorAll("#qBody .choice")].map(b=>b.dataset.c), ans:t.ev("queue[idx].ans")}; if(kd === "tile" && !i.ex && !tileNoEx) tileNoEx = i; t.answer(true); t.next(); } t.click(t.$("btnQuit")); }
+  ok(cloze === 0, `沒例句的成語不得出例句填空, 實得 ${cloze} 題`);
+  ok(!!readQ, "要找得到破音字讀音題");
+  if(readQ){
+    ok(readQ.opts.length === 4 && new Set(readQ.opts).size === 4, `讀音題要四個不重複的注音, 實得 ${readQ.opts.join(" ")}`);
+    ok(readQ.opts.includes(readQ.ans), "正解要在選項裡");
+    ok(t.ev(`readings(byC[${JSON.stringify(readQ.i.c)}]).some(r=>r.zy === ${JSON.stringify(readQ.ans)})`), "正解要是那條的特殊注音");
+  }
+  ok(!!tileNoEx, "沒例句的成語要能出拼成語");
+  const rq = t.ev("IDIOMS.find(i=>i.pz)");
+  t.ev(`queue = [{i: byC[${JSON.stringify(rq.c)}], kind:"read"}]; idx = 0; showQ();`);
+  const ans = t.ev("queue[0].ans");
+  t.click([...t.d.querySelectorAll("#qBody .choice")].find(b=>b.dataset.c !== ans)); t.click(t.$("btnCheck"));
+  ok(/再記一次/.test(t.$("fbTitle").textContent) && t.$("fbUse").textContent.includes("特殊注音"), "讀音答錯要講特殊注音");
+  ok(t.ev(`SHARED.days[dayKey()].i.n`) >= 1, "讀音題要算進當天題數");
 }
 
 // ================= W1 飼料帳 =================
