@@ -18,11 +18,11 @@ function ansOf(){
 }
 let pass=0,fail=0; const ok=(c,m)=>{c?pass++:(fail++,console.log('  ✗ '+m))};
 const stats=()=>click([...d.querySelectorAll('.nav button')].find(b=>b.dataset.view==='vStats'));
-const SW=w.eval('SUMMER_WORDS'); const byZh={}; SW.forEach(x=>(byZh[x.zh]=byZh[x.zh]||[]).push(x.w));
+const SW=w.eval('WORDS'); const byZh={}; SW.forEach(x=>(byZh[x.zh]=byZh[x.zh]||[]).push(x.w));
 function answer(){ const t=$('qKind').textContent;
   if(d.querySelector('#qBody .choice')){ const aw=w.eval('queue[idx].word.w');
     click([...d.querySelectorAll('#qBody .choice')].find(b=>b.dataset.w===aw)); click($('btnCheck')); }
-  else { const a=ansOf();
+  else { const a=w.eval('queue[idx].word.w');
     if((t.includes('拼英文')||t.includes('填單字'))){ const ts=[...d.querySelectorAll('#qBody .tile')];
       const seq=a.toLowerCase().split('').map(c=>ts.find(x=>x.textContent===c&&!x.classList.contains('used')));
       if(seq.every(Boolean)) seq.forEach(click); click($('btnCheck')); }
@@ -33,7 +33,7 @@ function answer(){ const t=$('qKind').textContent;
 click($('btnStart')); for(let i=0;i<R;i++) answer();
 click($('btnBackHome'));
 const todayK=w.eval('dayKey()');
-const S=JSON.parse(w.localStorage.getItem('cq-vocab-v1:summer'));
+const S=JSON.parse(w.localStorage.getItem('cq-vocab-v1:full'));
 const shared=w.eval('SHARED');
 ok(shared.days && shared.days[todayK],'今天應留下日曆紀錄');
 ok(shared.days[todayK].n===R,`今天題數應為 ${R}, 實得 `+(shared.days[todayK]||{}).n);
@@ -132,8 +132,8 @@ ok($('calSum').textContent.includes('還沒有'),'當月小結要顯示沒有紀
 click(modeBtn('half'));
 
 // 舊版存檔（沒有 days / bank）不能壞
-w.localStorage.setItem('cq-vocab-v1:summer', JSON.stringify({done:5,right:4,stats:{happy:{r:1,x:0,streak:1}}}));
-w.eval('useDeck("summer"); renderStats();');
+w.localStorage.setItem('cq-vocab-v1:full', JSON.stringify({done:5,right:4,stats:{happy:{r:1,x:0,streak:1}}}));
+w.eval('useDeck(); renderStats();');
 ok($('stDone').textContent==='1','舊存檔要能載入');
 ok(d.querySelectorAll('#calGrid .cell').length>0,'舊存檔也要能畫出日曆');
 ok($('bankLeft').textContent==='0','舊存檔的存摺應預設為 0');

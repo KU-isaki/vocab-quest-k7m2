@@ -135,22 +135,6 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 .idiomlink .tx b{font-size:15.5px}
 .idiomlink .tx small{font-size:12px; color:var(--ink-faint); line-height:1.5}
 .idiomlink .ar{color:var(--ink-faint); font-size:18px}
-.decks{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px}
-.decks[hidden]{display:none}   /* display:grid 會蓋掉 hidden 屬性 */
-.deck{
-  padding:13px 12px; border-radius:var(--r); border:1.5px solid var(--line);
-  background:var(--surface); text-align:left; line-height:1.35;
-  display:flex; flex-direction:column; gap:2px; transition:border-color .15s, background .15s;
-}
-.deck b{font-size:15.5px; font-weight:700}
-.deck span{font-size:11.5px; color:var(--ink-faint)}
-.deck u{
-  font-family:var(--font-num); font-variant-numeric:tabular-nums;
-  font-size:11.5px; color:var(--ink-soft); text-decoration:none; margin-top:3px;
-}
-.deck[aria-pressed="true"]{border-color:var(--brand); background:var(--brand-soft)}
-.deck[aria-pressed="true"] b{color:var(--brand)}
-.deck[aria-pressed="true"] span{color:var(--brand); opacity:.75}
 
 .chipbox{max-height:186px; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:2px}
 .todaybox{margin:16px 0 14px; text-align:left}
@@ -683,7 +667,6 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
     🔇 你現在用 LINE 內建瀏覽器開啟，<b>可能沒有聲音</b>。請點右上角 <b>⋯</b> →「用其他瀏覽器開啟」，選 Safari 或 Chrome，發音才會正常。
   </div>
 
-  <div class="decks" id="deckPicker"></div>
 
   <!-- ============ 練習 ============ -->
   <section class="view on" id="vQuiz">
@@ -787,7 +770,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
     <div class="card bank">
       <div class="bank-top">
         <div class="bank-main">
-          <span class="eyebrow">遊戲時間存摺 · 兩個題庫共用</span>
+          <span class="eyebrow">遊戲時間存摺 · 成語ㄚ喵也共用</span>
           <div class="bank-num"><b id="bankLeft">0</b><span>分鐘可用</span></div>
           <p id="bankDetail"></p>
         </div>
@@ -804,7 +787,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
       </details>
     </div>
 
-    <div class="grouphead"><b id="statDeck">成績</b><span>只算這個題庫</span></div>
+    <div class="grouphead"><b id="statDeck">成績</b><span>只算英文單字</span></div>
     <div class="tiles2">
       <div class="card stat accent"><b id="stDone">0</b><span>累積答題數</span></div>
       <div class="card stat"><b id="stRate">—</b><span>總答對率</span></div>
@@ -813,7 +796,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
       <div class="card stat"><b id="stDue">0</b><span>今天該複習</span></div>
       <div class="card stat"><b id="stDays">0</b><span>練習天數</span></div>
     </div>
-    <div class="grouphead"><b>練習日曆 · 兩個題庫共用</b><span id="calStreak"></span></div>
+    <div class="grouphead"><b>練習日曆 · 成語ㄚ喵也共用</b><span id="calStreak"></span></div>
     <div class="chiprow" id="calMode" style="justify-content:flex-start; margin:8px 0 2px">
       <button class="chip" data-cal="month" aria-pressed="true">📅 這個月</button>
       <button class="chip" data-cal="half" aria-pressed="false">📈 最近半年</button>
@@ -910,7 +893,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
     <details class="info"><summary>家長密碼會保護什麼？</summary>
       <div class="info-in">設一組 4 位數密碼之後，這幾件事要輸入密碼才做得了：<br>
         <b>兌換遊戲時間</b>　·　<b>贈送／沒收遊戲時間</b>　·　<b>發加倍券</b>　·　
-        <b>清除題庫的答題紀錄</b>　·　<b>清除練習日曆與遊戲時間</b><br>
+        <b>清除單字的答題紀錄</b>　·　<b>清除練習日曆與遊戲時間</b><br>
         都是誤觸會出事的操作。密碼只存在這台手機裡。</div>
     </details>
 
@@ -920,7 +903,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
     <details class="info"><summary>為什麼需要備份碼？</summary>
       <div class="info-in">紀錄存在這台手機的這個瀏覽器裡，換瀏覽器、清除瀏覽資料、或
         iOS Safari 長時間沒開這個網站，都可能被清掉。<br>
-        按「複製備份碼」會把兩個題庫的紀錄壓成一段文字，貼到 LINE 給自己留著，之後貼回來就能還原。</div>
+        按「複製備份碼」會把單字和成語的紀錄壓成一段文字，貼到 LINE 給自己留著，之後貼回來就能還原。</div>
     </details>
 
     <div class="grouphead"><b>雲端備份</b><span id="syncState"></span></div>
@@ -938,8 +921,8 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
     <button class="btn quiet" id="btnReset">清除答題紀錄</button>
     <button class="btn quiet" id="btnResetShared">清除練習日曆與遊戲時間</button>
     <details class="info"><summary>這兩個差在哪？</summary>
-      <div class="info-in"><b>題庫的答題紀錄</b>（答對率、已熟練、待加強）是兩個題庫各記各的，只清你目前選的那一個。<br>
-        <b>練習日曆與遊戲時間</b>是兩個題庫共用的，清了兩邊都會不見。</div>
+      <div class="info-in"><b>單字的答題紀錄</b>（答對率、已熟練、待加強）只清英文這邊，成語ㄚ喵的不動。<br>
+        <b>練習日曆與遊戲時間</b>是跟成語ㄚ喵共用的，清了兩邊都會不見。</div>
     </details>
 
     <p class="foot">紀錄存在這台手機的這個瀏覽器裡<br>換瀏覽器開會從頭開始，請固定用同一個</p>
@@ -994,10 +977,10 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.05-e";
+const VERSION = "2026.09.05-f";
 document.documentElement.lang = "zh-TW";
 
-/* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
+/* ================= 用法解釋（key 用小寫單字） =================
    想幫哪個字加說明，就在這裡加一行；沒寫的字不會顯示說明區塊。 */
 const NOTES = {
 "baby":"名詞，複數 babies。也可拿來稱呼親近的人「寶貝」。",
@@ -2436,205 +2419,82 @@ const EXAMPLES = {
 "a/an":["Use an before a vowel sound.","母音發音前面要用 an。"]
 };
 
-/* ================= 題庫一：暑假版（要增修單字，直接改這裡） ================= */
-const SUMMER_CATS = [
-  {id:"people",  name:"人物身份"},
-  {id:"char",    name:"個人特徵"},
-  {id:"body",    name:"身體部位"},
-  {id:"health",  name:"健康狀況"},
-  {id:"address", name:"稱謂"}
-];
-const SUMMER_WORDS = [
-["baby","嬰兒／寶貝","","people"],
-["boy","男孩","","people"],
-["child","小孩","複數 children","people"],
-["fool","傻瓜／愚弄","愚蠢的","people"],
-["giant","巨人／巨大的","","people"],
-["girl","女孩","","people"],
-["guy","傢伙／伙計","口語","people"],
-["kid","小孩／開玩笑","","people"],
-["king","國王","","people"],
-["man","男人","複數 men","people"],
-["neighbor","鄰居","near + bor","people"],
-["person","人（單數）","個人","people"],
-["people","人們／人民","複數概念","people"],
-["queen","皇后／女王","","people"],
-["stranger","陌生人","strange 陌生的","people"],
-["teenager","青少年","13-19 歲","people"],
-["visitor","訪客／遊客","visit 拜訪","people"],
-["woman","女人","複數 women","people"],
-["angry","生氣的","angry at","char"],
-["bad","壞的／差的","反 good","char"],
-["beautiful","美麗的／漂亮的","","char"],
-["blind","瞎的／盲目的","","char"],
-["bored","感到厭煩的","人 + ed","char"],
-["boring","令人無聊的","事 + ing","char"],
-["brave","勇敢的","","char"],
-["busy","忙碌的","busy with","char"],
-["careful","仔細的／小心的","care + ful","char"],
-["cool","涼爽的／酷的","","char"],
-["crazy","瘋狂的","crazy about","char"],
-["cute","可愛的","討人喜歡","char"],
-["excited","感到興奮的","人 + ed","char"],
-["exciting","令人興奮的","事 + ing","char"],
-["famous","有名的","famous for","char"],
-["fat","胖的","反 thin","char"],
-["friendly","友善的","friend + ly","char"],
-["funny","好笑的／幽默的","fun + ny","char"],
-["good","好的／優秀的","反 bad","char"],
-["handsome","英俊的／帥氣的","","char"],
-["happy","快樂的","反 unhappy","char"],
-["hard-working","努力工作的／勤奮的","hard + working","char"],
-["heavy","重的","反 light","char"],
-["honest","誠實的","h 不發音","char"],
-["interested","感興趣的","interested in","char"],
-["kind","親切的／仁慈的","kind to","char"],
-["lazy","懶惰的","反 diligent","char"],
-["lonely","寂寞的／孤單的","lone + ly","char"],
-["lovely","可愛的／美好的","love + ly","char"],
-["mad","發瘋的／生氣的","mad at","char"],
-["nice","好的／友善的","Nice meeting you.","char"],
-["old","老的／舊的","反 young / new","char"],
-["polite","有禮貌的","反 impolite","char"],
-["poor","貧困的／可憐的","反 rich","char"],
-["pretty","漂亮的","副詞：相當","char"],
-["proud","驕傲的／自豪的","proud of","char"],
-["rich","富有的／有錢的","反 poor","char"],
-["sad","悲傷的","反 happy","char"],
-["scared","害怕的","scared of","char"],
-["short","矮的／短的","反 tall / long","char"],
-["shy","害羞的","怕生","char"],
-["slim","苗條的／纖細的","體態勻稱","char"],
-["smart","聰明的","靈巧的","char"],
-["stupid","笨的／愚蠢的","","char"],
-["successful","成功的","success + ful","char"],
-["tall","高的","反 short","char"],
-["thin","瘦的／薄的","反 fat / thick","char"],
-["ugly","醜陋的","反 beautiful","char"],
-["unhappy","不快樂的","un- + happy","char"],
-["weak","虛弱的","反 strong","char"],
-["wise","明智的／聰慧的","有智慧的","char"],
-["young","年輕的","反 old","char"],
-["arm","手臂","","body"],
-["back","背部","","body"],
-["body","身體","","body"],
-["ear","耳朵","","body"],
-["eye","眼睛","","body"],
-["face","臉","","body"],
-["finger","手指","","body"],
-["foot","腳","複數 feet","body"],
-["hair","頭髮","","body"],
-["hand","手","","body"],
-["head","頭","","body"],
-["heart","心臟","","body"],
-["knee","膝蓋","","body"],
-["leg","腿","","body"],
-["lip","嘴唇","","body"],
-["mouth","嘴巴","","body"],
-["nail","指甲","","body"],
-["nose","鼻子","","body"],
-["shoulder","肩膀","","body"],
-["stomach","胃／肚子","","body"],
-["throat","喉嚨","sore throat","body"],
-["toe","腳趾","","body"],
-["tooth","牙齒","複數 teeth","body"],
-["cold","感冒／寒冷的","have a cold","health"],
-["comfortable","舒適的／舒服的","","health"],
-["death","死亡（名詞）","動詞 die","health"],
-["fever","發燒","have a fever","health"],
-["headache","頭痛","head + ache","health"],
-["health","健康（名詞）","good health","health"],
-["healthy","健康的（形容詞）","health + y","health"],
-["life","生活／生命","複數 lives","health"],
-["medicine","藥物／醫學","take medicine","health"],
-["sick","生病的","= ill","health"],
-["sore","疼痛的","sore throat","health"],
-["strong","強壯的","反 weak","health"],
-["tired","疲倦的","tired of","health"],
-["well","良好的／健康的","get well","health"],
-["doctor","醫生／博士","縮寫 Dr.","address"],
-["Mr.","先生","男性姓氏前","address"],
-["Mrs.","太太／夫人","已婚女性","address"],
-["Miss","小姐","未婚女性","address"],
-["Ms.","女士","婚姻狀況不明","address"],
-["sir","先生／閣下","尊稱、禮貌","address"],
-["name","名字","first / last name","address"]
-].map(([w,zh,hint,cat])=>({w,zh,hint,cats:[cat],use:NOTES[w.toLowerCase()],ex:EXAMPLES[w.toLowerCase()],spellable:/^[a-z]+$/i.test(w)}));
-
-/* ================= 題庫二：國中必備 1200 總整理 =================
+/* ================= 單字表：國中必備 1200 =================
    由「1200單字總整理_附記憶口訣版.pdf」解析產生（原檔 1288 筆，
-   跨章節重複的字已合併，中文以「；」串接）。格式：[單字, 中文, 所屬分類 id]  */
+   跨章節重複的字已合併，中文以「；」串接）。格式：[單字, 中文, 所屬分類 id, 提示（選填）]
+   原本另有一份「暑假版」114 字，全部都在這 1200 裡，2026-09 併掉了：它的提示搬到第 4 欄，
+   多出來的 hard-working 補在 c2。 */
 const FULL_CATS = [{"id":"c1","name":"人物身份","en":"People","tip":"連結人物關係：baby 成長為 boy/girl，變成 teenager，最後成為 man/woman。"},{"id":"c2","name":"個人特徵","en":"Personal characteristics","tip":"對比記憶法：tall ↔ short、fat ↔ slim、happy ↔ sad、brave ↔ scared。"},{"id":"c3","name":"身體部位","en":"Parts of body","tip":"從上到下順序背：head (頭) -> face (臉) -> arm (手臂) -> leg (腿) -> foot (腳)。"},{"id":"c4","name":"健康狀況","en":"Health","tip":"生病情境：fever (發燒) + headache (頭痛) -> sick (生病的) -> need medicine (藥)。"},{"id":"c5","name":"稱謂","en":"Forms of address","tip":"區分女性稱謂：Miss (未婚小姐)、Mrs. (已婚太太)、Ms. (不限婚唄女士)。"},{"id":"c6","name":"家庭稱謂","en":"Family","tip":"家族樹概念：grandfather/grandmother -> father/mother -> brother/sister/cousin。"},{"id":"c7","name":"數字","en":"Numbers","tip":"數字字尾規律：13~19 字尾為 -teen，20~90 整數字尾為 -ty。"},{"id":"c8","name":"時間","en":"Time","tip":"時間由小到大：second (秒) -> minute (分) -> hour (時) -> day -> week -> month -> year。"},{"id":"c9","name":"金錢","en":"Money","tip":"消費動作流：borrow (借入) 錢 -> pay/spend (花費) 買 cheap 或 expensive 的東西。"},{"id":"c10","name":"食物飲料","en":"Food & drinks","tip":"餐點分類記憶：主食 (rice/noodles/bread) + 肉類 (beef/pork/chicken) + 飲料 (tea/coffee/water)。"},{"id":"c11","name":"餐具","en":"Tableware","tip":"用餐動作聯想：用 bowl (碗) 裝 soup (湯)，用 plate (盤) 裝 dish，手持 fork/knife/spoon。"},{"id":"c12","name":"服裝配件","en":"Clothing & accessories","tip":"穿戴順序：內穿 T-shirt/shirt，外套 jacket/coat，下身 pants/shorts/skirt，腳穿 socks/shoes。"},{"id":"c13","name":"顏色","en":"Colors","tip":"聯想彩虹或色彩對比：black ↔ white、red/yellow/blue (三原色)。"},{"id":"c14","name":"運動興趣","en":"Sports, interests & hobbies","tip":"球類與動詞：球類運動大多搭配動詞 play (如 play basketball/baseball/tennis)。"},{"id":"c15","name":"住家","en":"Houses & apartments","tip":"空間想像：從 door (門) 進 house，經 living room (客廳) 到 bedroom (臥室) 與 bathroom (浴室)。"},{"id":"c16","name":"學校","en":"School","tip":"校園場景：teacher (老師) 在 classroom (教室) 用 blackboard (黑板) 與 book (書) 教 student (學生)。"},{"id":"c17","name":"地點方位","en":"Places & locations","tip":"生活圈地圖：去 bakery (麵包店) 買早餐，去 bank (銀行) 領錢，再去 post office (郵局) 寄信。"},{"id":"c18","name":"交通","en":"Transportation","tip":"搭乘動詞搭配：take a bus/taxi/train/car，ride a bicycle/motorcycle/scooter，fly a plane。"},{"id":"c19","name":"尺寸度量","en":"Sizes & measurements","tip":"單位換算聯想：cm (公分) -> m -> km；g (公克) -> kg (公斤)；pack (包) -> pair (雙) -> dozen (打)。"},{"id":"c20","name":"國家地區","en":"Countries and areas","tip":"縮寫對照：Taiwan (臺灣)、America / USA (美國)、China (中國)、ROC (中華民國)。"},{"id":"c21","name":"語言","en":"Languages","tip":"語言字首大寫：Chinese (中文)、English (英文) 專有名詞開頭一律大寫。"},{"id":"c22","name":"節日","en":"Holidays & festivals","tip":"三大西方節慶：Halloween (萬聖節 10/31) -> Christmas (聖誕節 12/25) -> Easter (復活節 春季)。"},{"id":"c23","name":"動物昆蟲","en":"Animals & insects","tip":"農場與野外：農場動物 (cow/pig/sheep/horse) ↔ 森林動物 (bear/fox/lion/tiger)。"},{"id":"c24","name":"冠詞限定詞","en":"Articles & determiners","tip":"指稱與所有格：a/an (單數)、the (指定)、this/these (近)、that/those (遠)；my/your/his/her (所有格)。"},{"id":"c25","name":"代名詞","en":"Pronouns & reflexives","tip":"人稱代名詞：主格 (I/you/he/she/it) -> 受格 (me/you/him/her/it) -> 反身 (myself/yourself/himself)。"},{"id":"c26","name":"疑問詞","en":"Wh-words","tip":"5W1H 疑問詞：What (物)、Who (人)、Where (地)、When (時)、Why (因)、How (法)。"},{"id":"c27","name":"職業","en":"Occupations","tip":"職業字尾規律：字尾 -er/-or (driver/teacher/actor)，字尾 -ist (dentist)，字尾 -man (mailman/salesman)。"},{"id":"c28","name":"天氣自然","en":"Weather & nature","tip":"天氣形容詞：名詞 + y 變成形容詞，如 rain -> rainy、snow -> snowy、sun -> sunny、wind -> windy。"},{"id":"c29","name":"地理名詞","en":"Geographical terms","tip":"水體大小排序：pond (池塘) < lake (湖泊) < river (河流) < sea (海洋/大海)。"},{"id":"c30","name":"be 動詞助動詞","en":"Be & auxiliaries","tip":"情態助動詞：can (能) / could (過去/客氣)；will (將) / would；must (必須) / should (應該)。"},{"id":"c31","name":"介系詞","en":"Prepositions","tip":"空間方位：on (上面) ↔ under (下面)、in (裡面) ↔ out/outside (外面)、in front of ↔ behind (後面)。"},{"id":"c32","name":"連接詞","en":"Conjunctions","tip":"邏輯連接：and (順接)、but/however (轉折)、because (原因)、if (條件)、though (讓步)。"},{"id":"c33","name":"感嘆詞","en":"Interjections","tip":"打招呼與離別：hello/hi/hey (打招呼) ↔ good-bye/bye (道別)。"},{"id":"c34","name":"其他名詞","en":"Other nouns","tip":"名詞分類背記：生活用品 (cellphone/key/box)、抽象概念 (chance/idea/dream/trouble)。"},{"id":"c35","name":"其他動詞","en":"Other verbs","tip":"常用反義動詞：come ↔ go、open ↔ close、buy ↔ sell、give ↔ take、ask ↔ answer。"},{"id":"c36","name":"其他形容詞","en":"Other adjectives","tip":"形容詞對比記憶：easy ↔ difficult、clean (tidy) ↔ dirty、safe ↔ dangerous、correct ↔ wrong。"},{"id":"c37","name":"其他副詞","en":"Other adverbs","tip":"頻率副詞排序：always (100%) -> usually -> often -> sometimes -> seldom -> never (0%)。"}];
 const FULL_WORDS = [
 ["baby","嬰兒","c1"],
 ["boy","男孩","c1"],
-["child","小孩","c1"],
-["fool","愚弄","c1"],
+["child","小孩","c1","複數 children"],
+["fool","愚弄","c1","愚蠢的"],
 ["giant","巨人","c1"],
 ["girl","女孩","c1"],
-["guy","傢伙","c1"],
+["guy","傢伙","c1","口語"],
 ["kid","小孩","c1"],
 ["king","國王","c1"],
-["man","男人","c1"],
-["neighbor","鄰居","c1"],
-["people","人們;人民","c1"],
-["person","人","c1"],
+["man","男人","c1","複數 men"],
+["neighbor","鄰居","c1","near + bor"],
+["people","人們;人民","c1","複數概念"],
+["person","人","c1","個人"],
 ["queen","皇后","c1"],
-["stranger","陌生人","c1"],
-["teenager","青少年","c1"],
-["visitor","訪客","c1"],
-["woman","女人","c1"],
+["stranger","陌生人","c1","strange 陌生的"],
+["teenager","青少年","c1","13-19 歲"],
+["visitor","訪客","c1","visit 拜訪"],
+["woman","女人","c1","複數 women"],
 ["beautiful","美麗的","c2"],
 ["blind","盲的","c2"],
-["cute","可愛的","c2"],
-["fat","胖的","c2"],
+["cute","可愛的","c2","討人喜歡"],
+["fat","胖的","c2","反 thin"],
 ["handsome","英俊的","c2"],
-["heavy","重的","c2"],
-["old","老的","c2"],
-["pretty","漂亮的","c2"],
-["short","短的","c2,c19"],
-["slim","苗條的","c2"],
-["tall","高的","c2"],
-["thin","瘦的","c2"],
-["ugly","醜的","c2"],
-["young","年輕的","c2"],
-["angry","生氣的","c2"],
-["bad","壞的","c2"],
-["bored","感到厭煩的","c2"],
-["boring","無聊的","c2"],
+["heavy","重的","c2","反 light"],
+["old","老的","c2","反 young / new"],
+["pretty","漂亮的","c2","副詞：相當"],
+["short","短的","c2,c19","反 tall / long"],
+["slim","苗條的","c2","體態勻稱"],
+["tall","高的","c2","反 short"],
+["thin","瘦的","c2","反 fat / thick"],
+["ugly","醜的","c2","反 beautiful"],
+["young","年輕的","c2","反 old"],
+["angry","生氣的","c2","angry at"],
+["bad","壞的","c2","反 good"],
+["bored","感到厭煩的","c2","人 + ed"],
+["boring","無聊的","c2","事 + ing"],
 ["brave","勇敢的","c2"],
-["busy","忙碌的","c2"],
-["careful","仔細的","c2"],
+["busy","忙碌的","c2","busy with"],
+["careful","仔細的","c2","care + ful"],
 ["cool","涼爽的","c2,c28"],
-["crazy","瘋狂的","c2"],
-["excited","感到興奮的","c2"],
-["exciting","令人興奮的","c2"],
-["famous","有名的","c2"],
-["friendly","友善的","c2"],
-["funny","好笑的","c2"],
-["good","好的","c2"],
-["happy","快樂的","c2"],
+["crazy","瘋狂的","c2","crazy about"],
+["excited","感到興奮的","c2","人 + ed"],
+["exciting","令人興奮的","c2","事 + ing"],
+["famous","有名的","c2","famous for"],
+["friendly","友善的","c2","friend + ly"],
+["funny","好笑的","c2","fun + ny"],
+["good","好的","c2","反 bad"],
+["happy","快樂的","c2","反 unhappy"],
 ["hardworking","努力工作的","c2"],
-["honest","誠實的","c2"],
-["interested","感興趣的","c2"],
-["kind","親切的；種類","c2,c34"],
-["lazy","懶惰的","c2"],
-["lonely","寂寞的","c2"],
-["lovely","可愛的","c2"],
-["mad","瘋狂的","c2"],
-["nice","好的","c2"],
-["polite","有禮貌的","c2"],
-["poor","貧困的;可憐的","c2"],
-["proud","驕傲的","c2"],
-["rich","有錢的","c2"],
-["sad","悲傷的","c2"],
-["scared","害怕的","c2,c36"],
-["shy","害羞的","c2"],
-["smart","聰明的","c2"],
+["honest","誠實的","c2","h 不發音"],
+["interested","感興趣的","c2","interested in"],
+["kind","親切的；種類","c2,c34","kind to"],
+["lazy","懶惰的","c2","反 diligent"],
+["lonely","寂寞的","c2","lone + ly"],
+["lovely","可愛的","c2","love + ly"],
+["mad","瘋狂的","c2","mad at"],
+["nice","好的","c2","Nice meeting you."],
+["polite","有禮貌的","c2","反 impolite"],
+["poor","貧困的;可憐的","c2","反 rich"],
+["proud","驕傲的","c2","proud of"],
+["rich","有錢的","c2","反 poor"],
+["sad","悲傷的","c2","反 happy"],
+["scared","害怕的","c2,c36","scared of"],
+["shy","害羞的","c2","怕生"],
+["smart","聰明的","c2","靈巧的"],
 ["stupid","笨的","c2"],
-["successful","成功的","c2"],
-["unhappy","不快樂的","c2"],
-["wise","明智的","c2"],
+["successful","成功的","c2","success + ful"],
+["unhappy","不快樂的","c2","un- + happy"],
+["wise","明智的","c2","有智慧的"],
 ["ear","耳朵","c3"],
 ["eye","眼睛","c3"],
 ["face","臉","c3"],
@@ -2642,12 +2502,12 @@ const FULL_WORDS = [
 ["lip","嘴唇","c3"],
 ["mouth","嘴巴","c3"],
 ["nose","鼻子","c3"],
-["tooth","牙齒","c3"],
+["tooth","牙齒","c3","複數 teeth"],
 ["arm","手臂","c3"],
 ["back","背；在...後面","c3,c17"],
 ["body","身體","c3"],
 ["finger","手指","c3"],
-["foot","腳；呎","c3,c19"],
+["foot","腳；呎","c3,c19","複數 feet"],
 ["hand","手；傳遞","c3,c35"],
 ["head","頭","c3"],
 ["knee","膝蓋","c3"],
@@ -2655,32 +2515,32 @@ const FULL_WORDS = [
 ["nail","指甲","c3"],
 ["neck","脖子","c3"],
 ["shoulder","肩膀","c3"],
-["throat","喉嚨","c3"],
+["throat","喉嚨","c3","sore throat"],
 ["toe","腳趾","c3"],
 ["heart","心","c3"],
 ["stomach","胃","c3"],
 ["comfortable","舒適的","c4"],
-["healthy","健康的","c4"],
-["sick","生病的","c4"],
-["strong","強壯的","c4"],
-["tired","疲倦的","c4"],
-["weak","弱的","c4"],
-["well","好地","c4"],
-["cold","寒冷的","c4,c28"],
-["headache","頭痛","c4"],
-["fever","發燒","c4"],
-["sore","疼痛的","c4"],
-["death","死亡","c4"],
-["health","健康","c4"],
-["life","生活","c4"],
-["medicine","藥","c4"],
-["doctor","(Dr.) 醫生","c5,c27"],
-["Mr.","先生","c5"],
-["Mrs.","太太","c5"],
-["Miss","小姐；想念","c5,c35"],
-["Ms.","女士","c5"],
-["sir","先生","c5"],
-["name","名字","c5"],
+["healthy","健康的","c4","health + y"],
+["sick","生病的","c4","= ill"],
+["strong","強壯的","c4","反 weak"],
+["tired","疲倦的","c4","tired of"],
+["weak","弱的","c4","反 strong"],
+["well","好地","c4","get well"],
+["cold","寒冷的","c4,c28","have a cold"],
+["headache","頭痛","c4","head + ache"],
+["fever","發燒","c4","have a fever"],
+["sore","疼痛的","c4","sore throat"],
+["death","死亡","c4","動詞 die"],
+["health","健康","c4","good health"],
+["life","生活","c4","複數 lives"],
+["medicine","藥","c4","take medicine"],
+["doctor","(Dr.) 醫生","c5,c27","縮寫 Dr."],
+["Mr.","先生","c5","男性姓氏前"],
+["Mrs.","太太","c5","已婚女性"],
+["Miss","小姐；想念","c5,c35","未婚女性"],
+["Ms.","女士","c5","婚姻狀況不明"],
+["sir","先生","c5","尊稱、禮貌"],
+["name","名字","c5","first / last name"],
 ["aunt","伯(叔)母","c6"],
 ["brother","兄弟","c6"],
 ["cousin","堂表兄弟姊妹","c6"],
@@ -3771,17 +3631,15 @@ const FULL_WORDS = [
 ["usually","通常","c37"],
 ["very","非常","c37"],
 ["yes","(yeah) 是","c37"],
-["yet","尚未","c37"]
-].map(([w,zh,cats])=>({w,zh,hint:"",cats:cats.split(","),use:NOTES[w.toLowerCase()],ex:EXAMPLES[w.toLowerCase()],spellable:/^[a-z]+$/i.test(w)}));
+["yet","尚未","c37"],
+["hard-working","努力工作的／勤奮的","c2","hard + working"]
+].map(([w,zh,cats,hint])=>({w,zh,hint:hint||"",cats:cats.split(","),use:NOTES[w.toLowerCase()],ex:EXAMPLES[w.toLowerCase()],spellable:/^[a-z]+$/i.test(w)}));
 
-const DECKS = {
-  summer:{key:"summer", label:"暑假版", sub:"七年級暑假範圍", cats:SUMMER_CATS, words:SUMMER_WORDS},
-  full:  {key:"full",   label:"總整理版", sub:"國中必備 1200",  cats:FULL_CATS,   words:FULL_WORDS}
-};
+const DECK = {key:"full", label:"國中必備 1200", cats:FULL_CATS, words:FULL_WORDS};
 
-/* ================= 跨題庫共用的紀錄 =================
-   練習日曆和遊戲時間存摺是「習慣」與「獎勵」，不該分題庫各記各的 ——
-   同一天在兩個題庫練的題數要合計，才算得出正確的每日進度。 */
+/* ================= 跟成語ㄚ喵共用的紀錄 =================
+   練習日曆和遊戲時間存摺是「習慣」與「獎勵」，英文和成語（idiom.html）共用同一份 ——
+   同一天兩邊練的題數要合計，才算得出正確的每日進度。 */
 const SHARED_KEY = "cq-shared-v1";
 let SHARED = {days:{}, bank:{earned:0, used:0, bonus:0}, gifts:[], coupons:[]};
 
@@ -3802,7 +3660,7 @@ function loadShared(){
   }catch(e){}
   migrateShared();
 }
-function migrateShared(){        // 舊版把日曆與存摺存在各題庫裡，合併過來
+function migrateShared(){        // 更舊的版本把日曆與存摺存在各題庫裡（那時有暑假版／總整理版兩份），合併過來
   const days = {}, bank = {earned:0, used:0, bonus:0};
   ["summer", "full"].forEach(k=>{
     let o = null;
@@ -3829,8 +3687,7 @@ function saveShared(){
 }
 
 /* ================= 狀態 ================= */
-const DECK_KEY = "cq-deck-v1";
-let DECK, CATS, WORDS, KEY, S, SYNONYMS = {}, pickedCats = new Set();
+let CATS, WORDS, KEY, S, SYNONYMS = {}, pickedCats = new Set();
 let listenOn = true;
 try{ listenOn = localStorage.getItem("cq-listen") !== "0"; }catch(e){}
 
@@ -3914,21 +3771,37 @@ function dayKey(dt){
   const t = dt || new Date();
   return t.getFullYear() + "-" + String(t.getMonth()+1).padStart(2,"0") + "-" + String(t.getDate()).padStart(2,"0");
 }
-function useDeck(k){
-  DECK = DECKS[k] || DECKS.summer;
+function useDeck(){
   CATS = DECK.cats; WORDS = DECK.words;
   KEY = "cq-vocab-v1:" + DECK.key;
-  if(DECK.key === "summer"){        // 沿用改版前存的進度
-    try{
-      const old = localStorage.getItem("cq-vocab-v1");
-      if(old && !localStorage.getItem(KEY)) localStorage.setItem(KEY, old);
-    }catch(e){}
-  }
   S = load();
+  mergeLegacy();
   pickedCats = new Set(CATS.map(c=>c.id));
   SYNONYMS = {};                     // 中文一模一樣的字（tall / high 都是「高的」）
   WORDS.forEach(w=>{ (SYNONYMS[w.zh] = SYNONYMS[w.zh] || []).push(w.w); });
-  try{ localStorage.setItem(DECK_KEY, DECK.key); }catch(e){}
+}
+/* 舊版分「暑假版／總整理版」兩個題庫，各記各的進度。暑假版 114 字全在 1200 裡，
+   所以把它的答題紀錄併進來就好：答對答錯相加、連對次數取高的那份（複習日跟著它走）。
+   併過的舊紀錄要刪掉，不然下次開又併一次。更舊的 cq-vocab-v1（還沒分題庫時）就是暑假版，
+   改版時會複製一份到 :summer，所以有 :summer 就不再看它。 */
+function mergeInto(o){
+  if(!o || !o.stats) return false;
+  const byLower = {}; WORDS.forEach(w=>{ byLower[w.w.toLowerCase()] = w.w; });
+  Object.keys(o.stats).forEach(k=>{
+    const key = byLower[k.toLowerCase()]; if(!key) return;
+    const a = o.stats[k] || {}, t = stat(key);
+    t.r += +a.r || 0; t.x += +a.x || 0;
+    if((+a.streak || 0) > t.streak){ t.streak = +a.streak; if(a.due) t.due = a.due; }
+    else if(!t.due && a.due) t.due = a.due;
+  });
+  S.done += +o.done || 0; S.right += +o.right || 0;
+  return true;
+}
+function mergeLegacy(){
+  let o = null;
+  try{ o = JSON.parse(localStorage.getItem("cq-vocab-v1:summer") || localStorage.getItem("cq-vocab-v1")); }catch(e){}
+  if(mergeInto(o)) save();
+  try{ ["cq-vocab-v1:summer", "cq-vocab-v1", "cq-deck-v1"].forEach(k=>localStorage.removeItem(k)); }catch(e){}
 }
 function alsoCorrect(word, typed){   // 同義字一律算對，不然小孩會被誤判
   return (SYNONYMS[word.zh] || [word.w]).some(x=>norm(x) === norm(typed));
@@ -3995,39 +3868,15 @@ document.querySelectorAll(".nav button").forEach(b=>{
     if(b.dataset.view === "vStats") renderStats();
     if(b.dataset.view === "vList") renderList();
     if(b.dataset.view === "vSet") renderSettings();
-    showDeckPicker(b.dataset.view);
     window.scrollTo(0,0);
   };
 });
 
-/* ================= 題庫切換 ================= */
-/* 題庫選擇只在真的會整頁改變的地方出現。
-   進度頁只有一半的內容跟題庫有關（存摺和日曆是共用的），設定頁只有一個清除鈕用得到，
-   所以那兩頁改用文字標明是哪個題庫，要換題庫回練習頁換。 */
-function showDeckPicker(view){
-  $("deckPicker").hidden = view === "vStats" || view === "vSet";
-}
+/* ================= 題庫標題 ================= */
+/* 以前有暑假版／總整理版兩個題庫要切換，2026-09 併成一份，剩下標題文字。 */
 function renderDecks(){
-  $("deckPicker").innerHTML = Object.values(DECKS).map(d=>{
-    let n = 0;
-    try{ const r = JSON.parse(localStorage.getItem("cq-vocab-v1:" + d.key)); n = (r && r.done) || 0; }catch(e){}
-    return `<button class="deck" data-deck="${d.key}" aria-pressed="${d.key===DECK.key}">
-      <b>${d.label}</b><span>${d.sub} · ${d.words.length} 字</span>
-      <u>${n ? "已答 " + n + " 題" : "還沒開始"}</u></button>`;
-  }).join("");
-  $("deckPicker").querySelectorAll(".deck").forEach(b=>{
-    b.onclick = () => {
-      if(b.dataset.deck === DECK.key) return;
-      useDeck(b.dataset.deck);
-      listCat = "all";
-      renderDecks(); renderChips(); refreshHeader(); renderListCats(); renderList(); renderStats();
-      $("qCard").hidden = true; $("sumCard").hidden = true; $("startCard").hidden = false;
-    };
-  });
   $("hDeck").textContent = DECK.label;
-  $("statDeck").textContent = `${DECK.label} 的成績`;
-  $("weakDeck").textContent = `${DECK.label} 需要加強的字`;
-  $("btnReset").textContent = `清除「${DECK.label}」的答題紀錄`;
+  $("btnReset").textContent = "清除單字的答題紀錄";
 }
 
 /* ================= 範圍選擇 ================= */
@@ -5197,7 +5046,7 @@ $("calNext").onclick = () => {
 };
 
 /* ================= 備份與還原 =================
-   把兩個題庫的紀錄壓成一段文字，可貼到 LINE 保存。純本機，不上傳。 */
+   把單字和成語的紀錄壓成一段文字，可貼到 LINE 保存。純本機，不上傳。 */
 const BK_PREFIX = "CQ5:";
 const BK_OLD    = ["CQ2:", "CQ3:", "CQ4:"];    // 舊碼都還原得回來，前綴一律 4 個字
 function bkVer(t){                     // 0 = 不是備份碼
@@ -5329,7 +5178,7 @@ function unpackDeck(str, ver){
   return o;
 }
 function exportCode(){
-  const parts = Object.keys(DECKS).concat(["idiom"]).map(k=>{   // idiom = 成語ㄚ喵，不在英文題庫清單裡
+  const parts = [DECK.key, "idiom"].map(k=>{               // idiom = 成語ㄚ喵
     try{
       const raw = localStorage.getItem("cq-vocab-v1:" + k);
       return raw ? k + "=" + packDeck(JSON.parse(raw)) : "";
@@ -5344,7 +5193,7 @@ function importCode(code){
   const t = String(code).trim().replace(/\s+/g, "");
   const ver = bkVer(t);
   if(!ver) return "這段文字不是備份碼";
-  let restored = 0;
+  let restored = 0, legacy = null;
   try{
     const body = t.slice(4);
     (ver === 2 ? atob(body) : b64d(body)).split("~").filter(Boolean).forEach(chunk=>{
@@ -5363,13 +5212,15 @@ function importCode(code){
         localStorage.setItem("cq-vocab-v1:idiom", JSON.stringify({done:o.done, right:o.right, stats:o.stats}));
         restored++; return;
       }
-      if(!DECKS[k]) return;
+      if(k === "summer"){ legacy = o; restored++; return; }  // 舊備份碼裡的暑假版：等 1200 那份載好再併進去
+      if(k !== DECK.key) return;
       localStorage.setItem("cq-vocab-v1:" + k, JSON.stringify(o));
       restored++;
     });
   }catch(e){ return "備份碼看起來壞掉了，請重新複製一次"; }
   if(!restored) return "備份碼裡沒有可以還原的紀錄";
-  useDeck(DECK.key);
+  useDeck();
+  if(mergeInto(legacy)) save();
   return "";
 }
 $("btnExport").onclick = async e => {
@@ -5421,15 +5272,16 @@ function syncSummary(){
     const d = SHARED.days[k];
     days[k] = {n:d.n || 0, r:d.r || 0, m:paidOf(d)};
   });
-  const decks = {};
-  Object.keys(DECKS).forEach(k=>{
+  const decks = {};                                        // 家長頁照舊吃 decks{}，現在只有一份
+  [DECK].forEach(D=>{
+    const k = D.key;
     let o = null;
     try{ o = JSON.parse(localStorage.getItem("cq-vocab-v1:" + k)); }catch(e){}
     if(!o || !o.stats) return;
-    const words = DECKS[k].words, st = w => o.stats[w] || {r:0, x:0, streak:0};
+    const words = D.words, st = w => o.stats[w] || {r:0, x:0, streak:0};
     const all = Object.keys(o.stats).map(x=>o.stats[x]);
     decks[k] = {
-      label: DECKS[k].label,
+      label: D.label,
       total: words.length,
       done:  all.reduce((a,x)=>a + (x.r||0) + (x.x||0), 0),
       right: all.reduce((a,x)=>a + (x.r||0), 0),
@@ -5756,17 +5608,17 @@ function renderStats(){
   $("weakList").querySelectorAll("[data-say]").forEach(b=>b.onclick = ()=>say(b.dataset.say));
 }
 $("btnResetShared").onclick = () => {
-  if(!confirm("確定要清除練習日曆和遊戲時間存摺嗎？\n（兩個題庫共用，單字的答題紀錄會保留）")) return;
+  if(!confirm("確定要清除練習日曆和遊戲時間存摺嗎？\n（跟成語ㄚ喵共用，單字的答題紀錄會保留）")) return;
   if(!checkPin()) return;
   SHARED = {days:{}, bank:{earned:0, used:0, bonus:0}, gifts:[], coupons:[]};
   saveShared(); refreshHeader(); renderStats(); renderDecks();
   toast("練習日曆與存摺已清除");
 };
 $("btnReset").onclick = () => {
-  if(!confirm(`確定要清除「${DECK.label}」的答題紀錄嗎？\n（練習日曆和遊戲時間存摺是兩個題庫共用的，會保留）`)) return;
+  if(!confirm("確定要清除單字的答題紀錄嗎？\n（練習日曆和遊戲時間存摺會保留，成語ㄚ喵的紀錄也不動）")) return;
   if(!checkPin()) return;
   S = blank(); save(); refreshHeader(); renderStats(); renderList(); renderDecks();
-  toast(`「${DECK.label}」的答題紀錄已清除`);
+  toast("單字的答題紀錄已清除");
 };
 
 /* ================= 顯示設定：字級與配色 ================= */
@@ -5830,16 +5682,13 @@ function showUpdate(worker){
 
 /* ================= 啟動 ================= */
 loadShared();
-let startDeck = "summer";
-try{ startDeck = localStorage.getItem(DECK_KEY) || "summer"; }catch(e){}
-useDeck(startDeck);
+useDeck();
 $("heroSub").textContent = `答對 +1、答錯 -1，換遊戲時間（${TIERS[0].n} 題 ${TIERS[0].m} 分起跳，一天最多 ${REWARD} 分）`;
 $("chipListen").setAttribute("aria-pressed", listenOn && TTS);
 if(!TTS) $("chipListen").disabled = true;
 renderMatrix();
 renderSettings();
 renderDecks();
-showDeckPicker("vQuiz");
 renderChips();
 $("verline").textContent = "版本 " + VERSION;
 $("heroVer").textContent = "版本 " + VERSION;

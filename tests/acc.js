@@ -146,11 +146,6 @@ w.eval(`SHARED.days[dayKey()]={n:${top},r:${top},mw:${top}}; refreshHeader();`);
 ok(!hTxt().includes('再答對'),'到頂就不該再叫人答題, 實得 '+hTxt());
 ok(hTxt().includes('✓'),'到頂要有完成標記, 實得 '+hTxt());
 ok($('hBar').style.width==='100%','到頂進度條要滿格');
-// 兩個題庫共用日曆，所以切題庫不該讓今天的進度歸零
-const barTop=$('hBar').style.width;
-click([...d.querySelectorAll('.deck')].find(b=>b.dataset.deck==='full'));
-ok($('hBar').style.width===barTop,'切題庫後今日進度不得歸零');
-ok(hTxt().includes('✓'),'切題庫後仍是已達上限, 實得 '+hTxt());
 
 console.log(`\n通過 ${pass} / 失敗 ${fail}`);
 process.exit(fail?1:0);

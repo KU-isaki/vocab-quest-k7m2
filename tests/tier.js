@@ -20,14 +20,14 @@ function ansOf(){
 }
 let pass=0,fail=0; const ok=(c,m)=>{c?pass++:(fail++,console.log('  ✗ '+m))};
 const TIERS=w.eval('TIERS'), SPEND=w.eval('SPEND'), REWARD=w.eval('REWARD');
-const SW=w.eval('SUMMER_WORDS'); const byZh={}; SW.forEach(x=>(byZh[x.zh]=byZh[x.zh]||[]).push(x.w));
+const SW=w.eval('WORDS'); const byZh={}; SW.forEach(x=>(byZh[x.zh]=byZh[x.zh]||[]).push(x.w));
 const stats=()=>click([...d.querySelectorAll('.nav button')].find(b=>b.dataset.view==='vStats'));
 const bank=()=>w.eval('SHARED.bank.earned');
 function answer(){ const t=$('qKind').textContent;
   if(d.querySelector('#qBody .choice')){ const aw=w.eval('queue[idx].word.w');
     const bs=[...d.querySelectorAll('#qBody .choice')];
     click(bs.find(x=>x.dataset.w===aw)||bs[0]); click($('btnCheck'));
-  } else { const a=ansOf();
+  } else { const a=w.eval('queue[idx].word.w');
     if((t.includes('拼英文')||t.includes('填單字'))){ const ts=[...d.querySelectorAll('#qBody .tile')];
       const seq=a.toLowerCase().split('').map(c=>ts.find(x=>x.textContent===c&&!x.classList.contains('used')));
       if(seq.every(Boolean)) seq.forEach(click); click($('btnCheck')); }

@@ -29,8 +29,8 @@ let pass=0, fail=0;
 const ok=(c,m)=>{ c?(pass++):(fail++,console.log('  ✗ '+m)); };
 
 // 1. 初始渲染
-ok(d.querySelectorAll('#catChips .chip').length===6, '分類 chip 應有 6 顆, 實得 '+d.querySelectorAll('#catChips .chip').length);
-ok(d.querySelectorAll('#listBody .wrow').length===114, '單字表 114 列, 實得 '+d.querySelectorAll('#listBody .wrow').length);
+ok(d.querySelectorAll('#catChips .chip').length===38, '分類 chip 應有 38 顆, 實得 '+d.querySelectorAll('#catChips .chip').length);
+ok(d.querySelectorAll('#listBody .wrow').length>=1207, '單字表至少 1207 列, 實得 '+d.querySelectorAll('#listBody .wrow').length);
 
 // 2. 開始練習
 click($('btnStart'));
@@ -78,7 +78,7 @@ if(hTier){
 }else ok($('hScore').textContent.includes('✓'),'到頂要顯示完成標記');
 
 // 4. localStorage 有寫入
-const saved=JSON.parse(w.localStorage.getItem('cq-vocab-v1:summer'));
+const saved=JSON.parse(w.localStorage.getItem('cq-vocab-v1:full'));
 ok(saved && saved.done===R, `localStorage 應存下 done=${R}`);
 ok(Object.keys(saved.stats).length===R, `應只存 ${R} 個考過的字, 實得 `+Object.keys(saved.stats).length);
 

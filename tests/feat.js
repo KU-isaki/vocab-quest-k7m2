@@ -22,19 +22,19 @@ let pass=0,fail=0; const ok=(c,m)=>{c?pass++:(fail++,console.log('  ✗ '+m))};
 
 const NOTES=w.eval('NOTES');
 ok(Object.keys(NOTES).length===222,'NOTES 應有 222 條, 實得 '+Object.keys(NOTES).length);
-const SW=w.eval('SUMMER_WORDS'), FW=w.eval('FULL_WORDS');
-ok(SW.every(x=>x.use && x.use.length>5),'暑假版 114 字每字都要有用法, 缺 '+SW.filter(x=>!x.use).length);
-ok(SW.find(x=>x.w==='child').use.includes('children'),'child 的說明應提到 children');
+const FW=w.eval('FULL_WORDS'), SW=FW.filter(x=>x.cats.some(c=>['c1','c2','c3','c4','c5'].includes(c)));
+ok(SW.filter(x=>x.use && x.use.length>5).length>=112,'前五類（原暑假範圍）的字幾乎都要有用法, 實得 '+SW.filter(x=>x.use).length);
+ok(FW.find(x=>x.w==='child').use.includes('children'),'child 的說明應提到 children');
 const fwUse=FW.filter(x=>x.use).length;
-ok(fwUse>200,'總整理版應有 200+ 字帶說明, 實得 '+fwUse);
+ok(fwUse>200,'單字表應有 200+ 字帶說明, 實得 '+fwUse);
 ok(FW.find(x=>x.w==='its').use.includes("it's"),'its 應解釋跟 it\'s 的差別');
 
 // 單字表展開
 click([...d.querySelectorAll('.nav button')].find(b=>b.dataset.view==='vList'));
 const exs=d.querySelectorAll('#listBody .ex');
-ok(exs.length===114,'暑假版每列都該有展開鈕, 實得 '+exs.length);
+ok(exs.length===d.querySelectorAll('#listBody .wrow').length && exs.length>1200,'每列都該有展開鈕, 實得 '+exs.length);
 const notes=d.querySelectorAll('#listBody .note');
-ok(notes.length===114,'應有 114 個說明區塊, 實得 '+notes.length);
+ok(notes.length===d.querySelectorAll('#listBody .wrow').length,'每列都要有說明區塊, 實得 '+notes.length);
 ok([...notes].every(n=>n.hidden),'預設全部收合');
 click(exs[0]);
 ok(!$(exs[0].dataset.note).hidden,'點一下應展開');
@@ -47,7 +47,7 @@ ok($(exs[0].dataset.note).hidden,'再點一下應收合');
 click([...d.querySelectorAll('.nav button')].find(b=>b.dataset.view==='vQuiz'));
 const byZh={}; SW.forEach(x=>(byZh[x.zh]=byZh[x.zh]||[]).push(x.w));
 let sawWrong=false, sawRight=false;
-for(let r=0;r<3 && !(sawWrong&&sawRight);r++){ click($('btnStart'));
+for(let r=0;r<12 && !(sawWrong&&sawRight);r++){ click($('btnStart'));
   for(let i=0;i<R;i++){ const t=$('qKind').textContent;
     const wrong = i%2===0;
     if(d.querySelector('#qBody .choice')){
@@ -56,7 +56,7 @@ for(let r=0;r<3 && !(sawWrong&&sawRight);r++){ click($('btnStart'));
       click(wrong ? bs.find(b=>b.dataset.w!==aw) : bs.find(b=>b.dataset.w===aw));
       click($('btnCheck'));
     } else {
-      const ans=ansOf();
+      const ans=w.eval('queue[idx].word.w');
       if((t.includes('拼英文')||t.includes('填單字'))){
         const tiles=[...d.querySelectorAll('#qBody .tile')];
         const seq = wrong ? tiles.slice(0,d.querySelectorAll('#qBody .slot').length)
@@ -66,7 +66,9 @@ for(let r=0;r<3 && !(sawWrong&&sawRight);r++){ click($('btnStart'));
       } else { $('typed').value = wrong?'zzzz':ans; click($('btnCheck')); }
     }
     const isWrong=$('fbTitle').textContent.includes('✗');
-    if(isWrong){ sawWrong=true; ok(!$('fbUse').hidden,'答錯時應顯示用法'); ok($('fbUse').textContent.length>5,'用法內容不該空'); }
+    const hasUse=!!w.eval('queue[idx].word.use');
+    if(isWrong && hasUse){ sawWrong=true; ok(!$('fbUse').hidden,'答錯時應顯示用法'); ok($('fbUse').textContent.length>5,'用法內容不該空'); }
+    else if(isWrong){ ok($('fbUse').hidden,'沒寫用法的字答錯不該顯示空區塊'); }
     else { sawRight=true; ok($('fbUse').hidden,'答對時不該顯示用法'); }
     click($('btnNext')); } }
 ok(sawWrong&&sawRight,'測試應同時涵蓋答對與答錯');

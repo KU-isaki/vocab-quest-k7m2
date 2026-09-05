@@ -67,10 +67,10 @@ ok(!t.ev("syncConf()"), "沒填「這台是誰在用」不得開啟雲端備份"
 t = boot(ls=>ls.setItem("cq-profile", "大寶"));
 // 先造一點答題紀錄，摘要才有東西可以放（沒練過的題庫本來就不該出現在摘要裡）
 t.ev(`(()=>{
-  const a = DECKS.summer.words[0].w, b = DECKS.summer.words[1].w, o = {done:10, right:8, stats:{}};
+  const a = DECK.words[0].w, b = DECK.words[1].w, o = {done:10, right:8, stats:{}};
   o.stats[a] = {r:1, x:4, streak:0};      // 一直錯的
   o.stats[b] = {r:5, x:0, streak:3};      // 已熟練的
-  localStorage.setItem("cq-vocab-v1:summer", JSON.stringify(o));
+  localStorage.setItem("cq-vocab-v1:full", JSON.stringify(o));
 })()`);
 t.w.prompt = ()=>setupCode(API, "w-secret");
 t.click(t.$("btnSync"));
@@ -89,14 +89,14 @@ ok(typeof body.code === "string" && body.code.startsWith(t.ev("BK_PREFIX")), "�
 const s = body.sum;
 ok(s.who === "大寶" && !!s.dev && s.at > 1e9, "摘要要帶身分與時間");
 ok(!!s.days && typeof s.streak === "number", "① 這週有沒有在練：要有日曆與連續天數");
-ok(!!s.decks.summer && Array.isArray(s.decks.summer.weak),
+ok(!!s.decks.full && Array.isArray(s.decks.full.weak),
   `② 哪幾個字一直錯：要有待加強字, 實得 ${JSON.stringify(s.decks)}`);
-ok(s.decks.summer.weak.length === 1 && s.decks.summer.weak[0].x === 4,
-  `只列真的還沒學會的字, 實得 ${JSON.stringify(s.decks.summer.weak)}`);
-ok(!!s.decks.summer.weak[0].zh, "待加強字要附中文，家長才看得懂");
-ok(s.decks.summer.mastered === 1 && s.decks.summer.total > 0,
-  `要有已熟練/總字數, 實得 ${s.decks.summer.mastered}/${s.decks.summer.total}`);
-ok(!s.decks.full, "沒練過的題庫不該出現在摘要裡");
+ok(s.decks.full.weak.length === 1 && s.decks.full.weak[0].x === 4,
+  `只列真的還沒學會的字, 實得 ${JSON.stringify(s.decks.full.weak)}`);
+ok(!!s.decks.full.weak[0].zh, "待加強字要附中文，家長才看得懂");
+ok(s.decks.full.mastered === 1 && s.decks.full.total > 0,
+  `要有已熟練/總字數, 實得 ${s.decks.full.mastered}/${s.decks.full.total}`);
+ok(Object.keys(s.decks).length === 1, "現在只有一份單字表，摘要裡不得多出別的");
 ok(!!s.bank && Array.isArray(s.gifts) && Array.isArray(s.coupons), "③ 獎勵有沒有效：要有存摺與贈送紀錄");
 ok(!/"pin"|cq-pin/.test(c0.opt.body), "不得把家長密碼傳出去");
 // 成語ㄚ喵：飼料帳與成語摘要要一起上去（摘要由成語頁算好放在 localStorage）
@@ -186,7 +186,7 @@ ok(t.calls[0].opt.keepalive === true, "小份的照樣用 keepalive（關掉分�
 t = boot(seedOn);
 t.ev(`(()=>{                            // 灌成滿載的樣子
   const o = {done:9, right:9, stats:{}};
-  DECKS.full.words.forEach(w=>{ o.stats[w.w] = {r:9, x:3, streak:1, due:"2026-12-31"}; });
+  DECK.words.forEach(w=>{ o.stats[w.w] = {r:9, x:3, streak:1, due:"2026-12-31"}; });
   localStorage.setItem("cq-vocab-v1:full", JSON.stringify(o));
   for(let i=0;i<400;i++){ const d=new Date(2026,0,1); d.setDate(d.getDate()+i);
     SHARED.days[dayKey(d)] = {n:50, r:45, paid:30}; }

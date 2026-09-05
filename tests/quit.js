@@ -17,7 +17,7 @@ function ansOf(){
   return null;
 }
 let pass=0,fail=0; const ok=(c,m)=>{c?pass++:(fail++,console.log('  ✗ '+m))};
-const SW=w.eval('SUMMER_WORDS'); const byZh={}; SW.forEach(x=>(byZh[x.zh]=byZh[x.zh]||[]).push(x.w));
+const SW=w.eval('WORDS'); const byZh={}; SW.forEach(x=>(byZh[x.zh]=byZh[x.zh]||[]).push(x.w));
 // n 題答對, 之後可選擇中途結束
 function answer(correct){
   const t=$('qKind').textContent;
@@ -27,7 +27,7 @@ function answer(correct){
     click(correct? bs.find(b=>b.dataset.w===aw) : bs.find(b=>b.dataset.w!==aw));
     click($('btnCheck'));   // 選完要按檢查才送出
   } else {
-    const ans=ansOf();
+    const ans=w.eval('queue[idx].word.w');
     if((t.includes('拼英文')||t.includes('填單字'))){
       const tiles=[...d.querySelectorAll('#qBody .tile')];
       const seq= correct ? ans.toLowerCase().split('').map(c=>tiles.find(x=>x.textContent===c&&!x.classList.contains('used')))
@@ -80,7 +80,7 @@ ok(/還要加強 \d+ 字：|沒有待加強/.test(rep2),'訊息要列出待加�
 console.log('  ── 全對那輪的訊息 ──\n'+rep2.split('\n').map(s=>'    '+s).join('\n'));
 
 // ⑤ 答對率必須等於 累積答對/累積答題
-const S=JSON.parse(w.localStorage.getItem('cq-vocab-v1:summer'));
+const S=JSON.parse(w.localStorage.getItem('cq-vocab-v1:full'));
 const expect=Math.round(S.right/S.done*100);
 ok(rep2.includes(`答對率 ${expect}%`),`答對率應為 ${expect}%（${S.right}/${S.done}）`);
 ok(rep2.includes(`累積：${S.done} 題`),'累積題數要跟實際一致');

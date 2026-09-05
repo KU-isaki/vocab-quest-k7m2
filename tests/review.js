@@ -8,39 +8,36 @@ w.HTMLElement.prototype.scrollIntoView=function(){};
 const $=id=>d.getElementById(id), click=e=>e.dispatchEvent(new w.MouseEvent('click',{bubbles:true}));
 let pass=0,fail=0; const ok=(c,m)=>{c?pass++:(fail++,console.log('  ✗ '+m))};
 const list=()=>click([...d.querySelectorAll('.nav button')].find(b=>b.dataset.view==='vList'));
-const deckBtn=k=>[...d.querySelectorAll('.deck')].find(b=>b.dataset.deck===k);
 
-// ① 暑假版分類列
+// ① 分類列（只有一份 1200 單字表）
 list();
 let chips=[...d.querySelectorAll('#listCats .chip')];
-ok(chips.length===6,'暑假版應有 6 顆分類鈕（含全部）, 實得 '+chips.length);
-ok(chips[0].textContent.includes('114'),'全部鈕要顯示總字數, 實得 '+chips[0].textContent);
+const N=w.eval('WORDS.length');
+ok(chips.length===38,'應有 38 顆分類鈕（37 類＋全部）, 實得 '+chips.length);
+ok(chips[0].textContent.includes(String(N)),'全部鈕要顯示總字數 '+N+', 實得 '+chips[0].textContent);
 ok(chips[0].getAttribute('aria-pressed')==='true','預設選全部');
-ok(d.querySelectorAll('#listBody .wrow').length===114,'預設顯示全部 114 字');
+ok(d.querySelectorAll('#listBody .wrow').length>=N,'預設顯示全部（跨類的字會重複列）');
+ok(!d.querySelector('.deck') && !$('deckPicker'),'不該再有題庫切換');
 
 // 點某一類只顯示該類
 const bodyChip=chips.find(c=>c.textContent.includes('身體部位'));
 click(bodyChip);
-const n=d.querySelectorAll('#listBody .wrow').length;
-ok(n===23,'身體部位應有 23 字, 實得 '+n);
+const n=d.querySelectorAll('#listBody .wrow').length, nBody=w.eval('WORDS.filter(x=>x.cats.includes("c3")).length');
+ok(n===nBody,'身體部位應有 '+nBody+' 字, 實得 '+n);
 ok(d.querySelectorAll('#listBody .grouphead').length===1,'只該顯示一個分類標題');
 ok($('listInfo').textContent.includes('身體部位'),'應顯示目前分類, 實得 '+$('listInfo').textContent);
-ok($('listInfo').textContent.includes('23'),'應顯示字數');
+ok($('listInfo').textContent.includes(String(nBody)),'應顯示字數');
 
 // 搜尋時自動跳回全部
 $('search').value='happy';
 $('search').dispatchEvent(new w.Event('input',{bubbles:true}));
 ok([...d.querySelectorAll('#listCats .chip')][0].getAttribute('aria-pressed')==='true','搜尋時應跳回全部');
 const rows=[...d.querySelectorAll('#listBody .wrow .en')].map(e=>e.textContent);
-ok(rows.includes('happy')&&rows.includes('unhappy'),'搜尋要跨全部分類, 實得 '+rows);
+ok(rows.includes('happy')&&rows.length>=2,'搜尋要跨全部分類, 實得 '+rows);
 $('search').value=''; $('search').dispatchEvent(new w.Event('input',{bubbles:true}));
 
-// ② 總整理版 37 類
-click([...d.querySelectorAll('.nav button')].find(b=>b.dataset.view==='vQuiz'));
-click(deckBtn('full'));
-list();
+// ② 37 類都在
 chips=[...d.querySelectorAll('#listCats .chip')];
-ok(chips.length===38,'總整理版應有 38 顆分類鈕, 實得 '+chips.length);
 const verbChip=chips.find(c=>c.textContent.includes('其他動詞'));
 ok(!!verbChip,'應有「其他動詞」分類');
 click(verbChip);

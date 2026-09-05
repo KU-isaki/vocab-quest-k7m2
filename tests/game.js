@@ -25,7 +25,7 @@ const DAILY=w.eval('DAILY'), ROUND=w.eval('ROUND'), REWARD=w.eval('REWARD');
 const TIERS=w.eval('TIERS'), SPEND=w.eval('SPEND');
 // 測試都全對 → 答對率 100% → ×1.2
 const ACCTOP=w.eval('ACC[0].m'), perfect=m=>Math.min(REWARD,Math.round(m*ACCTOP)), T1=perfect(TIERS[0].m);
-const SW=w.eval('SUMMER_WORDS'); const byZh={}; SW.forEach(x=>(byZh[x.zh]=byZh[x.zh]||[]).push(x.w));
+const SW=w.eval('WORDS'); const byZh={}; SW.forEach(x=>(byZh[x.zh]=byZh[x.zh]||[]).push(x.w));
 const stats=()=>click([...d.querySelectorAll('.nav button')].find(b=>b.dataset.view==='vStats'));
 function answer(correct=true){
   const t=$('qKind').textContent;
@@ -35,7 +35,7 @@ function answer(correct=true){
     const b= correct ? bs.find(x=>x.dataset.w===aw) : bs.find(x=>x.dataset.w!==aw);
     click(b||bs[0]); click($('btnCheck'));
   } else {
-    const a=ansOf();
+    const a=w.eval('queue[idx].word.w');
     if((t.includes('拼英文')||t.includes('填單字'))){ const ts=[...d.querySelectorAll('#qBody .tile')];
       const seq=a.toLowerCase().split('').map(c=>ts.find(x=>x.textContent===c&&!x.classList.contains('used')));
       if(seq.every(Boolean)) seq.forEach(click); click($('btnCheck')); }
@@ -140,7 +140,7 @@ ok(w.eval('importCode("亂打一通")')!=='','不是備份碼要擋下來');
 ok(w.eval('importCode("CQ2:@@@壞掉")')!=='','壞掉的備份碼要擋下來');
 ok(w.eval('bankLeft()')>=0,'還原後存摺不得為負');
 // 往返一致性：pack → unpack 後資料必須完全相同
-const orig=JSON.parse(w.localStorage.getItem('cq-vocab-v1:summer'));
+const orig=JSON.parse(w.localStorage.getItem('cq-vocab-v1:full'));
 const round=w.eval(`unpackDeck(packDeck(${JSON.stringify(orig)}))`);
 ok(round.done===orig.done&&round.right===orig.right,'往返後總題數要一致');
 ok(JSON.stringify(round.bank)===JSON.stringify(orig.bank),'往返後存摺要一致');
@@ -163,7 +163,7 @@ const t3=w.eval('unpackDeck(packDeck({days:{"2026-08-16":{n:30,r:30,paid:18}}}))
 ok(t3.days["2026-08-16"].paid===18,`每天要存回實際分鐘數, 實得 ${t3.days["2026-08-16"].paid}`);
 ok(w.eval('paidOf(unpackDeck(packDeck({days:{"2026-08-16":{n:30,r:30,paid:18}}})).days["2026-08-16"])')===18,
   '還原後日曆顯示的分鐘不得虛胖成 60');
-ok(code.length<4000,'備份碼應壓到 4000 字元以內, 實得 '+code.length);
+ok(code.length<5000,'備份碼應壓到 5000 字元以內（1200 字的單字比暑假版長，同樣題數會多一成）, 實得 '+code.length);
 
 // ⑧ 成績訊息含遊戲時間
 const rep=w.eval('reportText(false)');
