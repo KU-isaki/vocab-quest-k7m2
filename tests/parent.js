@@ -25,7 +25,10 @@ const LIST = {children:[
     gifts:[{d:D2, m:30, why:"幫忙洗碗"}, {d:D2, m:-5, why:"亂發脾氣"}],
     coupons:[{d:D2, on:D, why:"考試進步"}],
     decks:{summer:{label:"暑假版", total:114, done:200, right:170, mastered:60,
-                   weak:[{w:"honest", zh:"誠實的", x:4}, {w:"nurse", zh:"護士", x:2}]}}}},
+                   weak:[{w:"honest", zh:"誠實的", x:4}, {w:"nurse", zh:"護士", x:2}]}},
+    feed:{earned:14, used:3, bonus:0, tickets:1},
+    idiom:{byLv:{1:{m:20, total:80}, 2:{m:5, total:120}, 3:{m:0, total:120}, 4:{m:0, total:129}},
+           weak:[{c:"守株待兔", m:"死守老方法，只想等好運。", x:3}], done:60, right:50, streak:2, at:1}}},
   {child:"二寶", dev:"bb22", at:Math.floor(Date.now()/1000) - 7200, sum:{
     v:"2026.09.02-b", who:"二寶", streak:0, days:{}, bank:{left:0},
     gifts:[], coupons:[], decks:{}}}
@@ -90,6 +93,13 @@ ok(/115/.test(txt), "要顯示存摺剩餘");
 ok(/唯讀/.test(txt), "畫面上要標明這是唯讀的");
 ok(t.d.querySelectorAll(".d.gift").length > 0, "有送獎勵的日子要在圖上標出來");
 ok(/2026\.09\.02-b/.test(txt), "要看得到小孩那台的版本");
+// 成語ㄚ喵
+ok(/成語ㄚ喵/.test(txt), "要有成語ㄚ喵這一段");
+ok(/守株待兔/.test(txt) && /錯 3/.test(txt), "要列出一直錯的成語");
+ok(/20 \/ 80/.test(txt), "各級熟練要顯示");
+ok(/>11</.test(t.d.body.innerHTML), "飼料剩餘要算對（14+0-3）");
+ok(t.d.querySelectorAll(".lvb").length === 4, "四級都要有一條");
+ok(!/成語ㄚ喵/.test(boot(seedConf, () => okRes({children:[LIST.children[1]]})).d.body.textContent) || true, "沒練成語的小孩不強制顯示");
 
 // 沒資料時要講人話，不是空白
 t = boot(seedConf, () => okRes({children:[]}));
@@ -126,7 +136,9 @@ const EVIL = {children:[{child:"壞資料", dev:"x", at:1, sum:{
   gifts:[{d:D, m:BOOM, why:BOOM}],
   coupons:[{d:D, on:D, why:BOOM}],
   decks:{summer:{label:BOOM, total:BOOM, done:BOOM, right:BOOM, mastered:BOOM,
-                 weak:[{w:BOOM, zh:BOOM, x:BOOM}]}}}}]};
+                 weak:[{w:BOOM, zh:BOOM, x:BOOM}]}},
+  feed:{earned:BOOM, used:BOOM, bonus:BOOM, tickets:BOOM},
+  idiom:{byLv:{1:{m:BOOM, total:BOOM}}, weak:[{c:BOOM, m:BOOM, x:BOOM}], streak:BOOM}}}]};
 t = boot(seedConf, () => okRes(EVIL));
 await wait();
 ok(!t.w.__pwned, "小孩上傳的內容不得在家長瀏覽器裡執行");

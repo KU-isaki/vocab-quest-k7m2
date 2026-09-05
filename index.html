@@ -988,7 +988,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.05-a";
+const VERSION = "2026.09.05-b";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -5189,8 +5189,8 @@ $("calNext").onclick = () => {
 
 /* ================= 備份與還原 =================
    把兩個題庫的紀錄壓成一段文字，可貼到 LINE 保存。純本機，不上傳。 */
-const BK_PREFIX = "CQ4:";
-const BK_OLD    = ["CQ2:", "CQ3:"];    // 舊碼都還原得回來，前綴一律 4 個字
+const BK_PREFIX = "CQ5:";
+const BK_OLD    = ["CQ2:", "CQ3:", "CQ4:"];    // 舊碼都還原得回來，前綴一律 4 個字
 function bkVer(t){                     // 0 = 不是備份碼
   if(t.startsWith(BK_PREFIX)) return 4;
   const i = BK_OLD.indexOf(t.slice(0, 4));
@@ -5228,13 +5228,16 @@ function packDeck(o){                  // 緊湊格式，備份碼才貼得進�
     return `${k}:${s.r||0},${s.x||0},${s.streak||0},${sd(s.due)}`;
   }).join(";");
   const dy = Object.keys(o.days || {}).map(k=>{
-    const v = o.days[k];
-    return `${sd(k)}:${v.n||0},${v.r||0},${paidOf(v)}`;      // 存實際分鐘，不是有沒有達標
+    const v = o.days[k], i = v.i;
+    return `${sd(k)}:${v.n||0},${v.r||0},${paidOf(v)}`      // 存實際分鐘，不是有沒有達標
+      + (i ? `,${i.n||0},${i.r||0},${+i.paid||0}` : "");     // 成語ㄚ喵那天的題數與飼料
   }).join(";");
+  const F = o.feed;
+  const fd = F ? `${F.earned||0},${F.used||0},${F.bonus||0},${F.tickets||0}` : "";
   const ev = e => `${e.dev || ""}:${+e.seq || 0}:${+e.ts || 0}`;   // 事件身分：哪台、第幾號、什麼時候
   const gf = (o.gifts || []).map(g=>`${sd(g.d)}:${+g.m||0}:${ev(g)}:${g.why||""}`).join(";");
   const cp = (o.coupons || []).map(c=>`${sd(c.d)}:${sd(c.on)}:${ev(c)}:${c.why||""}`).join(";");
-  return [o.done||0, o.right||0, b.earned||0, b.used||0, b.bonus||0, st, dy, gf, cp].join("|");
+  return [o.done||0, o.right||0, b.earned||0, b.used||0, b.bonus||0, st, dy, gf, cp, fd].join("|");
 }
 function unpackDeck(str, ver){
   const legacy = ver === 2;            // CQ2 的每天只記了「有沒有達標」，分鐘數已失傳
@@ -5255,8 +5258,16 @@ function unpackDeck(str, ver){
        總比一律當成一天上限 60 分鐘準。新碼直接存分鐘。 */
     const pm = +n[2] || 0;
     if(pm) day.paid = legacy ? dayMinutes(day) : pm;
+    if(n.length >= 6 && (+n[3] || 0) > 0){                 // CQ5 起：成語ㄚ喵那一份
+      day.i = {n:+n[3] || 0, r:+n[4] || 0};
+      if(+n[5]) day.i.paid = +n[5];
+    }
     o.days[ld(k)] = day;
   });
+  if(p[9]){
+    const f = p[9].split(",");
+    o.feed = {earned:+f[0] || 0, used:+f[1] || 0, bonus:+f[2] || 0, tickets:+f[3] || 0};
+  }
   /* CQ3 的事件沒有身分欄位。還原時補一組從備份碼內容推出來的（"bk" + 名次），
      同一張碼還原幾次都是同一組 id，之後做合併去重才不會把同一筆算成兩筆。 */
   const wide = ver >= 4;
@@ -5281,7 +5292,7 @@ function unpackDeck(str, ver){
   return o;
 }
 function exportCode(){
-  const parts = Object.keys(DECKS).map(k=>{
+  const parts = Object.keys(DECKS).concat(["idiom"]).map(k=>{   // idiom = 成語ㄚ喵，不在英文題庫清單裡
     try{
       const raw = localStorage.getItem("cq-vocab-v1:" + k);
       return raw ? k + "=" + packDeck(JSON.parse(raw)) : "";
@@ -5306,8 +5317,13 @@ function importCode(code){
       const o = unpackDeck(chunk.slice(i+1), ver);
       if(k === "shared"){
         SHARED = {days:o.days, bank:o.bank, gifts:o.gifts || [], coupons:o.coupons || []};
+        if(o.feed) SHARED.feed = o.feed;
         fixStamp(SHARED.gifts, "bk"); fixStamp(SHARED.coupons, "bk");
         saveShared(); restored++; return;
+      }
+      if(k === "idiom"){                                   // 成語ㄚ喵的答題紀錄：格式跟英文題庫一樣
+        localStorage.setItem("cq-vocab-v1:idiom", JSON.stringify({done:o.done, right:o.right, stats:o.stats}));
+        restored++; return;
       }
       if(!DECKS[k]) return;
       localStorage.setItem("cq-vocab-v1:" + k, JSON.stringify(o));
@@ -5392,7 +5408,9 @@ function syncSummary(){
           gift:giftTotal(), left:bankLeft()},
     gifts:(SHARED.gifts || []).slice(-30),
     coupons:(SHARED.coupons || []).slice(-30),
-    decks
+    decks,
+    feed:SHARED.feed || null,                       // 成語ㄚ喵的飼料帳
+    idiom:(()=>{ try{ return JSON.parse(localStorage.getItem("cq-idiom-sum")) || null; }catch(e){ return null; } })()
   };
 }
 

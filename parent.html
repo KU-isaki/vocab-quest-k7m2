@@ -66,6 +66,11 @@ button.ghost{background:var(--surface); color:var(--ink); border-color:var(--lin
 input{font:inherit; width:100%; padding:11px 12px; border-radius:11px; margin:0 0 10px;
       border:1px solid var(--line); background:var(--surface); color:var(--ink)}
 .err{color:var(--no); font-size:13px; margin:8px 0 0}
+.lvbars{display:grid; gap:6px; margin:4px 0 0}
+.lvb{display:grid; grid-template-columns:40px 1fr 64px; gap:8px; align-items:center; font-size:12.5px; color:var(--ink-soft)}
+.lvb .bar{height:8px; background:var(--surface-2); border-radius:99px; overflow:hidden}
+.lvb .bar div{height:100%; background:var(--brand); border-radius:99px}
+.lvb span:last-child{text-align:right; font-variant-numeric:tabular-nums}
 .acts{display:flex; gap:8px; margin:16px 0 0}
 .acts button{width:auto; flex:1}
 .bk{margin:10px 0 0}
@@ -181,6 +186,28 @@ function weakList(sum){
           + `<span class="x">錯 ${num(w.x)}</span></li>`).join("") + `</ul>`;
   }).join("");
 }
+/* 成語ㄚ喵：各級熟練、一直錯的成語、飼料。跟其他欄位一樣，數字全部 num()、文字全部 esc() */
+function idiomSection(sum){
+  const I = (sum.idiom && typeof sum.idiom === "object") ? sum.idiom : null;
+  const F = (sum.feed && typeof sum.feed === "object") ? sum.feed : null;
+  if(!I && !F) return "";
+  const byLv = (I && I.byLv && typeof I.byLv === "object") ? I.byLv : {};
+  const names = {1:"一級", 2:"二級", 3:"三級", 4:"四級"};
+  const bars = Object.keys(names).map(lv=>{
+    const b = byLv[lv] || {}, m = num(b.m), tot = num(b.total);
+    return `<div class="lvb"><span>${names[lv]}</span><div class="bar"><div style="width:${tot ? Math.min(100, m/tot*100) : 0}%"></div></div><span>${m} / ${tot || "—"}</span></div>`;
+  }).join("");
+  const weak = Array.isArray(I && I.weak) ? I.weak.slice(0, 8) : [];
+  const left = F ? Math.max(0, num(F.earned) + num(F.bonus) - num(F.used)) : 0;
+  return `<h3>成語ㄚ喵</h3>
+    <div class="row" style="margin-bottom:10px">
+      <div class="stat"><b>${left}</b><span>飼料（顆）</span></div>
+      <div class="stat"><b>${num(I && I.streak)}</b><span>成語連續達標</span></div>
+      <div class="stat"><b>${num(F && F.tickets)}</b><span>轉蛋券</span></div>
+    </div>
+    <div class="lvbars">${bars}</div>
+    ${weak.length ? `<p class="muted" style="margin:10px 0 4px">一直錯的成語</p><ul class="w">` + weak.map(w=>`<li><span class="en" style="letter-spacing:.1em">${esc(w.c)}</span><span class="zh">${esc(w.m)}</span><span class="x">錯 ${num(w.x)}</span></li>`).join("") + `</ul>` : `<p class="muted">目前沒有一直錯的成語。</p>`}`;
+}
 function card(c){
   const sum = c.sum;
   if(!sum) return `<div class="card"><p class="kid">${esc(c.child)}</p>
@@ -202,6 +229,8 @@ function card(c){
 
     <h3>哪幾個字一直錯</h3>
     ${weakList(sum)}
+
+    ${idiomSection(sum)}
 
     <h3>送的獎勵有沒有效</h3>
     <p class="muted">🎁 標記的是有送獎勵的日子，看看那之後幾天的柱子有沒有變高。</p>

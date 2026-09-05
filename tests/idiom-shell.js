@@ -124,6 +124,32 @@ e.ev("SHARED.feed = {earned:1}; saveShared();");
 ok(e.w.localStorage.getItem("cq-shared-v1") === null, "沒有存摺時成語頁不得自己寫一份（會擋掉單字闖關的舊資料搬家）");
 ok(e.$("hFeed").textContent === "0" && e.$("stStreak").textContent === "0" && /再答對/.test(e.$("hStreak").textContent), "沒有紀錄時畫面要是空的而不是壞的");
 
+// ---------- ⑥-2 按鈕配色：通用規則不得蓋掉次要按鈕的文字色（單字闖關踩過白底白字）----------
+{
+  const css = idiomHtml.match(/<style>([\s\S]*?)<\/style>/)[1].replace(/\/\*[\s\S]*?\*\//g, "");
+  const rules = [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)].map(m=>({sel:m[1].trim(), body:m[2]}))
+    .filter(r=>/(^|[;\s])color\s*:/.test(r.body) && /\.btn/.test(r.sel));
+  const spec = sel => ((sel.match(/#[\w-]+/g) || []).length) * 100 + ((sel.match(/\.[\w-]+|\[[^\]]+\]|:(?!:)[\w-]+/g) || []).length) * 10;
+  const generic = rules.filter(r=>!/\.ghost|\.quiet|\.done|\.sel|\.right|\.wrong|:disabled|:hover|:active|:focus|\.ox|\.spellbar/.test(r.sel));
+  const ghost = rules.find(r=>/\.btn\.ghost/.test(r.sel)), quiet = rules.find(r=>/\.btn\.quiet/.test(r.sel));
+  ok(!!ghost && !!quiet, "ghost / quiet 都要自己設定文字色");
+  generic.forEach(g=>{
+    ok(spec(g.sel) < spec(ghost.sel), `通用規則「${g.sel}」特異性不得 >= .btn.ghost，否則次要按鈕會白底白字`);
+    ok(spec(g.sel) < spec(quiet.sel), `通用規則「${g.sel}」不得蓋過 .btn.quiet`);
+  });
+}
+// ---------- ⑥-3 練習中的每個畫面，hidden 的東西都要真的看不見 ----------
+{
+  const t2 = boot(idiomHtml, "idiom.html", ls=>ls.setItem("cq-shared-v1", JSON.stringify({days:{}, bank:{earned:0, used:0, bonus:0}, gifts:[], coupons:[]})));
+  const check = tag => [...t2.d.querySelectorAll("[hidden]")].forEach(el=>ok(disp(t2, el) === "none", `${tag}：#${el.id || el.className} 有 hidden 卻仍顯示 (display=${disp(t2, el)})`));
+  check("主畫面");
+  t2.click(t2.$("btnStart")); check("答題中");
+  ok(disp(t2, t2.$("startCard")) === "none" && disp(t2, t2.$("chainCard")) === "none", "答題中開始卡與接龍卡要收起來");
+  t2.click(t2.$("btnQuit")); check("結算頁");
+  ok(disp(t2, t2.$("qCard")) === "none" && disp(t2, t2.$("sumCard")) !== "none", "結算頁只留結算卡");
+  t2.click(t2.$("btnBackHome")); check("回主畫面");
+}
+
 // ---------- ⑦ 版本標示 ----------
 ok(/版本 \d{4}\.\d{2}\.\d{2}-[a-z]/.test(t.$("heroVer").textContent), "要有版本標示");
 ok(/題庫 \d+ 條/.test(t.$("verline").textContent), "頁尾要有題庫條數");

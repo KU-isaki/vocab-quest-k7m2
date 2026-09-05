@@ -14,6 +14,7 @@ function boot(seed){
     beforeParse(win){
       // 假裝這台開過單字闖關：有一份存摺，飼料才存得住
       win.localStorage.setItem("cq-shared-v1", JSON.stringify({days:{}, bank:{earned:40, used:5, bonus:0}, gifts:[], coupons:[]}));
+      win.localStorage.setItem("cq-idiom-lv", "[1,2,3,4]");     // 測試用全範圍（預設是三、四級）
       if(seed) seed(win.localStorage);
     }});
   const w = dom.window, d = w.document;
@@ -106,7 +107,8 @@ function playRound(t, n, correct = true){
   t.next(); const c2 = t.cur().c; t.answer(false);
   ok(t.ev(`S.stats[${JSON.stringify(c2)}].due`) === today, "答錯要立刻排回來");
   t.click(t.$("btnQuit"));
-  // 錯得多的要優先出現
+  // 錯得多的要優先出現（範圍縮到一級 80 條，門檻才算得準）
+  t.ev(`pickLv = new Set([1]); savePick(); renderPickers();`);
   t.ev(`IDIOMS.slice(0, 10).forEach(i=>{ S.stats[i.c] = {r:0, x:5, streak:0}; }); save();`);
   // 80 條裡只有 10 條錯過，均勻抽 10 題平均只會抽到 1.25 條；加權後理論值約 5。
   // 門檻放 3.5：明顯高於均勻、又不會因為抽樣抖動而偶發失敗。
@@ -193,8 +195,8 @@ function playRound(t, n, correct = true){
 // ================= E5 抓錯字 / E6 用法○✕ =================
 {
   const t = boot();
-  // 塞一條有誤用例句的進去，用法題才有原料
-  t.ev(`IDIOMS.push({c:"再接再厲", zy:"ㄗㄞˋ ㄐㄧㄝ ㄗㄞˋ ㄌㄧˋ", m:"一次又一次繼續努力。", ex:"比賽輸了沒關係，我們再接再厲！", lv:1, chars:[..."再接再厲"], near:[], anti:[], x:"再接再勵", xw:"「厲」是磨刀，不是鼓勵的「勵」。", bad:"他今天再接再厲地睡了一整天。", badw:"用在偷懶上是錯的，這個成語是講努力。"}); byC["再接再厲"] = IDIOMS[IDIOMS.length-1];`);
+  // 四級每條都有易錯字與誤用例句，是這兩種題型的原料
+  t.ev(`pickLv = new Set([4]); savePick(); renderPickers();`);
   pickDiff(t, "hard");
   const forKindC = (want, c) => { for(let r = 0; r < 60; r++){ pickN(t, 50); t.start(); for(let k = 0; k < 50; k++){ if(t.kind() === want && (!c || t.cur().c === c)) return true; t.answer(true); t.next(); } t.click(t.$("btnQuit")); } return false; };
   ok(forKindC("wrong"), "要找得到抓錯字的題");
@@ -222,18 +224,18 @@ function playRound(t, n, correct = true){
   ok(/答對/.test(t.$("fbTitle").textContent), "兩步都對才算對");
   t.click(t.$("btnQuit"));
   // 用法○✕
-  ok(forKindC("usage", "再接再厲"), "要找得到用法題");
-  const right = t.ev("queue[idx].right");
-  ok(t.$("qPrompt").textContent.includes(right ? "比賽輸了" : "睡了一整天"), "句子要對得上○或✕");
+  ok(forKindC("usage"), "要找得到用法題");
+  const right = t.ev("queue[idx].right"), iu = t.cur();
+  ok(t.$("qPrompt").textContent.includes(right ? iu.ex : iu.bad), "句子要對得上○或✕");
   t.answer(false);
   ok(/再記一次/.test(t.$("fbTitle").textContent), "判斷錯要算錯");
-  if(!right) ok(t.$("fbUse").textContent.includes("偷懶"), "誤用的句子答錯要解釋為什麼用錯");
+  if(!right) ok(t.$("fbUse").textContent.includes(iu.badw.slice(0, 4)), "誤用的句子答錯要解釋為什麼用錯");
   t.click(t.$("btnQuit"));
   // ○✕ 要各半左右：直接把同一題出 60 次，數硬幣
   let o = 0;
-  for(let r = 0; r < 60; r++){ t.ev(`queue = [{i: byC["再接再厲"], kind:"usage"}]; idx = 0; showQ();`); if(t.ev("queue[0].right")) o++; }
+  for(let r = 0; r < 60; r++){ t.ev(`queue = [{i: byC["屢見不鮮"], kind:"usage"}]; idx = 0; showQ();`); if(t.ev("queue[0].right")) o++; }
   ok(o > 18 && o < 42, `○✕ 要各半左右, ○ ${o}/60`);
-  ok(t.$("qPrompt").textContent.includes("再接再厲"), "用法題的句子裡要有那個成語");
+  ok(t.$("qPrompt").textContent.includes("屢見不鮮"), "用法題的句子裡要有那個成語");
 }
 
 // ================= W1 飼料帳 =================

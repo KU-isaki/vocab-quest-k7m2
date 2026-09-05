@@ -425,7 +425,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 
 <script>
 /* 版本標示：每次改版都更新，跟單字闖關同一套規矩 */
-const IDIOM_VERSION = "2026.09.05-b";
+const IDIOM_VERSION = "2026.09.05-c";
 
 /* ================= 成語題庫 =================
    格式：["成語", "注音（四組，空格分開）", "解釋", "例句", 級, {選填}]
@@ -951,7 +951,8 @@ function streakDays(){                 // 跟單字闖關同一條：今天還�
   while(SHARED.days[dayKey(t)]){ n++; t.setDate(t.getDate() - 1); }
   return n;
 }
-function feedLeft(){                   // 飼料帳是第一階 W1，先讀著；沒有就是 0
+const nowSec = () => Math.floor(Date.now() / 1000);
+function feedLeft(){                   // 飼料帳：沒有就是 0
   const f = SHARED.feed || {earned:0, used:0, bonus:0};
   return Math.max(0, (f.earned || 0) + (f.bonus || 0) - (f.used || 0));
 }
@@ -1111,11 +1112,21 @@ function tileSet(i){                   // 4 個正確的字 + 4 個干擾字；�
 /* ================= 一輪 ================= */
 let queue = [], idx = 0, roundRight = 0, missed = [], answered = false, wrongMode = false;
 let sel = null, picked = [], tiles = [], xStep = 0, xPos = -1;
+/* 給家長儀表板的摘要。單字闖關那頁負責上傳，但它不認得成語的級距，
+   所以這裡算好放在 localStorage，它只要原封不動帶上去。 */
+function idiomSummary(){
+  const byLv = {};
+  LEVELS.forEach(l=>{ byLv[l.lv] = {m:IDIOMS.filter(i=>i.lv === l.lv && mastered(i.c)).length, total:countLv(l.lv)}; });
+  const weak = IDIOMS.filter(i=>stat(i.c).x > 0 && stat(i.c).streak < 2)
+    .sort((a,b)=>stat(b.c).x - stat(a.c).x).slice(0, 10).map(i=>({c:i.c, m:i.m, x:stat(i.c).x}));
+  return {byLv, weak, done:S.done, right:S.right, streak:feedStreak(), at:nowSec()};
+}
 function save(){
   try{
     const out = {done:S.done, right:S.right, stats:{}};
     for(const k in S.stats){ const v = S.stats[k]; if(v.r || v.x) out.stats[k] = v; }
     localStorage.setItem(KEY, JSON.stringify(out));
+    localStorage.setItem("cq-idiom-sum", JSON.stringify(idiomSummary()));
   }catch(e){}
   saveShared();
 }

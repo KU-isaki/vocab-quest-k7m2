@@ -85,7 +85,7 @@ ok(/關閉/.test(t.$("btnSync").textContent), "按鈕要變成關閉");
 
 // ---------- ⑤ 傳出去的內容 ----------
 const body = JSON.parse(c0.opt.body);
-ok(typeof body.code === "string" && body.code.startsWith("CQ4:"), "要帶完整備份碼");
+ok(typeof body.code === "string" && body.code.startsWith(t.ev("BK_PREFIX")), "要帶完整備份碼");
 const s = body.sum;
 ok(s.who === "大寶" && !!s.dev && s.at > 1e9, "摘要要帶身分與時間");
 ok(!!s.days && typeof s.streak === "number", "① 這週有沒有在練：要有日曆與連續天數");
@@ -99,6 +99,25 @@ ok(s.decks.summer.mastered === 1 && s.decks.summer.total > 0,
 ok(!s.decks.full, "沒練過的題庫不該出現在摘要裡");
 ok(!!s.bank && Array.isArray(s.gifts) && Array.isArray(s.coupons), "③ 獎勵有沒有效：要有存摺與贈送紀錄");
 ok(!/"pin"|cq-pin/.test(c0.opt.body), "不得把家長密碼傳出去");
+// 成語ㄚ喵：飼料帳與成語摘要要一起上去（摘要由成語頁算好放在 localStorage）
+{
+  const t2 = boot(ls=>{ ls.setItem("cq-profile", "大寶");
+    ls.setItem("cq-sync", JSON.stringify({api:API, code:"w-secret"}));
+    ls.setItem("cq-shared-v1", JSON.stringify({days:{}, bank:{earned:0, used:0, bonus:0}, gifts:[], coupons:[], feed:{earned:12, used:3, bonus:0, tickets:1}}));
+    ls.setItem("cq-idiom-sum", JSON.stringify({byLv:{1:{m:5, total:80}, 4:{m:2, total:129}}, weak:[{c:"守株待兔", m:"死守老方法。", x:3}], done:40, right:33, streak:2, at:1}));
+  });
+  t2.ev("syncPush()");
+  await wait();
+  const s2 = JSON.parse(t2.calls[0].opt.body).sum;
+  ok(s2.feed && s2.feed.earned === 12 && s2.feed.tickets === 1, "摘要要帶飼料帳");
+  ok(s2.idiom && s2.idiom.byLv && s2.idiom.byLv["4"].m === 2, "摘要要帶各級熟練");
+  ok(s2.idiom.weak[0].c === "守株待兔", "摘要要帶一直錯的成語");
+  const t3 = boot(seedOn);
+  t3.ev("syncPush()");
+  await wait();
+  const s3 = JSON.parse(t3.calls[0].opt.body).sum;
+  ok(s3.idiom === null && s3.feed === null, "沒練過成語的裝置，摘要裡是 null 不是爆掉");
+}
 
 // ---------- ⑥ 家長操作、練完一輪都要傳 ----------
 t = boot(seedOn);
