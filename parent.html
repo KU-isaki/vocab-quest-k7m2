@@ -208,6 +208,21 @@ function idiomSection(sum){
     <div class="lvbars">${bars}</div>
     ${weak.length ? `<p class="muted" style="margin:10px 0 4px">一直錯的成語</p><ul class="w">` + weak.map(w=>`<li><span class="en" style="letter-spacing:.1em">${esc(w.c)}</span><span class="zh">${esc(w.m)}</span><span class="x">錯 ${num(w.x)}</span></li>`).join("") + `</ul>` : `<p class="muted">目前沒有一直錯的成語。</p>`}`;
 }
+function petSection(sum){
+  const p = (sum.pet && typeof sum.pet === "object") ? sum.pet : null;
+  if(!p) return "";
+  const stage = ["幼貓","少年貓","成貓","老練貓"].includes(p.stage) ? p.stage : "";
+  const st = p.away ? `🚪 離家中（${esc(p.away)} 出門）` : p.box ? "📦 餓到躲進紙箱" : num(p.hunger) < 30 ? "😿 餓了" : num(p.clean) < 30 ? "🧹 貓砂該清了" : "😺 狀況不錯";
+  const diary = Array.isArray(p.diary) ? p.diary.slice(-5) : [];
+  return `<h3>貓：${esc(p.name)}</h3>
+    <p class="muted" style="margin:0 0 8px">${esc(stage)}　·　成長 ${num(p.xp)}　·　${st}</p>
+    <div class="row" style="margin-bottom:10px">
+      <div class="stat"><b>${num(p.hunger)}</b><span>飽足</span></div>
+      <div class="stat"><b>${num(p.clean)}</b><span>清潔</span></div>
+      <div class="stat"><b>${num(p.xp)}</b><span>成長值</span></div>
+    </div>
+    ${diary.length ? `<ul class="g">` + diary.map(e=>`<li><span class="d2">${esc(md(e.d))}</span>${esc(e.text)}</li>`).join("") + `</ul>` : ""}`;
+}
 function card(c){
   const sum = c.sum;
   if(!sum) return `<div class="card"><p class="kid">${esc(c.child)}</p>
@@ -231,6 +246,7 @@ function card(c){
     ${weakList(sum)}
 
     ${idiomSection(sum)}
+    ${petSection(sum)}
 
     <h3>送的獎勵有沒有效</h3>
     <p class="muted">🎁 標記的是有送獎勵的日子，看看那之後幾天的柱子有沒有變高。</p>

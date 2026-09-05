@@ -988,7 +988,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.05-b";
+const VERSION = "2026.09.05-c";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -5234,10 +5234,14 @@ function packDeck(o){                  // 緊湊格式，備份碼才貼得進�
   }).join(";");
   const F = o.feed;
   const fd = F ? `${F.earned||0},${F.used||0},${F.bonus||0},${F.tickets||0}` : "";
+  // 貓：成語ㄚ喵的 SHARED.pet。名字已經去掉分隔符；日記只帶最近 20 則
+  const P = o.pet, ct = c => `${String(c.name||"").replace(/[|~;:,=^]/g," ")}:${c.breed||""}:${Math.round(c.xp||0)}:${Math.round(c.hunger||0)}:${Math.round(c.clean||0)}:${Math.round(c.bonus||0)}:${sd(c.adopted)}:${c.away ? sd(c.away.since) : ""}:${c.box?1:0}`;
+  const pt = P ? [`${P.free?1:0},${P.bell ? P.bell.month.replace("-","") + "/" + (P.bell.n||0) : ""}`, (P.cats||[]).map(ct).join(";")].join("^")
+               + "^" + (P.diary||[]).slice(-20).map(e=>`${sd(e.d)}:${e.ev||""}:${String(e.text||"").replace(/[|~;:,=^]/g," ")}`).join(";") : "";
   const ev = e => `${e.dev || ""}:${+e.seq || 0}:${+e.ts || 0}`;   // 事件身分：哪台、第幾號、什麼時候
   const gf = (o.gifts || []).map(g=>`${sd(g.d)}:${+g.m||0}:${ev(g)}:${g.why||""}`).join(";");
   const cp = (o.coupons || []).map(c=>`${sd(c.d)}:${sd(c.on)}:${ev(c)}:${c.why||""}`).join(";");
-  return [o.done||0, o.right||0, b.earned||0, b.used||0, b.bonus||0, st, dy, gf, cp, fd].join("|");
+  return [o.done||0, o.right||0, b.earned||0, b.used||0, b.bonus||0, st, dy, gf, cp, fd, pt].join("|");
 }
 function unpackDeck(str, ver){
   const legacy = ver === 2;            // CQ2 的每天只記了「有沒有達標」，分鐘數已失傳
@@ -5267,6 +5271,25 @@ function unpackDeck(str, ver){
   if(p[9]){
     const f = p[9].split(",");
     o.feed = {earned:+f[0] || 0, used:+f[1] || 0, bonus:+f[2] || 0, tickets:+f[3] || 0};
+  }
+  if(p[10]){
+    const [head, cats, diary] = p[10].split("^");
+    const [free, bell] = (head || "").split(",");
+    const pet = {free:free === "1", bell:null, cats:[], diary:[]};
+    if(bell){ const [m, k] = bell.split("/"); if(m && m.length === 6) pet.bell = {month:m.slice(0,4) + "-" + m.slice(4), n:+k || 0}; }
+    (cats || "").split(";").filter(Boolean).forEach(seg=>{
+      const f = seg.split(":");
+      if(f.length < 9) return;
+      const c = {name:f[0], breed:f[1], xp:+f[2] || 0, hunger:+f[3] || 0, clean:+f[4] || 0, bonus:+f[5] || 0,
+                 adopted:ld(f[6]) || dayKey(), last:nowSec(), away:f[7] ? {since:ld(f[7]), idle:0} : null, box:f[8] === "1",
+                 cleanDay:"", cleanN:0, tapDay:"", tapN:0, id:String(Date.now()).slice(-6)};
+      pet.cats.push(c);
+    });
+    (diary || "").split(";").filter(Boolean).forEach(seg=>{
+      const f = cut(seg, 2); if(!f) return;
+      const d = ld(f[0]); if(d) pet.diary.push({d, ev:f[1], text:f[2], ts:0});
+    });
+    o.pet = pet;
   }
   /* CQ3 的事件沒有身分欄位。還原時補一組從備份碼內容推出來的（"bk" + 名次），
      同一張碼還原幾次都是同一組 id，之後做合併去重才不會把同一筆算成兩筆。 */
@@ -5318,6 +5341,7 @@ function importCode(code){
       if(k === "shared"){
         SHARED = {days:o.days, bank:o.bank, gifts:o.gifts || [], coupons:o.coupons || []};
         if(o.feed) SHARED.feed = o.feed;
+        if(o.pet) SHARED.pet = o.pet;
         fixStamp(SHARED.gifts, "bk"); fixStamp(SHARED.coupons, "bk");
         saveShared(); restored++; return;
       }
@@ -5410,6 +5434,12 @@ function syncSummary(){
     coupons:(SHARED.coupons || []).slice(-30),
     decks,
     feed:SHARED.feed || null,                       // 成語ㄚ喵的飼料帳
+    pet:(()=>{                                      // 貓：只帶家長看得懂的幾個數字
+      const P = SHARED.pet, c = P && P.cats && P.cats[0]; if(!c) return null;
+      return {name:c.name, breed:c.breed, xp:c.xp, hunger:Math.round(c.hunger), clean:Math.round(c.clean), stage:c.stage,
+              adopted:c.adopted, away:c.away ? c.away.since : null, box:!!c.box,
+              diary:(P.diary || []).slice(-5).map(e=>({d:e.d, text:e.text}))};
+    })(),
     idiom:(()=>{ try{ return JSON.parse(localStorage.getItem("cq-idiom-sum")) || null; }catch(e){ return null; } })()
   };
 }

@@ -28,7 +28,9 @@ const LIST = {children:[
                    weak:[{w:"honest", zh:"誠實的", x:4}, {w:"nurse", zh:"護士", x:2}]}},
     feed:{earned:14, used:3, bonus:0, tickets:1},
     idiom:{byLv:{1:{m:20, total:80}, 2:{m:5, total:120}, 3:{m:0, total:120}, 4:{m:0, total:129}},
-           weak:[{c:"守株待兔", m:"死守老方法，只想等好運。", x:3}], done:60, right:50, streak:2, at:1}}},
+           weak:[{c:"守株待兔", m:"死守老方法，只想等好運。", x:3}], done:60, right:50, streak:2, at:1},
+    pet:{name:"小橘", breed:"orange", xp:180, hunger:64, clean:22, stage:"少年貓", adopted:"2026-09-01", away:null, box:false,
+         diary:[{d:"2026-09-01", text:"領養了小橘"}, {d:D, text:"小橘長成少年貓了"}]}}},
   {child:"二寶", dev:"bb22", at:Math.floor(Date.now()/1000) - 7200, sum:{
     v:"2026.09.02-b", who:"二寶", streak:0, days:{}, bank:{left:0},
     gifts:[], coupons:[], decks:{}}}
@@ -99,6 +101,10 @@ ok(/守株待兔/.test(txt) && /錯 3/.test(txt), "要列出一直錯的成語")
 ok(/20 \/ 80/.test(txt), "各級熟練要顯示");
 ok(/>11</.test(t.d.body.innerHTML), "飼料剩餘要算對（14+0-3）");
 ok(t.d.querySelectorAll(".lvb").length === 4, "四級都要有一條");
+// 貓
+ok(/貓：小橘/.test(txt), "要有貓卡");
+ok(/少年貓/.test(txt) && /貓砂該清了/.test(txt), `貓卡要講狀態（清潔 22 → 該清了）`);
+ok(/長成少年貓/.test(txt), "貓卡要有最近的日記");
 ok(!/成語ㄚ喵/.test(boot(seedConf, () => okRes({children:[LIST.children[1]]})).d.body.textContent) || true, "沒練成語的小孩不強制顯示");
 
 // 沒資料時要講人話，不是空白
@@ -138,6 +144,7 @@ const EVIL = {children:[{child:"壞資料", dev:"x", at:1, sum:{
   decks:{summer:{label:BOOM, total:BOOM, done:BOOM, right:BOOM, mastered:BOOM,
                  weak:[{w:BOOM, zh:BOOM, x:BOOM}]}},
   feed:{earned:BOOM, used:BOOM, bonus:BOOM, tickets:BOOM},
+  pet:{name:BOOM, breed:BOOM, xp:BOOM, hunger:BOOM, clean:BOOM, stage:BOOM, adopted:BOOM, away:BOOM, box:BOOM, diary:[{d:BOOM, text:BOOM}]},
   idiom:{byLv:{1:{m:BOOM, total:BOOM}}, weak:[{c:BOOM, m:BOOM, x:BOOM}], streak:BOOM}}}]};
 t = boot(seedConf, () => okRes(EVIL));
 await wait();

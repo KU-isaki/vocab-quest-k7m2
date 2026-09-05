@@ -41,12 +41,12 @@ t.click(nav("vList"));
 ok(nav("vList").getAttribute("aria-current") === "true" && nav("vQuiz").getAttribute("aria-current") === "false", "切分頁要更新 aria-current");
 ok(disp(t, t.$("vList")) !== "none" && disp(t, t.$("vQuiz")) === "none", "切過去之後只有成語表看得見");
 ok([...t.d.querySelectorAll(".view")].filter(v=>disp(t, v) !== "none").length === 1, "任何時候只能有一個分頁看得見");
-// 貓：第二階才有，鈕在但不能按，而且要進得了 tab 順序
+// 貓的分頁
 const cat = nav("vCat");
-ok(cat.getAttribute("aria-disabled") === "true" && !cat.disabled, "貓的分頁要用 aria-disabled（不是 disabled）");
 t.click(cat);
-ok(nav("vList").getAttribute("aria-current") === "true" && disp(t, t.$("vCat")) === "none", "按貓不得切過去");
-ok(/第二階/.test(t.$("toast").textContent), "按貓要有提示說明為什麼");
+ok(cat.getAttribute("aria-current") === "true" && disp(t, t.$("vCat")) !== "none", "按貓要切過去");
+ok(disp(t, t.$("gachaCard")) !== "none" && disp(t, t.$("petCard")) === "none", "還沒有貓時要顯示轉蛋、不顯示貓");
+t.click(nav("vList"));
 ok(!!t.d.querySelector('a.back[href="./"]'), "要有回單字闖關的路");
 
 // ---------- ③ hidden 的東西真的不能看見（display:grid/flex 蓋掉 hidden 是這專案的老坑）----------

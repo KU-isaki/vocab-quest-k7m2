@@ -116,7 +116,16 @@ ok(!/"pin"|cq-pin/.test(c0.opt.body), "不得把家長密碼傳出去");
   t3.ev("syncPush()");
   await wait();
   const s3 = JSON.parse(t3.calls[0].opt.body).sum;
-  ok(s3.idiom === null && s3.feed === null, "沒練過成語的裝置，摘要裡是 null 不是爆掉");
+  ok(s3.idiom === null && s3.feed === null && s3.pet === null, "沒練過成語、沒有貓的裝置，摘要裡是 null 不是爆掉");
+  const t4 = boot(ls=>{ ls.setItem("cq-profile", "大寶"); ls.setItem("cq-sync", JSON.stringify({api:API, code:"w-secret"}));
+    ls.setItem("cq-shared-v1", JSON.stringify({days:{}, bank:{earned:0, used:0, bonus:0}, gifts:[], coupons:[],
+      pet:{free:false, cats:[{name:"小橘", breed:"orange", xp:120, hunger:55.5, clean:80, bonus:0, stage:"少年貓", adopted:"2026-09-01", away:null, box:false, last:1}],
+           diary:[{d:"2026-09-01", ev:"adopt", text:"領養了小橘"}]}})); });
+  t4.ev("syncPush()");
+  await wait();
+  const s4 = JSON.parse(t4.calls[0].opt.body).sum;
+  ok(s4.pet && s4.pet.name === "小橘" && s4.pet.hunger === 56 && s4.pet.stage === "少年貓", `摘要要帶貓的狀態, 實得 ${JSON.stringify(s4.pet)}`);
+  ok(Array.isArray(s4.pet.diary) && s4.pet.diary[0].text === "領養了小橘", "摘要要帶最近的日記");
 }
 
 // ---------- ⑥ 家長操作、練完一輪都要傳 ----------

@@ -298,6 +298,79 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 .chain .choices{gap:7px}
 .chain .choice{padding:11px 13px}
 .chain .lock{padding:14px 0; text-align:center; color:var(--ink-faint); font-size:13.5px}
+/* ===== 貓 ===== */
+.pet{margin-top:12px; padding:16px}
+.pet .who{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin:0 0 2px}
+.pet .who b{font-size:19px}
+.pet .who span{font-size:12px; color:var(--ink-faint)}
+.pet .stage{font-size:12.5px; color:var(--ink-faint); margin:0 0 10px}
+.room{position:relative; height:200px; overflow:hidden; border-radius:12px; margin:0 0 12px;
+      background:linear-gradient(var(--surface-2) 0 74%, color-mix(in srgb,var(--ink) 8%,var(--surface-2)) 74%)}
+.catsvg{position:absolute; left:0; bottom:8px; width:150px; height:auto; overflow:visible;
+        transform:translateX(var(--x,90px)) scaleX(var(--dir,1)) scale(var(--sz,1)); transform-origin:50% 100%; transition:transform .6s linear}
+.catsvg *{transform-box:fill-box}
+.fur{fill:var(--fur)} .fur2{fill:var(--fur2)} .ink{fill:var(--ink)}
+.room{--fur:#F2A54A; --fur2:#FFD9A8; --stripe:#C97A22; --nose:#E8807A}
+.cbody{transform-origin:50% 100%; animation:breathe 2.6s ease-in-out infinite}
+.chead{transform-origin:40% 100%}
+.ctail{transform-origin:100% 100%; animation:tail 2s ease-in-out infinite}
+.eye{transform-origin:50% 50%; animation:blink 4.8s infinite}
+.earL{transform-origin:50% 100%; animation:twitch 7s infinite}
+.earR{transform-origin:50% 100%}
+.leg{transform-origin:50% 0}
+.mouth-sad,.mouth-open,.zzz,.bowl,.box,.hearts,.flies,.yarn,.door,.noteg,.bell,.stripes,.patches{opacity:0; transition:opacity .3s}
+.room.tabby .stripes{opacity:1} .room.calico .patches{opacity:1}
+.room.legend{--fur:#B8A7F5; --fur2:#EDE7FF; --stripe:#8C74E6}
+.room.legend .cbody ellipse,.room.legend .chead>circle{filter:drop-shadow(0 0 6px rgba(184,167,245,.9))}
+.scarf,.hat{opacity:0} .room.s2 .scarf,.room.s3 .scarf,.room.s4 .scarf{opacity:1} .room.s3 .hat,.room.s4 .hat{opacity:1}
+@keyframes breathe{50%{transform:scaleY(1.035)}}
+@keyframes tail{50%{transform:rotate(22deg)}}
+@keyframes blink{0%,93%,100%{transform:scaleY(1)} 96%{transform:scaleY(.08)}}
+@keyframes twitch{0%,91%,100%{transform:rotate(0)} 94%{transform:rotate(-16deg)} 97%{transform:rotate(7deg)}}
+@keyframes step{50%{transform:translateY(-4px)}}
+@keyframes chew{50%{transform:rotate(9deg) translateY(3px)}}
+@keyframes jump{0%,100%{transform:translateY(0)} 40%{transform:translateY(-22px)}}
+@keyframes floatup{0%{transform:translateY(0);opacity:0} 20%{opacity:1} 100%{transform:translateY(-40px);opacity:0}}
+@keyframes buzz{0%{transform:translate(0,0)} 25%{transform:translate(6px,-5px)} 50%{transform:translate(-4px,-9px)} 75%{transform:translate(5px,-3px)} 100%{transform:translate(0,0)}}
+@keyframes ring{0%,100%{transform:rotate(0)} 30%{transform:rotate(-24deg)} 70%{transform:rotate(22deg)}}
+@keyframes shake{0%,100%{transform:rotate(0)} 20%{transform:rotate(-8deg)} 40%{transform:rotate(8deg)} 60%{transform:rotate(-6deg)} 80%{transform:rotate(6deg)}}
+.st-walk .leg{animation:step .35s infinite} .st-walk .leg:nth-child(2n){animation-delay:.17s}
+.st-eat .chead{animation:chew .55s ease-in-out infinite} .st-eat .bowl{opacity:1} .st-eat .mouth-open{opacity:1} .st-eat .mouth{opacity:0}
+.st-sleep .eye{animation:none; transform:scaleY(.08)} .st-sleep .zzz{opacity:1} .st-sleep .box{opacity:1} .st-sleep .ctail{animation-duration:5s} .st-sleep .cat{transform:translateY(26px)}
+.st-happy .cat{animation:jump .8s ease-in-out infinite} .st-happy .hearts{opacity:1} .st-happy .mouth-open{opacity:1} .st-happy .mouth{opacity:0}
+.st-hungry .earL{animation:none; transform:rotate(-32deg)} .st-hungry .earR{transform:rotate(32deg)} .st-hungry .mouth{opacity:0} .st-hungry .mouth-sad{opacity:1} .st-hungry .ctail{animation-duration:4.5s} .st-hungry .eye{transform:scaleY(.75)}
+.st-dirty .flies{opacity:1} .st-dirty .mouth{opacity:0} .st-dirty .mouth-sad{opacity:1} .st-dirty .earR{transform:rotate(20deg)}
+.st-play .yarn{opacity:1} .st-play .leg{animation:step .28s infinite} .st-play .chead{animation:chew 1.1s ease-in-out infinite}
+.st-peek .door{opacity:1} .st-peek .chead{animation:chew 2.4s ease-in-out infinite}
+.st-away .cat{opacity:0; transition:opacity .5s} .st-away .door,.st-away .noteg{opacity:1}
+.st-bell .door{opacity:1} .st-bell .bell{opacity:1; animation:ring .5s ease-in-out 4} .st-bell .catsvg{transition:transform 1.6s cubic-bezier(.2,.8,.3,1)} .st-bell .leg{animation:step .28s infinite} .st-bell .hearts{opacity:1}
+.hearts text{animation:floatup 1.6s ease-out infinite} .hearts text:nth-child(2){animation-delay:.5s} .hearts text:nth-child(3){animation-delay:1s}
+.zzz text{animation:floatup 2.4s ease-out infinite} .zzz text:nth-child(2){animation-delay:.8s} .zzz text:nth-child(3){animation-delay:1.6s}
+.flies circle{animation:buzz 1.1s linear infinite} .flies circle:nth-child(2){animation-delay:.4s} .flies circle:nth-child(3){animation-delay:.7s}
+.bell{transform-origin:50% 0}
+.bars{display:grid; gap:7px; margin:0 0 12px}
+.pbar{display:grid; grid-template-columns:46px 1fr 40px; gap:8px; align-items:center; font-size:12.5px; color:var(--ink-soft)}
+.pbar i{display:block; height:9px; background:var(--surface-2); border-radius:99px; overflow:hidden}
+.pbar i b{display:block; height:100%; background:var(--brand); border-radius:99px; transition:width .4s}
+.pbar i b.low{background:var(--no)} .pbar i b.grow{background:var(--ok)}
+.pbar span{text-align:right; font-family:var(--font-num); font-variant-numeric:tabular-nums}
+.pacts{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:0 0 6px}
+.pacts .btn{padding:12px 8px; font-size:14.5px}
+.pacts .btn small{display:block; font-size:10.5px; font-weight:400; opacity:.75}
+.away{padding:14px; border-radius:12px; background:var(--no-soft); margin:0 0 12px; font-size:14px; line-height:1.7}
+.away b{display:block; margin-bottom:4px}
+.gacha{text-align:center; padding:26px 18px}
+.gacha .egg{font-size:64px; line-height:1; margin:6px 0 10px; display:inline-block}
+.gacha .egg.shake{animation:shake .5s ease-in-out 3}
+.gacha h2{margin:6px 0 4px; font-size:20px}
+.gacha p{margin:0 0 16px; color:var(--ink-soft); font-size:14px}
+.reveal{padding:10px 0 0; text-align:center}
+.reveal .rar{display:inline-block; font-size:12px; padding:3px 10px; border-radius:99px; background:var(--surface-2); color:var(--ink-soft); margin-bottom:8px}
+.reveal .rar.r2{background:var(--brand-soft); color:var(--brand)} .reveal .rar.r3{background:var(--ok-soft); color:var(--ok)} .reveal .rar.r4{background:#EDE7FF; color:#5B48C8}
+.diary{margin-top:6px}
+.diary li{list-style:none; display:flex; gap:10px; padding:7px 2px; border-bottom:1px solid var(--line); font-size:13.5px}
+.diary li span:first-child{color:var(--ink-faint); font-family:var(--font-num); font-variant-numeric:tabular-nums; white-space:nowrap}
+.diary ul{margin:0; padding:0}
 [hidden]{display:none !important}   /* 這專案踩過三次 display:grid/flex 蓋掉 hidden 的坑，這頁直接鎖死 */
 
 </style>
@@ -403,10 +476,83 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 
   <!-- ================= 貓（第二階） ================= -->
   <section class="view" id="vCat">
-    <div class="card" style="margin-top:12px; padding:22px 18px; text-align:center">
-      <div class="eyebrow">第二階</div>
-      <h2 style="margin:8px 0 6px">貓還在路上</h2>
-      <p style="color:var(--ink-soft); font-size:14px; margin:0">先把成語練習做好、飼料存起來。貓來的時候飼料就派得上用場。</p>
+    <div class="card gacha" id="gachaCard" hidden>
+      <div class="eyebrow">成語ㄚ喵</div>
+      <div class="egg" id="egg">🥚</div>
+      <h2 id="gachaTitle">還沒有貓</h2>
+      <p id="gachaSub">第一隻免費。轉一顆蛋，看看是誰來了。</p>
+      <div class="reveal" id="reveal" hidden></div>
+      <button class="btn" id="btnGacha">✨ 轉蛋</button>
+    </div>
+
+    <div class="card pet" id="petCard" hidden>
+      <div class="who"><b id="petName"></b><span id="petRar"></span></div>
+      <div class="stage" id="petStage"></div>
+      <div class="room" id="room">
+        <svg class="catsvg" id="catsvg" viewBox="0 0 220 150" role="img" aria-label="你的貓">
+          <g class="bowl"><ellipse cx="190" cy="140" rx="18" ry="6" fill="#8FB2E0"/><ellipse cx="190" cy="136" rx="14" ry="4" fill="#C97A22"/></g>
+          <g class="yarn"><circle cx="196" cy="134" r="9" fill="#E07A6E"/><path d="M190 130 q6 8 12 0 M189 136 q7 6 14 -2" stroke="#B5342A" stroke-width="1.5" fill="none"/></g>
+          <g class="cat">
+            <g class="ctail"><path d="M62 112 q-30 -8 -22 -42" stroke="var(--fur)" stroke-width="10" stroke-linecap="round" fill="none"/>
+              <path class="stripes" d="M62 112 q-30 -8 -22 -42" stroke="var(--stripe)" stroke-width="10" stroke-linecap="round" fill="none" stroke-dasharray="6 9"/></g>
+            <g class="legs">
+              <rect class="leg fur" x="78" y="118" width="13" height="22" rx="6"/><rect class="leg fur" x="96" y="120" width="13" height="22" rx="6"/>
+              <rect class="leg fur" x="120" y="120" width="13" height="22" rx="6"/><rect class="leg fur" x="138" y="118" width="13" height="22" rx="6"/>
+            </g>
+            <g class="cbody">
+              <ellipse class="fur" cx="110" cy="112" rx="50" ry="30"/><ellipse class="fur2" cx="112" cy="122" rx="30" ry="14"/>
+              <g class="stripes"><path d="M84 90 q6 10 0 22 M100 86 q6 12 0 26 M118 86 q6 12 0 26" stroke="var(--stripe)" stroke-width="5" stroke-linecap="round" fill="none"/></g>
+              <g class="patches"><ellipse cx="90" cy="100" rx="14" ry="10" fill="#2B2B2B"/><ellipse cx="128" cy="96" rx="12" ry="9" fill="#E8A24A"/></g>
+            </g>
+            <g class="chead">
+              <path class="earL fur" d="M112 62 l6 -26 l18 18 z"/><path class="earR fur" d="M166 62 l-6 -26 l-18 18 z"/>
+              <path d="M117 64 l5 -18 l10 12 z" style="fill:var(--nose);opacity:.55"/><path d="M161 64 l-5 -18 l-10 12 z" style="fill:var(--nose);opacity:.55"/>
+              <circle class="fur" cx="139" cy="78" r="30"/>
+              <g class="stripes"><path d="M126 54 q4 8 0 14 M139 50 q4 9 0 16 M152 54 q4 8 0 14" stroke="var(--stripe)" stroke-width="4" stroke-linecap="round" fill="none"/></g>
+              <g class="patches"><ellipse cx="124" cy="66" rx="11" ry="9" fill="#2B2B2B"/></g>
+              <ellipse class="eye ink" cx="128" cy="78" rx="4" ry="5.5"/><ellipse class="eye ink" cx="150" cy="78" rx="4" ry="5.5"/>
+              <circle cx="129.5" cy="76" r="1.3" fill="#fff"/><circle cx="151.5" cy="76" r="1.3" fill="#fff"/>
+              <path d="M136 88 l3 3 l3 -3 z" fill="var(--nose)"/>
+              <path class="mouth" d="M133 92 q6 6 12 0" stroke="var(--ink)" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+              <path class="mouth-sad" d="M133 96 q6 -5 12 0" stroke="var(--ink)" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+              <ellipse class="mouth-open" cx="139" cy="94" rx="4" ry="3.5" fill="#B5342A"/>
+              <path d="M108 84 l16 2 M108 90 l16 -1 M170 84 l-16 2 M170 90 l-16 -1" stroke="var(--ink)" stroke-width="1" opacity=".5"/>
+              <g class="hat"><path d="M118 52 q21 -22 42 0 l-3 4 q-18 -10 -36 0 z" fill="#1F4FA9"/><rect x="114" y="52" width="50" height="5" rx="2" fill="#172242"/></g>
+            </g>
+            <g class="scarf"><path d="M112 96 q27 12 54 0 l0 8 q-27 12 -54 0 z" fill="#B5342A"/><path d="M158 100 l8 18 l-10 -2 z" fill="#B5342A"/></g>
+            <g class="zzz" font-family="ui-monospace,monospace" font-weight="700" fill="var(--ink-soft)"><text x="168" y="60" font-size="12">z</text><text x="176" y="50" font-size="15">z</text><text x="186" y="38" font-size="18">Z</text></g>
+            <g class="hearts" font-size="14"><text x="160" y="62">❤</text><text x="176" y="56">❤</text><text x="150" y="52">❤</text></g>
+          </g>
+          <g class="door"><rect x="4" y="52" width="34" height="90" rx="3" fill="#A97F4C"/><rect x="8" y="56" width="26" height="82" rx="2" fill="#C9A06A"/><circle cx="30" cy="98" r="2.2" fill="#5B4223"/></g>
+          <g class="bell"><path d="M180 26 q-12 0 -12 14 v10 h24 v-10 q0 -14 -12 -14 z" fill="#FFD84D" stroke="#C99A00" stroke-width="1.5"/><circle cx="180" cy="53" r="3" fill="#C99A00"/><path d="M176 22 h8" stroke="#C99A00" stroke-width="2"/></g>
+          <g class="noteg"><rect x="86" y="120" width="60" height="22" rx="3" fill="#FFF8DC" stroke="#E2D8A0"/><text x="92" y="135" font-size="10" fill="#5B4223" font-family="ui-monospace,monospace">我出去走走 🐾</text></g>
+          <g class="box"><rect x="70" y="112" width="110" height="34" rx="4" fill="#C9A06A"/><rect x="66" y="108" width="118" height="8" rx="2" fill="#A97F4C"/><text x="98" y="136" font-size="11" fill="#5B4223" font-family="ui-monospace,monospace">📦 zzz…</text></g>
+          <g class="flies"><g transform="translate(20,118)"><circle r="2.2" fill="var(--ink)"/></g><g transform="translate(34,124)"><circle r="2.2" fill="var(--ink)"/></g><g transform="translate(28,110)"><circle r="2.2" fill="var(--ink)"/></g>
+            <rect x="8" y="128" width="42" height="14" rx="3" fill="#8D8D8D"/><text x="12" y="139" font-size="9" fill="#fff" font-family="ui-monospace,monospace">貓砂</text></g>
+        </svg>
+      </div>
+      <div class="away" id="awayBox" hidden></div>
+      <div class="bars">
+        <div class="pbar">飽足<i><b id="bHunger"></b></i><span id="vHunger"></span></div>
+        <div class="pbar">清潔<i><b id="bClean"></b></i><span id="vClean"></span></div>
+        <div class="pbar">心情<i><b id="bMood"></b></i><span id="vMood"></span></div>
+        <div class="pbar">成長<i><b class="grow" id="bXp"></b></i><span id="vXp"></span></div>
+      </div>
+      <p class="stage" id="petNext" style="margin:-4px 0 12px"></p>
+      <div class="pacts">
+        <button class="btn" id="btnFeed">🍖 餵 1 顆<small id="feedHint"></small></button>
+        <button class="btn ghost" id="btnClean">🧹 清貓砂<small id="cleanHint"></small></button>
+        <button class="btn ghost" id="btnPlay">🎮 玩接龍<small>心情 +10</small></button>
+        <button class="btn ghost" id="btnBell" hidden>🔔 回家鈴鐺<small id="bellHint"></small></button>
+      </div>
+      <details class="info"><summary>牠是怎麼運作的？</summary>
+        <div class="info-in">飽足每天掉 30、清潔每天掉 25。1 顆飼料 +10 飽足；<b>吃飽（80 以上）再餵，多的變成長值</b>。
+          清貓砂免費、一天最多兩次。飽足歸零會躲進紙箱睡覺，餵了就出來，<b>永遠不會死</b>。<br>
+          <b>3 天沒練成語</b>牠會站在門口張望，<b>7 天</b>會離家（留一張紙條）；連續練 3 天自己回來，
+          或搖回家鈴鐺（2 張轉蛋券起跳，同一個月第二次起每次多 1 張）。成長值、階段、名字離家時全部保留。</div>
+      </details>
+      <div class="grouphead"><b>成長日記</b><span id="diaryN"></span></div>
+      <div class="diary"><ul id="diary"></ul></div>
     </div>
   </section>
 
@@ -418,14 +564,14 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
     <button data-view="vQuiz" aria-current="true"><em>✏️</em>練習</button>
     <button data-view="vList" aria-current="false"><em>📖</em>成語表</button>
     <button data-view="vStats" aria-current="false"><em>📊</em>進度</button>
-    <button data-view="vCat" aria-current="false" aria-disabled="true" title="第二階才有"><em>🐈</em>貓</button>
+    <button data-view="vCat" aria-current="false"><em>🐈</em>貓</button>
   </div>
 </nav>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 /* 版本標示：每次改版都更新，跟單字闖關同一套規矩 */
-const IDIOM_VERSION = "2026.09.05-c";
+const IDIOM_VERSION = "2026.09.05-d";
 
 /* ================= 成語題庫 =================
    格式：["成語", "注音（四組，空格分開）", "解釋", "例句", 級, {選填}]
@@ -969,11 +1115,11 @@ const mastered = c => (stat(c).streak || 0) >= 2 && !(stat(c).due && stat(c).due
 /* ================= 分頁 ================= */
 document.querySelectorAll(".nav button").forEach(b=>{
   b.onclick = () => {
-    if(b.getAttribute("aria-disabled") === "true"){ toast("貓是第二階才有的，先把飼料存起來 🐾"); return; }
     document.querySelectorAll(".nav button").forEach(x=>x.setAttribute("aria-current", x===b));
     document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on", v.id===b.dataset.view));
     if(b.dataset.view === "vStats") renderStats();
     if(b.dataset.view === "vList") renderList();
+    if(b.dataset.view === "vCat") renderPet();
     window.scrollTo(0,0);
   };
 });
@@ -1302,6 +1448,7 @@ function endRound(){
   $("sumWeak").innerHTML = weak.length ? `<b>還要加強 ${weak.length} 條　連對 2 次就畢業</b><div class="ws">${weak.slice(0, 12).map(i=>`<span class="zh-serif">${esc(i.c)}</span>`).join("")}${weak.length > 12 ? `<em>… 還有 ${weak.length - 12} 條</em>` : ""}</div>` : "";
   renderPickers();
   showStory();
+  if(cat()) tickPet();
   window.scrollTo(0,0);
 }
 /* ================= 典故猜成語：放在結算頁，純練習 =================
@@ -1357,10 +1504,255 @@ function chainNext(from){
     <div class="choices">${shuffle([ans, ...dis]).map((o, k)=>`<button class="choice" data-n="${esc(o.c)}"><i>${"ABCD"[k]}</i><span class="c4 zh-serif">${esc(o.c)}</span></button>`).join("")}</div>`;
   $("chainBody").querySelectorAll(".choice").forEach(b=>b.onclick = ()=>{
     const pick = byC[b.dataset.n];
-    if(pick.c[0] === ch){ chainN++; toast(`接上了！${pick.c}`); chainNext(pick); }
+    if(pick.c[0] === ch){ chainN++; petPlayed(); toast(`接上了！${pick.c}`); chainNext(pick); }
     else{ b.classList.add("wrong"); $("chainBody").querySelectorAll(".choice").forEach(x=>{ x.disabled = true; if(x.dataset.n === ans.c) x.classList.add("right"); }); chainN = 0; toast(`要用「${ch}」開頭才接得上`); setTimeout(()=>chainNext(null), 1400); }
   });
 }
+
+/* ================= 貓 =================
+   資料放 SHARED.pet，跟存摺同一份，備份碼與雲端自然帶著走。
+   數值用時間戳算：關掉幾天再開，一次算清楚，不需要背景執行。
+   貓永遠不會死。飽足歸零是躲進紙箱；長時間沒練成語才會離家，回家時成長值原封不動。 */
+const HUNGER_DAY = 30, CLEAN_DAY = 25, MOOD_DAY = 20;       // 每天掉多少
+const FEED_HUNGER = 10, FULL_AT = 80, XP_PER_FEED = 10;       // 1 顆 +10；吃飽再餵才長
+const CLEAN_MAX_DAY = 2, CLEAN_ADD = 50;
+const PEEK_DAYS = 3, AWAY_DAYS = 7, HOME_DAYS = 3;            // 門口張望 / 離家 / 連續練幾天回來
+const BELL_BASE = 2;                                          // 鈴鐺 2 張起跳，同月第二次起 +1
+const STAGES = [{xp:0, name:"幼貓", cls:"s1", sz:.72}, {xp:100, name:"少年貓", cls:"s2", sz:.86}, {xp:300, name:"成貓", cls:"s3", sz:1}, {xp:600, name:"老練貓", cls:"s4", sz:1.1}];
+const RARS = [
+  {r:1, name:"普通", p:.60, breeds:[{id:"white", name:"白貓", fur:"#F6F1E8", fur2:"#FFFFFF", stripe:"#E2D8C8", cls:""}, {id:"black", name:"黑貓", fur:"#2B2B2B", fur2:"#4A4A4A", stripe:"#111", cls:""}, {id:"gray", name:"灰貓", fur:"#9AA1B8", fur2:"#E4E7EF", stripe:"#5A6484", cls:""}]},
+  {r:2, name:"少見", p:.30, breeds:[{id:"orange", name:"橘虎斑", fur:"#F2A54A", fur2:"#FFD9A8", stripe:"#C97A22", cls:"tabby"}, {id:"graytabby", name:"灰虎斑", fur:"#9AA1B8", fur2:"#E4E7EF", stripe:"#5A6484", cls:"tabby"}, {id:"calico", name:"三花", fur:"#F6F1E8", fur2:"#FFFFFF", stripe:"#E8A24A", cls:"calico"}]},
+  {r:3, name:"稀有", p:.09, breeds:[{id:"silver", name:"銀漸層", fur:"#C9CFD9", fur2:"#F4F6FA", stripe:"#8C96A8", cls:"tabby"}, {id:"cream", name:"奶油貓", fur:"#F5DEB3", fur2:"#FFF6E5", stripe:"#D9B380", cls:"tabby"}]},
+  {r:4, name:"傳說", p:.01, breeds:[{id:"legend", name:"星光貓", fur:"#B8A7F5", fur2:"#EDE7FF", stripe:"#8C74E6", cls:"legend"}]}
+];
+const BREED = {}; RARS.forEach(R=>R.breeds.forEach(b=>{ BREED[b.id] = Object.assign({rar:R.r, rarName:R.name}, b); }));
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const cleanName = t => String(t || "").replace(/[|~;:,=<>"]/g, " ").replace(/\s+/g, " ").trim().slice(0, 12);
+const monthKey = () => dayKey().slice(0, 7);
+
+function pet(){ return SHARED.pet || null; }
+function cat(){ const p = pet(); return p && p.cats && p.cats[0] || null; }
+function stageOf(xp){ let st = STAGES[0]; STAGES.forEach(x=>{ if(xp >= x.xp) st = x; }); return st; }
+function nextStage(xp){ return STAGES.find(x=>x.xp > xp) || null; }
+function diary(ev, text){
+  const p = pet(); if(!p) return;
+  p.diary = p.diary || [];
+  p.diary.push({d:dayKey(), ts:nowSec(), ev, text});
+  if(p.diary.length > 60) p.diary = p.diary.slice(-60);
+}
+/* 最後一次練成語是哪一天（離家倒數看這個，不看有沒有餵） */
+function lastPractice(){
+  const ks = Object.keys(SHARED.days).filter(k=>SHARED.days[k].i && SHARED.days[k].i.n > 0).sort();
+  return ks.length ? ks[ks.length - 1] : null;
+}
+function daysBetween(a, b){ return Math.round((new Date(b) - new Date(a)) / 86400000); }
+function idlePracticeDays(){          // 幾天沒練了；回家那天重新起算，不然搖完鈴鐺下一秒又離家
+  const c = cat(); if(!c) return 0;
+  const last = [lastPractice() || "", c.adopted || "", c.homeAt || ""].sort().pop();
+  return Math.max(0, daysBetween(last, dayKey()));
+}
+function practicedSince(k){           // 從某天（不含）之後連續練了幾天
+  let n = 0, t = new Date();
+  const todayK = dayKey();
+  const has = key => { const d = SHARED.days[key]; return d && d.i && d.i.n > 0; };
+  if(!has(todayK)) t.setDate(t.getDate() - 1);
+  while(true){ const key = dayKey(t); if(key < k || !has(key)) break; n++; t.setDate(t.getDate() - 1); }
+  return n;
+}
+/* 把時間算清楚：每天掉多少、該不該躲紙箱、該不該離家、該不該回家 */
+function tickPet(){
+  const p = pet(), c = cat(); if(!p || !c) return;
+  const now = nowSec(), hrs = Math.max(0, (now - (c.last || now)) / 3600);
+  if(hrs > 0){
+    c.hunger = clamp(c.hunger - HUNGER_DAY / 24 * hrs, 0, 100);
+    c.clean  = clamp(c.clean  - CLEAN_DAY  / 24 * hrs, 0, 100);
+    c.bonus  = clamp((c.bonus || 0) - MOOD_DAY / 24 * hrs, 0, 40);
+    c.last = now;
+  }
+  if(c.hunger <= 0 && !c.box){ c.box = true; diary("box", `${c.name}餓到躲進紙箱睡覺了`); }
+  if(c.hunger > 0) c.box = false;
+  // 離家
+  const idle = idlePracticeDays();
+  if(!c.away && idle >= AWAY_DAYS){ c.away = {since:dayKey(), idle}; diary("away", `${c.name}離家了，留了一張「我出去走走」`); }
+  if(c.away && practicedSince(c.away.since) >= HOME_DAYS){ c.away = null; c.homeAt = dayKey(); diary("home", `連續練了 ${HOME_DAYS} 天，${c.name}自己回來了`); c.bonus = 40; }
+  // 階段
+  const st = stageOf(c.xp);
+  if(c.stage !== st.name){ if(c.stage) diary("stage", `${c.name}長成${st.name}了`); c.stage = st.name; }
+  saveShared();
+}
+function moodOf(c){ return c.away ? 0 : Math.round(clamp((c.hunger + c.clean) / 2 * .7 + (c.bonus || 0), 0, 100)); }
+function petState(c){                 // 現在該播哪一組動畫
+  if(c.away) return "away";
+  if(idlePracticeDays() >= PEEK_DAYS) return "peek";
+  if(c.box) return "sleep";
+  if(c.clean < 30) return "dirty";
+  if(c.hunger < 30) return "hungry";
+  return "idle";
+}
+function bellCost(){ const p = pet(); const b = p && p.bell; return BELL_BASE + (b && b.month === monthKey() ? b.n : 0); }
+
+/* ---- 轉蛋 ---- */
+function rollBreed(){
+  const r = Math.random(); let acc = 0, R = RARS[0];
+  for(const x of RARS){ acc += x.p; if(r < acc){ R = x; break; } }
+  return R.breeds[Math.floor(Math.random() * R.breeds.length)];
+}
+let petAnim = null;
+function gacha(){
+  if(cat()){ toast("現在一次養一隻，多養是第三階的事"); return; }
+  const p = SHARED.pet || (SHARED.pet = {cats:[], diary:[], bell:null, free:true});
+  const F = feedLedger();
+  if(!p.free){ if((F.tickets || 0) < 1){ toast("沒有轉蛋券。連續 7 天成語達標會送一張"); return; } F.tickets--; }
+  const b = rollBreed();
+  $("egg").classList.add("shake");
+  $("btnGacha").disabled = true;
+  setTimeout(()=>{
+    $("egg").classList.remove("shake"); $("egg").textContent = "🐣";
+    const rv = $("reveal");
+    rv.hidden = false;
+    rv.innerHTML = `<span class="rar r${b.rar}">${esc(b.rarName)}</span><div class="zh-serif" style="font-size:22px">${esc(b.name)}</div>`;
+    let name = prompt(`是一隻${b.name}！幫牠取個名字（12 字以內）：`, "");
+    name = cleanName(name) || b.name;
+    const c = {id:nowSec().toString(36), name, breed:b.id, xp:0, hunger:70, clean:80, bonus:20, box:false, away:null,
+               adopted:dayKey(), last:nowSec(), cleanDay:"", cleanN:0, tapDay:"", tapN:0, stage:"幼貓"};
+    p.cats.push(c); p.free = false;
+    diary("adopt", `領養了${b.rarName}的${b.name}，取名「${name}」`);
+    saveShared(); $("btnGacha").disabled = false; $("egg").textContent = "🥚"; rv.hidden = true;
+    renderPet(); toast(`歡迎 ${name} 🐾`);
+  }, 1600);
+}
+
+/* ---- 照顧 ---- */
+function feedCat(){
+  const c = cat(); if(!c) return;
+  if(c.away){ toast(`${c.name}不在家，先把牠叫回來`); return; }
+  if(feedLeft() < 1){ toast("沒有飼料了，去練成語吧 🍖"); return; }
+  feedLedger().used += 1;
+  // 數值內部是小數（每分鐘掉 0.02），門檻用四捨五入後的值比，不然畫面寫 80 卻說沒吃飽
+  const wasFull = Math.round(c.hunger) >= FULL_AT;
+  c.hunger = clamp(c.hunger + FEED_HUNGER, 0, 100);
+  c.bonus = clamp((c.bonus || 0) + 5, 0, 40);
+  c.box = false;
+  if(wasFull){ c.xp += XP_PER_FEED; const st = stageOf(c.xp); if(c.stage !== st.name){ c.stage = st.name; diary("stage", `${c.name}長成${st.name}了`); toast(`✨ ${c.name}長成${st.name}了！`); } }
+  if(!c.firstFed){ c.firstFed = true; diary("feed", `第一次餵${c.name}`); }
+  saveShared(); playState("eat", 2200); renderPet(); refreshHeader();
+}
+function cleanLitter(){
+  const c = cat(); if(!c) return;
+  if(c.away){ toast(`${c.name}不在家`); return; }
+  if(c.cleanDay !== dayKey()){ c.cleanDay = dayKey(); c.cleanN = 0; }
+  if(c.cleanN >= CLEAN_MAX_DAY){ toast("今天已經清過兩次了，明天再清"); return; }
+  c.cleanN++; c.clean = clamp(c.clean + CLEAN_ADD, 0, 100); c.bonus = clamp((c.bonus || 0) + 5, 0, 40);
+  saveShared(); playState("happy", 1400); renderPet(); toast("貓砂清乾淨了 🧹");
+}
+function petPlayed(){                 // 接龍接上一條：心情 +10
+  const c = cat(); if(!c || c.away) return;
+  c.bonus = clamp((c.bonus || 0) + 10, 0, 40); saveShared();
+}
+function tapCat(){
+  const c = cat(); if(!c || c.away || c.box) return;
+  if(c.tapDay !== dayKey()){ c.tapDay = dayKey(); c.tapN = 0; }
+  if(c.tapN < 5){ c.tapN++; c.bonus = clamp((c.bonus || 0) + 1, 0, 40); saveShared(); }
+  playState("happy", 1400); renderPet();
+}
+function ringBell(){
+  const c = cat(), p = pet(); if(!c || !c.away) return;
+  const cost = bellCost(), F = feedLedger();
+  if((F.tickets || 0) < cost){ toast(`要 ${cost} 張轉蛋券，現在只有 ${F.tickets || 0} 張。或者連續練 3 天牠會自己回來`); return; }
+  if(!confirm(`用 ${cost} 張轉蛋券搖鈴鐺叫${c.name}回家？\n（連續練 3 天成語牠也會自己回來，不用花券）`)) return;
+  F.tickets -= cost;
+  if(!p.bell || p.bell.month !== monthKey()) p.bell = {month:monthKey(), n:0};
+  p.bell.n++;
+  c.away = null; c.bonus = 40; c.homeAt = dayKey();
+  diary("bell", `搖鈴鐺叫${c.name}回來了（用了 ${cost} 張券）`);
+  saveShared(); renderPet(); playState("bell", 3800); toast(`🔔 ${c.name}回來了！`);
+}
+
+/* ---- 畫面 ---- */
+let stTimer = null, walkTimer = null, walkX = 90, walkDir = 1;
+function setRoomState(st){
+  const room = $("room");
+  room.className = room.className.replace(/\bst-\S+/g, "").trim() + " st-" + st;
+  const svg = $("catsvg");
+  clearInterval(walkTimer); walkTimer = null;
+  const put = (x, dir) => { walkX = x; walkDir = dir; svg.style.setProperty("--x", x + "px"); svg.style.setProperty("--dir", dir); };
+  if(st === "walk"){ walkTimer = setInterval(()=>{ walkX += 14 * walkDir; if(walkX > 150) walkDir = -1; if(walkX < 10) walkDir = 1; put(walkX, walkDir); }, 600); }
+  else if(st === "eat") put(60, 1);
+  else if(st === "play") put(70, 1);
+  else if(st === "dirty") put(120, 1);
+  else if(st === "peek") put(-58, 1);
+  else if(st === "away") put(-140, 1);
+  else if(st === "bell"){ put(-140, 1); setTimeout(()=>put(96, 1), 350); }
+  else put(90, 1);
+}
+function playState(st, ms){           // 暫時播一組動畫，然後回到資料決定的狀態
+  clearTimeout(stTimer);
+  setRoomState(st);
+  stTimer = setTimeout(()=>{ const c = cat(); if(c) setRoomState(petState(c)); startIdleWalk(); }, ms);
+}
+function startIdleWalk(){             // 閒著沒事會在房間走來走去
+  clearInterval(petAnim); petAnim = null;
+  const c = cat(); if(!c || petState(c) !== "idle") return;
+  petAnim = setInterval(()=>{
+    const cc = cat(); if(!cc || petState(cc) !== "idle") return;
+    const room = $("room");
+    if(/st-idle/.test(room.className) && Math.random() < .5) playState("walk", 3000 + Math.random() * 3000);
+  }, 6000);
+}
+function renderPet(){
+  tickPet();
+  const c = cat();
+  $("gachaCard").hidden = !!c; $("petCard").hidden = !c;
+  if(!c){
+    const p = pet(), F = feedLedger();
+    $("gachaTitle").textContent = "還沒有貓";
+    $("gachaSub").textContent = (!p || p.free) ? "第一隻免費。轉一顆蛋，看看是誰來了。" : `要 1 張轉蛋券（現在 ${F.tickets || 0} 張）。連續 7 天成語達標會送一張。`;
+    return;
+  }
+  const b = BREED[c.breed] || BREED.white, st = stageOf(c.xp), nx = nextStage(c.xp);
+  const room = $("room");
+  room.className = "room " + (b.cls || "") + " " + st.cls + " " + (room.className.match(/st-\S+/) || ["st-" + petState(c)])[0];
+  room.style.setProperty("--fur", b.fur); room.style.setProperty("--fur2", b.fur2); room.style.setProperty("--stripe", b.stripe);
+  $("catsvg").style.setProperty("--sz", (st.sz + Math.min(.12, Math.max(0, c.xp - st.xp) / 1000)).toFixed(3));
+  $("petName").textContent = c.name;
+  $("petRar").textContent = `${b.rarName} · ${b.name}`;
+  $("petStage").textContent = `${st.name} · 成長 ${c.xp}${nx ? " / " + nx.xp : ""} · ${c.adopted} 領養`;
+  const bar = (id, v, low) => { $("b" + id).style.width = v + "%"; $("b" + id).classList.toggle("low", !!low); $("v" + id).textContent = Math.round(v); };
+  bar("Hunger", c.hunger, c.hunger < 30); bar("Clean", c.clean, c.clean < 30); bar("Mood", moodOf(c), moodOf(c) < 30);
+  $("bXp").style.width = (nx ? (c.xp - st.xp) / (nx.xp - st.xp) * 100 : 100) + "%"; $("vXp").textContent = c.xp;
+  $("petNext").textContent = c.away ? "" : c.box ? `${c.name}餓到躲進紙箱了，餵牠就會出來` : nx ? `再 ${nx.xp - c.xp} 成長值就長成${nx.name}` + (Math.round(c.hunger) < FULL_AT ? `　·　飽足到 ${FULL_AT} 以上再餵才會長` : "　·　吃飽了，現在餵會長大") : "已經是老練貓了";
+  $("feedHint").textContent = `飼料 ${feedLeft()} 顆`;
+  const cn = c.cleanDay === dayKey() ? c.cleanN : 0;
+  $("cleanHint").textContent = `今天還能 ${Math.max(0, CLEAN_MAX_DAY - cn)} 次`;
+  $("btnFeed").disabled = !!c.away || feedLeft() < 1;
+  $("btnClean").disabled = !!c.away || cn >= CLEAN_MAX_DAY;
+  $("btnPlay").disabled = !!c.away;
+  $("btnBell").hidden = !c.away;
+  if(c.away){
+    const F = feedLedger(), cost = bellCost(), since = practicedSince(c.away.since);
+    $("bellHint").textContent = `${cost} 張券（有 ${F.tickets || 0} 張）`;
+    $("awayBox").hidden = false;
+    $("awayBox").innerHTML = `<b>${esc(c.name)}離家了</b>牠 ${c.away.idle} 天沒看到你練成語，${esc(c.away.since)} 出門去了。成長值、階段、名字都還在。<br>
+      回家的路有兩條：<b>連續練 3 天成語</b>（已經 ${since} 天）牠就自己回來；或搖<b>回家鈴鐺</b>，要 ${cost} 張轉蛋券。`;
+  }else{
+    $("awayBox").hidden = true;
+    const idle = idlePracticeDays();
+    if(idle >= PEEK_DAYS){ $("awayBox").hidden = false; $("awayBox").innerHTML = `<b>${esc(c.name)}在門口張望</b>已經 ${idle} 天沒練成語了，再 ${AWAY_DAYS - idle} 天牠會離家。練一輪牠就回房間。`; }
+  }
+  const D = (pet().diary || []).slice().reverse().slice(0, 10);
+  $("diaryN").textContent = D.length ? `最近 ${D.length} 則` : "";
+  $("diary").innerHTML = D.length ? D.map(e=>`<li><span>${esc(e.d.slice(5).replace("-", "/"))}</span><span>${esc(e.text)}</span></li>`).join("") : `<li><span></span><span>還沒有紀錄</span></li>`;
+  if(!/st-(eat|happy|bell|play|walk)/.test(room.className)) setRoomState(petState(c));
+  startIdleWalk();
+}
+$("btnGacha").onclick = gacha;
+$("btnFeed").onclick = feedCat;
+$("btnClean").onclick = cleanLitter;
+$("btnBell").onclick = ringBell;
+$("btnPlay").onclick = ()=>{ const c = cat(); if(c) playState("play", 2500); document.querySelector('.nav button[data-view="vQuiz"]').click(); $("chainCard").scrollIntoView({behavior:"smooth"}); };
+$("catsvg").addEventListener("click", tapCat);
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && !$("vCat").classList.contains("on")) return; if(!document.hidden) renderPet(); });
+setInterval(()=>{ if($("vCat").classList.contains("on")) renderPet(); }, 60000);
 
 $("btnStart").onclick = ()=>startRound(false);
 $("btnWrongOnly").onclick = ()=>startRound(true);

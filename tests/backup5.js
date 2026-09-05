@@ -54,6 +54,32 @@ const IDIOM_S = {done:40, right:35, stats:{"一心一意":{r:3, x:1, streak:2, d
   ok(c.ev("feedStreak()") === 2, `成語連續達標要還原, 實得 ${c.ev("feedStreak()")}`);
 }
 
+// ---------- ①-2 貓要跟著備份碼走 ----------
+{
+  const withPet = JSON.parse(JSON.stringify(SHARED));
+  withPet.pet = {free:false, bell:{month:today.slice(0,7), n:1}, cats:[{name:"小橘", breed:"orange", xp:250, hunger:64.4, clean:30.2, bonus:12, adopted:y1, last:1700000000, away:null, box:false, stage:"少年貓"}],
+                 diary:[{d:y1, ev:"adopt", text:"領養了少見的橘虎斑，取名「小橘」", ts:1}, {d:today, ev:"stage", text:"小橘長成少年貓了", ts:2}]};
+  const a = boot(indexHtml, "index.html", ls=>ls.setItem("cq-shared-v1", JSON.stringify(withPet)));
+  const code = a.ev("exportCode()");
+  const b = boot(indexHtml, "index.html");
+  ok(b.ev(`importCode(${JSON.stringify(code)})`) === "", "帶貓的備份碼要還原得回來");
+  const c = b.ev("SHARED.pet && SHARED.pet.cats[0]");
+  ok(!!c && c.name === "小橘" && c.breed === "orange", `貓的名字與花色要跟著走, 實得 ${JSON.stringify(c)}`);
+  ok(c.xp === 250 && c.hunger === 64 && c.clean === 30, "成長值與狀態要跟著走（四捨五入到整數）");
+  ok(c.adopted === y1 && c.away === null && c.box === false, "領養日、在不在家要跟著走");
+  ok(b.ev("SHARED.pet.free") === false && b.ev("SHARED.pet.bell.n") === 1 && b.ev("SHARED.pet.bell.month") === today.slice(0,7), "免費額度與鈴鐺次數要跟著走");
+  ok(b.ev("SHARED.pet.diary.length") === 2 && b.ev("SHARED.pet.diary[1].text").includes("少年貓"), "日記要跟著走");
+  // 離家中的貓也要還原成離家
+  withPet.pet.cats[0].away = {since:y1, idle:7};
+  const a2 = boot(indexHtml, "index.html", ls=>ls.setItem("cq-shared-v1", JSON.stringify(withPet)));
+  const b2 = boot(indexHtml, "index.html");
+  b2.ev(`importCode(${JSON.stringify(a2.ev("exportCode()"))})`);
+  ok(b2.ev("SHARED.pet.cats[0].away && SHARED.pet.cats[0].away.since") === y1, "離家中要還原成離家");
+  // 成語頁讀得到那隻貓
+  const d = boot(idiomHtml, "idiom.html", ls=>ls.setItem("cq-shared-v1", b.ls.getItem("cq-shared-v1")));
+  ok(d.ev("cat() && cat().name") === "小橘", "成語頁要讀到還原的貓");
+}
+
 // ---------- ② 沒練過成語的裝置：備份碼不得多出怪東西，還原後也不得爆 ----------
 {
   const a = boot(indexHtml, "index.html", ls=>ls.setItem("cq-shared-v1", JSON.stringify({days:{[today]:{n:10, r:9, paid:2}}, bank:{earned:2, used:0, bonus:0}, gifts:[], coupons:[]})));
@@ -62,6 +88,7 @@ const IDIOM_S = {done:40, right:35, stats:{"一心一意":{r:3, x:1, streak:2, d
   ok(b.ev(`importCode(${JSON.stringify(code)})`) === "", "沒有成語紀錄的碼要還原得回來");
   ok(!b.ev(`SHARED.days[${JSON.stringify(today)}].i`), "沒練成語的日子不得多出 i");
   ok(!b.ev("SHARED.feed"), "沒有飼料帳就不該憑空長出來");
+  ok(!b.ev("SHARED.pet"), "沒有貓就不該憑空長出來");
   ok(b.ls.getItem("cq-vocab-v1:idiom") === null, "沒有成語紀錄就不得寫一份空的");
 }
 
