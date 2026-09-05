@@ -47,11 +47,110 @@ const snap = t => JSON.stringify({S:t.ev("JSON.parse(JSON.stringify(S))"), feed:
   const wasDone = t.ev("$('storyChoices').dataset.done");
   t.click(cs.find(b=>b.dataset.s === ansC));
   ok(wasDone === "1" && /✗/.test(t.$("storyRes").textContent), "答完不得再改答案");
-  // 同一篇不會連續出兩次
-  let same = 0;
-  for(let r = 0; r < 12; r++){ const prev = t.ev("localStorage.getItem('cq-idiom-story')"); t.ev("endRound()"); if(t.ev("localStorage.getItem('cq-idiom-story')") === prev) same++; }
+  // 三種不計分練習輪流出，所以「同一篇不會連續出兩次」只在真的出典故的那幾輪比對
+  let same = 0, n = {story:0, liushu:0, yihun:0}, over = 0;
+  let prev = t.ev("localStorage.getItem('cq-idiom-story')");
+  for(let r = 0; r < 30; r++){
+    t.ev("endRound()");
+    const on = ["story", "liushu", "yihun"].filter(k => !t.$(k + "Box").hidden);
+    if(on.length !== 1) over++;
+    on.forEach(k => n[k]++);
+    if(!on.includes("story")) continue;
+    const cur = t.ev("localStorage.getItem('cq-idiom-story')");
+    if(cur === prev) same++;
+    prev = cur;
+  }
   ok(same === 0, `同一篇典故不得連續出現, 實得 ${same} 次`);
-  ok(snap(t) === before, "出了 12 次典故題還是不得動到任何紀錄");
+  ok(over === 0, `每輪只能出一種不計分練習，實得 ${over} 輪不是`);
+  ok(n.story >= 8 && n.liushu >= 8 && n.yihun >= 8,
+     `30 輪要三種輪流各出 8 次以上，實得 典故 ${n.story}、造字 ${n.liushu}、易混淆字 ${n.yihun}`);
+  ok(snap(t) === before, "出了 30 次不計分練習還是不得動到任何紀錄");
+}
+
+// ================= E7c 易混淆字（結算頁的第三種不計分練習） =================
+{
+  const t = boot(idiomHtml, "idiom.html");
+  // 三種輪流，BONUS_KEY 餘 2 的那一輪出易混淆字
+  t.ev("localStorage.setItem('cq-idiom-bonus','2'); queue = []; idx = 0; roundRight = 0; missed = []; endRound();");
+  ok(!t.$("yihunBox").hidden, "輪到易混淆字時結算頁要出現它");
+  ok(t.$("storyBox").hidden && t.$("liushuBox").hidden, "出易混淆字時另外兩種要收起來");
+
+  const cs = [...t.d.querySelectorAll("#yihunChoices .choice")];
+  ok(cs.length === 4, `要四個選項，實得 ${cs.length}`);
+  const k = +t.ev("localStorage.getItem('cq-idiom-yihun')");
+  const chars = t.ev(`YIHUN_ROWS[${k}][1]`), why = t.ev(`YIHUN_ROWS[${k}][2]`);
+  const ans = chars[0];
+  ok(new Set(cs.map(b=>b.dataset.w)).size === 4, "四個選項不得重複");
+  ok(cs.some(b=>b.dataset.w === ans), "正解要在選項裡");
+  ok(!t.$("yihunText").textContent.includes(ans), "題幹裡不得出現正解");
+
+  const before = snap(t);
+  t.click(cs.find(b => b.dataset.w !== ans));
+  const res = t.$("yihunRes").textContent;
+  ok(/✗/.test(res) && res.includes(ans) && res.includes(why), "答錯要講正解與解析");
+  ok(snap(t) === before, "易混淆字不得動到答題紀錄、飼料、日曆");
+  ok(cs.every(b=>b.disabled), "答完就鎖住");
+  const wasDone = t.ev("$('yihunChoices').dataset.done");
+  t.click(cs.find(b => b.dataset.w === ans));
+  ok(wasDone === "1" && /✗/.test(t.$("yihunRes").textContent), "答完不得再改答案");
+
+  let same = 0, seen = 0, prev = t.ev("localStorage.getItem('cq-idiom-yihun')");
+  for(let r = 0; r < 30; r++){
+    t.ev("endRound()");
+    if(t.$("yihunBox").hidden) continue;
+    seen++;
+    const cur = t.ev("localStorage.getItem('cq-idiom-yihun')");
+    if(cur === prev) same++;
+    prev = cur;
+  }
+  ok(same === 0, `同一題易混淆字不得連續出現, 實得 ${same} 次`);
+  ok(seen >= 8, `30 輪要出到 8 次以上易混淆字，實得 ${seen}`);
+  ok(snap(t) === before, "出了 30 次易混淆字還是不得動到任何紀錄");
+}
+
+// ================= E7b 造字法則（結算頁的另一種不計分練習） =================
+{
+  const t = boot(idiomHtml, "idiom.html");
+  // BONUS_KEY 是奇數的那一輪出造字法則
+  t.ev("localStorage.setItem('cq-idiom-bonus','1'); queue = []; idx = 0; roundRight = 0; missed = []; endRound();");
+  ok(!t.$("liushuBox").hidden, "輪到造字法則時結算頁要出現它");
+  ok(t.$("storyBox").hidden && t.$("yihunBox").hidden, "出造字法則時另外兩種要收起來");
+  ok(t.$("liushuText").textContent.length >= 8, "要有題目");
+
+  const cs = [...t.d.querySelectorAll("#liushuChoices .choice")];
+  const opts = t.ev("JSON.stringify(LIUSHU_OPTS)");
+  ok(cs.length === 4, `要四個選項，實得 ${cs.length}`);
+  ok(cs.map(b=>b.textContent.replace(/^[A-D]/, "")).join("") === JSON.parse(opts).join(""),
+     "選項要照課本順序「象形指事會意形聲」，不打亂");
+
+  const k = +t.ev("localStorage.getItem('cq-idiom-liushu')");
+  const ansIdx = t.ev(`LIUSHU_ROWS[${k}][1]`);
+  const why = t.ev(`LIUSHU_ROWS[${k}][2]`);
+  const before = snap(t);
+
+  t.click(cs.find(b => +b.dataset.k !== ansIdx));
+  const res = t.$("liushuRes").textContent;
+  ok(/✗/.test(res), "答錯要標示答錯");
+  ok(res.includes(JSON.parse(opts)[ansIdx]) && res.includes(why), "答錯要講正解與解析");
+  ok(snap(t) === before, "造字法則不得動到答題紀錄、飼料、日曆");
+  ok(cs.every(b=>b.disabled), "答完就鎖住");
+  const wasDone = t.ev("$('liushuChoices').dataset.done");
+  t.click(cs.find(b => +b.dataset.k === ansIdx));
+  ok(wasDone === "1" && /✗/.test(t.$("liushuRes").textContent), "答完不得再改答案");
+
+  // 同一題不會連續出兩次
+  let same = 0, seen = 0, prev = t.ev("localStorage.getItem('cq-idiom-liushu')");
+  for(let r = 0; r < 24; r++){
+    t.ev("endRound()");
+    if(t.$("liushuBox").hidden) continue;
+    seen++;
+    const cur = t.ev("localStorage.getItem('cq-idiom-liushu')");
+    if(cur === prev) same++;
+    prev = cur;
+  }
+  ok(same === 0, `同一題造字法則不得連續出現, 實得 ${same} 次`);
+  ok(seen >= 8, `24 輪要出到 8 次以上造字法則，實得 ${seen}`);
+  ok(snap(t) === before, "出了 24 次造字法則還是不得動到任何紀錄");
 }
 
 // ================= E7 接龍 =================

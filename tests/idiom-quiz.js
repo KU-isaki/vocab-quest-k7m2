@@ -175,7 +175,14 @@ function playRound(t, n, correct = true){
     if((t.kind() === "tile" || t.kind() === "cloze") && i.x){
       found = true;
       const ts2 = [...t.d.querySelectorAll("#qBody .tile")]; const used = new Set();
-      [...i.x].forEach(ch=>{ const x = ts2.find(y=>y.dataset.ch === ch && !used.has(y)); used.add(x); t.click(x); });
+      let miss = "";
+      [...i.x].forEach(ch=>{
+        const x = ts2.find(y=>y.dataset.ch === ch && !used.has(y));
+        if(!x){ miss += ch; return; }                      // 找不到就記下來，不要讓整支測試爆掉
+        used.add(x); t.click(x);
+      });
+      ok(!miss, `「${i.c}」的易錯寫法「${i.x}」拼不出來，字塊缺「${miss}」（有 ${ts2.map(y=>y.dataset.ch).join("")}）`);
+      if(miss){ t.click(t.$("btnQuit")); found = false; break; }
       t.click(t.$("btnCheck"));
       ok(/再記一次/.test(t.$("fbTitle").textContent), `拼成易錯字「${i.x}」要判錯`);
       ok(!t.$("fbUse").hidden && t.$("fbUse").textContent.includes(i.xw.slice(0, 4)), "判錯要說明為什麼容易錯");
@@ -264,6 +271,31 @@ function playRound(t, n, correct = true){
   t.click([...t.d.querySelectorAll("#qBody .choice")].find(b=>b.dataset.c !== ans)); t.click(t.$("btnCheck"));
   ok(/再記一次/.test(t.$("fbTitle").textContent) && t.$("fbUse").textContent.includes("特殊注音"), "讀音答錯要講特殊注音");
   ok(t.ev(`SHARED.days[dayKey()].i.n`) >= 1, "讀音題要算進當天題數");
+}
+
+// ================= 每一條的易錯寫法都要拼得出來 =================
+/* 疊字成語的易錯寫法會在兩個位置換同一個字（小心翼翼→小心奕奕），
+   字塊只放一個的話那條的陷阱等於沒放。以前只有隨機抽到才會發現，這裡逐條算清楚。 */
+{
+  const t = boot();
+  const bad = t.ev(`(function(){
+    const out = [];
+    IDIOMS.filter(i=>i.x).forEach(i=>{
+      const tiles = tileSet(i), pool = {};
+      tiles.forEach(ch=>pool[ch] = (pool[ch] || 0) + 1);
+      const want = {}; [...i.x].forEach(ch=>want[ch] = (want[ch] || 0) + 1);
+      const miss = Object.keys(want).filter(ch=>(pool[ch] || 0) < want[ch]);
+      if(miss.length) out.push(i.c + "→" + i.x + " 缺「" + miss.join("") + "」");
+      if(tiles.length !== 8) out.push(i.c + " 字塊不是 8 個，實得 " + tiles.length);
+    });
+    return out;
+  })()`);
+  const withX = t.ev("IDIOMS.filter(i=>i.x).length");
+  ok(withX > 300, `有易錯字的成語要有三百多條, 實得 ${withX}`);
+  ok(bad.length === 0, `每條的易錯寫法都要拼得出來, ${bad.length} 條不行：${bad.slice(0, 6).join("；")}`);
+  const dbl = t.ev(`IDIOMS.filter(i=>i.x && [...i.x].some((ch, k)=>{
+    const want = [...i.x].filter(c=>c === ch).length; return ch !== i.c[k] && want > 1; })).length`);
+  ok(dbl >= 8, `題庫裡本來就有疊字的易錯寫法，這條才有意義, 實得 ${dbl}`);
 }
 
 // ================= 選項不得有兩個都對 =================
