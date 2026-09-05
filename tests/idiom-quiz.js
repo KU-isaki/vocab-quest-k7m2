@@ -266,6 +266,52 @@ function playRound(t, n, correct = true){
   ok(t.ev(`SHARED.days[dayKey()].i.n`) >= 1, "讀音題要算進當天題數");
 }
 
+// ================= 選項不得有兩個都對 =================
+/* 題庫裡有意思幾乎一樣的成語（十萬火急／刻不容緩），也有同一條成語的兩種寫法
+   （無精打采／沒精打采）。四個選項裡同時出現兩條，小孩怎麼選都可能被判錯。
+   這裡用測試自己算一次相似度（不借用頁面的 clashSet），才驗得出「有真的接上去」。 */
+{
+  const t = boot();
+  t.ev(`pickScope = "all"; savePick(); renderPickers();`);
+  const rows = t.ev("IDIOMS.map(i=>({c:i.c, m:i.m}))");
+  const bag = m => new Set(m.replace(/[，。、；：？！「」（）()①②③亦也後用比喻形容指的是常]/g, ""));
+  const bags = {}; rows.forEach(r=>bags[r.c] = bag(r.m));
+  const twin = (a, b) => {
+    let diff = 0; for(let k = 0; k < 4; k++) if(a[k] !== b[k]) diff++;
+    if(diff === 1) return true;
+    const x = bags[a], y = bags[b]; let hit = 0;
+    x.forEach(ch=>{ if(y.has(ch)) hit++; });
+    return hit / Math.min(x.size, y.size) >= .7;
+  };
+  // 先確認題庫裡真的有這種組合，不然這條測試等於沒測
+  let pairs = 0;
+  for(let a = 0; a < rows.length && pairs < 1; a++)
+    for(let b = a + 1; b < rows.length; b++)
+      if(twin(rows[a].c, rows[b].c)){ pairs++; break; }
+  ok(pairs > 0, "題庫裡本來就有意思一樣的成語，這條才有意義");
+
+  let bad = 0, seen = 0, sample = "";
+  ["easy", "std", "hard"].forEach(d=>{
+    pickDiff(t, d); pickN(t, 50);
+    for(let r = 0; r < 4; r++){
+      t.start();
+      for(let k = 0; k < 50; k++){
+        const kd = t.kind();
+        if(kd === "m2c" || kd === "c2m" || kd === "syn"){
+          const cs = [...t.d.querySelectorAll("#qBody .choice")].map(b=>b.dataset.c);
+          seen++;
+          for(let a = 0; a < cs.length; a++) for(let b = a + 1; b < cs.length; b++)
+            if(twin(cs[a], cs[b])){ bad++; if(!sample) sample = `${d} ${kd}：${cs.join(" ")}`; }
+        }
+        t.answer(true); t.next();
+      }
+      t.click(t.$("btnQuit"));
+    }
+  });
+  ok(seen > 200, `要真的抽到夠多選擇題, 實得 ${seen}`);
+  ok(bad === 0, `同一題不得出現兩個意思一樣的選項, ${bad} 題有問題（例：${sample}）`);
+}
+
 // ================= W1 飼料帳 =================
 {
   const t = boot();
