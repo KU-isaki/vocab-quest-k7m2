@@ -13,7 +13,7 @@ let pass = 0, fail = 0;
 const ok = (c, m) => { c ? pass++ : (fail++, console.log("  ✗ " + m)); };
 
 const ROWS = w.eval("YIHUN_ROWS");
-const TARGET = 151;   // 來源 161 題，丟掉 10 題（答案錯或兩個選項都對）
+const TARGET = 149;   // 來源 161 題，丟掉 12 題（答案錯、兩個選項都對，或整題建立在錯的讀音上）
 
 // ---------- 整體 ----------
 ok(ROWS.length === TARGET, `題數要剛好 ${TARGET} 題，實得 ${ROWS.length}`);
@@ -82,6 +82,23 @@ ROWS.forEach((r, k) => {
     });
   });
   ok(clash.length === 0, `正解要跟成語題庫同一個寫法：${clash.slice(0, 3).join("；")}`);
+}
+/* 題幹給的注音要跟成語題庫的破音字一致。來源有兩題把「櫛」念成 ㄐㄧˊ、「券」念成 ㄐㄩㄢˋ，
+   而且四個選項全照錯的音去配 —— 那種題整題都要丟，不能只改注音。 */
+{
+  const pz = {};
+  (html.match(/pz:"[^"]+"/g) || []).forEach(x=>x.slice(4, -1).split(/[，,]/).forEach(p=>{
+    const [ch, z] = p.split("："); if(ch && z) (pz[ch] = pz[ch] || new Set()).add(z);
+  }));
+  const wrong = [];
+  ROWS.forEach((r, k)=>{
+    const m = r[0].match(/[「『]([^」』]+)[」』]/); if(!m) return;
+    const zy = m[1].split(" "); if(zy.length !== 1) return;
+    const ans = r[1][0];
+    if(pz[ans] && !pz[ans].has(zy[0]))
+      wrong.push(`第 ${k+1} 題「${ans}」注音寫 ${zy[0]}，題庫破音字是 ${[...pz[ans]].join("／")}`);
+  });
+  ok(wrong.length === 0, `題幹注音要跟題庫的破音字一致：${wrong.join("；")}`);
 }
 ok(seen.size >= 3, `正解不得固定在同一個位置（來源一律排第一個），60 次只出現在 ${[...seen].sort().join("/")} 號位`);
   ok(!(seen.size === 1 && seen.has(0)), "正解永遠在 A，等於送分題");
