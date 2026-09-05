@@ -166,6 +166,77 @@ const wait = ms => new Promise(r=>setTimeout(r, ms));
   ok(!t5.cat().away && t5.state() === "idle", `剛領養的貓不會馬上離家（倒數從領養日起算）, 實得 ${t5.state()}`);
 }
 
+// ================= 多貓與門檻 =================
+{
+  const t = boot((ls, sh)=>{ sh.feed.tickets = 9; sh.bank = {earned:60, used:0, bonus:0}; ls.setItem("cq-shared-v1", JSON.stringify(sh)); });
+  t.goCat(); t.click(t.$("btnGacha")); await wait(1800);
+  ok(t.ev("SHARED.pet.cats.length") === 1, "先有一隻");
+  ok(!!t.$("btnMore") && t.$("btnMore").disabled, "第 2 隻的槽要出現但鎖住");
+  t.click(t.$("btnMore"));
+  ok(t.ev("SHARED.pet.cats.length") === 1 && /三級/.test(t.$("toast").textContent), "沒達門檻不得抽，要講門檻");
+  // 三級熟練 50 條 → 開第 2 隻
+  t.ev(`IDIOMS.filter(i=>i.lv === 3).slice(0, 50).forEach(i=>{ S.stats[i.c] = {r:3, x:0, streak:3, due:"2099-01-01"}; }); save(); renderPet();`);
+  ok(!t.$("btnMore").disabled, "三級熟練 50 條要開第 2 隻");
+  // 用固定花色抽，避免重複
+  t.ev(`rollBreed = () => BREED[SHARED.pet.cats[0].breed === "black" ? "white" : "black"];`);
+  t.w.prompt = ()=>"小黑";
+  t.click(t.$("btnMore")); await wait(1800);
+  ok(t.ev("SHARED.pet.cats.length") === 2 && t.ev("feedLedger().tickets") === 8, `第 2 隻要扣 1 張券, 隻數 ${t.ev("SHARED.pet.cats.length")} 券 ${t.ev("feedLedger().tickets")}`);
+  ok(t.cat().name === "小黑" && t.ev("SHARED.pet.active") === 1, "新抽的要變成目前的貓");
+  ok(t.d.querySelectorAll("#catTabs [data-cat]").length === 2, "選貓列要兩顆");
+  t.click(t.d.querySelector('#catTabs [data-cat="0"]'));
+  ok(t.cat().name === "小橘", "切回第一隻");
+  // 各自獨立：餵第一隻不影響第二隻
+  const h2 = t.ev("SHARED.pet.cats[1].hunger");
+  t.click(t.$("btnFeed"));
+  ok(Math.round(t.ev("SHARED.pet.cats[1].hunger")) === Math.round(h2), "餵一隻不得影響另一隻");
+  // 第 3 隻：四級 50 條 + 挑戰模式近 7 天 85%
+  ok(t.$("btnMore").disabled, "第 3 隻要鎖住");
+  t.ev(`IDIOMS.filter(i=>i.lv === 4).slice(0, 50).forEach(i=>{ S.stats[i.c] = {r:3, x:0, streak:3, due:"2099-01-01"}; }); save(); renderPet();`);
+  ok(t.$("btnMore").disabled, "只有四級 50 條還不夠，挑戰模式答對率也要");
+  t.ev(`SHARED.days[dayKey()].i.hn = 40; SHARED.days[dayKey()].i.hr = 36; renderPet();`);
+  ok(!t.$("btnMore").disabled, "四級 50 條 + 挑戰 90% 要開第 3 隻");
+  t.ev(`SHARED.days[dayKey()].i.hn = 20; SHARED.days[dayKey()].i.hr = 20; renderPet();`);
+  ok(t.$("btnMore").disabled, "挑戰模式不到 30 題不算");
+  t.ev(`SHARED.days[dayKey()].i.hn = 40; SHARED.days[dayKey()].i.hr = 36; renderPet();`);
+  // 重複花色 → 20 顆飼料，不新增貓
+  t.ev(`rollBreed = () => BREED["black"];`);
+  const fb = t.ev("feedLedger().bonus || 0");
+  t.click(t.$("btnMore")); await wait(200);
+  ok(t.ev("SHARED.pet.cats.length") === 2 && t.ev("feedLedger().bonus") === fb + 20, "抽到重複花色要換成 20 顆飼料");
+  ok(t.ev("feedLedger().tickets") === 7, "重複也要扣券");
+  ok(/換成 20 顆/.test(t.$("diary").textContent), "重複要寫日記");
+  // 第 3 隻成功，然後最多 3 隻
+  t.ev(`rollBreed = () => BREED["orange"];`); t.w.prompt = ()=>"三花";
+  t.click(t.$("btnMore")); await wait(1800);
+  ok(t.ev("SHARED.pet.cats.length") === 3, "第 3 隻要抽得到");
+  ok(!t.$("btnMore"), "三隻之後不得再有空槽");
+  // 練習後 tick 要算到每一隻
+  t.ev(`SHARED.pet.cats.forEach(c=>{ c.hunger = 50; c.last = nowSec() - 24*3600; }); renderPet();`);
+  ok(t.ev("SHARED.pet.cats.every(c=>Math.round(c.hunger) === 20)"), "時間過去每一隻都要掉");
+}
+
+// ================= 用遊戲時間換 =================
+{
+  const t = boot((ls, sh)=>{ sh.bank = {earned:40, used:5, bonus:0}; sh.gifts = [{d:today, m:10, why:"送", dev:"x", seq:1, ts:1}]; ls.setItem("cq-shared-v1", JSON.stringify(sh)); });
+  t.goCat(); t.click(t.$("btnGacha")); await wait(1800);
+  ok(t.ev("bankLeft()") === 45, `成語頁算的存摺要跟單字闖關一樣（40+10−5）, 實得 ${t.ev("bankLeft()")}`);
+  const f0 = t.ev("feedLeft()");
+  t.click(t.$("btnTradeFeed"));
+  ok(t.ev("feedLeft()") === f0 + 10 && t.ev("SHARED.bank.used") === 15, `10 分鐘換 10 顆：飼料 +10、分鐘 −10, 實得 飼料 ${t.ev("feedLeft()")} used ${t.ev("SHARED.bank.used")}`);
+  ok(t.ev("feedLedger().earned") === 20, "換來的飼料不得算成「練習賺到的」");
+  t.click(t.$("btnTradeTicket"));
+  ok(t.ev("feedLedger().tickets") === 4 && t.ev("SHARED.bank.used") === 30, "15 分鐘換 1 張券");
+  ok(/換了/.test(t.$("diary").textContent), "換要寫日記");
+  t.ev("SHARED.bank.used = 100; renderPet();");
+  ok(t.$("btnTradeFeed").disabled && t.$("btnTradeTicket").disabled, "分鐘不夠不能換");
+  t.click(t.$("btnTradeFeed"));
+  ok(t.ev("SHARED.bank.used") === 100, "不夠不得扣");
+  // 贈送的飼料（kind:feed）不得算進分鐘存摺
+  t.ev(`SHARED.gifts.push({d:dayKey(), m:30, why:"送飼料", kind:"feed", dev:"x", seq:2, ts:1}); SHARED.bank.used = 5;`);
+  ok(t.ev("bankLeft()") === 45, "家長送的飼料不得混進分鐘存摺");
+}
+
 // ================= 隱藏的東西真的看不見、hidden 沒被 grid 蓋掉 =================
 {
   const t = boot(); t.goCat();

@@ -54,6 +54,20 @@ const IDIOM_S = {done:40, right:35, stats:{"一心一意":{r:3, x:1, streak:2, d
   ok(c.ev("feedStreak()") === 2, `成語連續達標要還原, 實得 ${c.ev("feedStreak()")}`);
 }
 
+// ---------- ①-1 贈送的種類、挑戰模式題數要跟著走 ----------
+{
+  const sh = JSON.parse(JSON.stringify(SHARED));
+  sh.gifts.push({d:today, m:20, why:"送飼料", kind:"feed", dev:"ab12", seq:2, ts:1700000001}, {d:today, m:2, why:"送券", kind:"ticket", dev:"ab12", seq:3, ts:1700000002});
+  sh.days[y1].i.hn = 40; sh.days[y1].i.hr = 36;
+  const a = boot(indexHtml, "index.html", ls=>ls.setItem("cq-shared-v1", JSON.stringify(sh)));
+  const b = boot(indexHtml, "index.html");
+  ok(b.ev(`importCode(${JSON.stringify(a.ev("exportCode()"))})`) === "", "帶種類的碼要還原得回來");
+  const gs = b.ev("SHARED.gifts");
+  ok(gs.length === 3 && gs[1].kind === "feed" && gs[1].m === 20 && gs[2].kind === "ticket" && gs[2].m === 2 && !gs[0].kind, `贈送種類要跟著走, 實得 ${JSON.stringify(gs.map(g=>[g.kind, g.m]))}`);
+  ok(b.ev("giftTotal()") === 30, "分鐘只算分鐘那種");
+  ok(b.ev(`SHARED.days[${JSON.stringify(y1)}].i.hn`) === 40 && b.ev(`SHARED.days[${JSON.stringify(y1)}].i.hr`) === 36, "挑戰模式題數要跟著走（第 3 隻貓的門檻要用）");
+}
+
 // ---------- ①-2 貓要跟著備份碼走 ----------
 {
   const withPet = JSON.parse(JSON.stringify(SHARED));

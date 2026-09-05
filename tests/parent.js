@@ -22,7 +22,7 @@ const LIST = {children:[
     v:"2026.09.02-b", who:"大寶", streak:3,
     days:{[D2]:{n:30,r:28,m:15}, [D]:{n:50,r:45,m:30}},
     bank:{earned:120, bonus:30, used:60, gift:25, left:115},
-    gifts:[{d:D2, m:30, why:"幫忙洗碗"}, {d:D2, m:-5, why:"亂發脾氣"}],
+    gifts:[{d:D2, m:30, why:"幫忙洗碗"}, {d:D2, m:-5, why:"亂發脾氣"}, {d:D, m:20, why:"倒垃圾", kind:"feed"}, {d:D, m:1, why:"月考", kind:"ticket"}],
     coupons:[{d:D2, on:D, why:"考試進步"}],
     decks:{summer:{label:"暑假版", total:114, done:200, right:170, mastered:60,
                    weak:[{w:"honest", zh:"誠實的", x:4}, {w:"nurse", zh:"護士", x:2}]}},
@@ -105,6 +105,7 @@ ok(t.d.querySelectorAll(".lvb").length === 4, "四級都要有一條");
 ok(/貓：小橘/.test(txt), "要有貓卡");
 ok(/少年貓/.test(txt) && /貓砂該清了/.test(txt), `貓卡要講狀態（清潔 22 → 該清了）`);
 ok(/長成少年貓/.test(txt), "貓卡要有最近的日記");
+ok(/送 20 顆飼料/.test(txt) && /送 1 張轉蛋券/.test(txt), "送飼料、送券要顯示對單位");
 ok(!/成語ㄚ喵/.test(boot(seedConf, () => okRes({children:[LIST.children[1]]})).d.body.textContent) || true, "沒練成語的小孩不強制顯示");
 
 // 沒資料時要講人話，不是空白

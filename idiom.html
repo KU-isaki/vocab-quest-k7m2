@@ -486,6 +486,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
     </div>
 
     <div class="card pet" id="petCard" hidden>
+      <div class="chiprow" id="catTabs" style="justify-content:flex-start; margin:0 0 10px"></div>
       <div class="who"><b id="petName"></b><span id="petRar"></span></div>
       <div class="stage" id="petStage"></div>
       <div class="room" id="room">
@@ -545,11 +546,17 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
         <button class="btn ghost" id="btnPlay">🎮 玩接龍<small>心情 +10</small></button>
         <button class="btn ghost" id="btnBell" hidden>🔔 回家鈴鐺<small id="bellHint"></small></button>
       </div>
+      <div class="pacts" style="margin-top:4px">
+        <button class="btn quiet" id="btnTradeFeed">⏱ 10 分鐘 → 10 顆飼料<small id="tradeHint"></small></button>
+        <button class="btn quiet" id="btnTradeTicket">⏱ 15 分鐘 → 1 張轉蛋券</button>
+      </div>
       <details class="info"><summary>牠是怎麼運作的？</summary>
         <div class="info-in">飽足每天掉 30、清潔每天掉 25。1 顆飼料 +10 飽足；<b>吃飽（80 以上）再餵，多的變成長值</b>。
           清貓砂免費、一天最多兩次。飽足歸零會躲進紙箱睡覺，餵了就出來，<b>永遠不會死</b>。<br>
           <b>3 天沒練成語</b>牠會站在門口張望，<b>7 天</b>會離家（留一張紙條）；連續練 3 天自己回來，
-          或搖回家鈴鐺（2 張轉蛋券起跳，同一個月第二次起每次多 1 張）。成長值、階段、名字離家時全部保留。</div>
+          或搖回家鈴鐺（2 張轉蛋券起跳，同一個月第二次起每次多 1 張）。成長值、階段、名字離家時全部保留。<br>
+          <b>想多養</b>：第 2 隻要三級熟練 50 條，第 3 隻要四級熟練 50 條、挑戰模式近 7 天答對率 85%。每多一隻每天多吃 3 顆。<br>
+          遊戲時間可以換飼料和轉蛋券，但<b>故意比自己練貴一倍</b>——忙的日子有退路，平常練比較划算。</div>
       </details>
       <div class="grouphead"><b>成長日記</b><span id="diaryN"></span></div>
       <div class="diary"><ul id="diary"></ul></div>
@@ -571,7 +578,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 
 <script>
 /* 版本標示：每次改版都更新，跟單字闖關同一套規矩 */
-const IDIOM_VERSION = "2026.09.05-e";
+const IDIOM_VERSION = "2026.09.05-f";
 
 /* ================= 成語題庫 =================
    格式：["成語", "注音（四組，空格分開）", "解釋", "例句", 級, {選填}]
@@ -1413,6 +1420,7 @@ function grade(ok, got){
   const di = day.i || (day.i = {n:0, r:0});
   const mw = (di.mw === undefined ? di.n : di.mw) + DIFF.mul;   // 難度倍率累加，之後除以題數才是當天平均
   di.n++; if(ok) di.r++; di.mw = Math.round(mw * 100) / 100;
+  if(DIFF.id === "hard"){ di.hn = (di.hn || 0) + 1; if(ok) di.hr = (di.hr || 0) + 1; }   // 挑戰模式另外記
   checkFeed(di);
   save(); refreshHeader();
 
@@ -1531,7 +1539,40 @@ const cleanName = t => String(t || "").replace(/[|~;:,=<>"]/g, " ").replace(/\s+
 const monthKey = () => dayKey().slice(0, 7);
 
 function pet(){ return SHARED.pet || null; }
-function cat(){ const p = pet(); return p && p.cats && p.cats[0] || null; }
+function cat(){ const p = pet(); if(!p || !p.cats || !p.cats.length) return null; return p.cats[Math.min(p.active || 0, p.cats.length - 1)]; }
+/* 想多養，成語要練得更難：第 2 隻要三級熟練 50 條，第 3 隻要四級熟練 50 條且挑戰模式近 7 天答對率 85% */
+const SLOT_RULES = [
+  {n:1, ok:()=>true, text:"第一隻免費"},
+  {n:2, ok:()=>masteredLv(3) >= 50, text:"三級（國小高年級）熟練 50 條以上"},
+  {n:3, ok:()=>masteredLv(4) >= 50 && hardAcc7() >= .85, text:"四級（國中）熟練 50 條以上，且挑戰模式近 7 天答對率 85% 以上（至少 30 題）"}
+];
+const MAX_CATS = SLOT_RULES.length;
+function masteredLv(lv){ return IDIOMS.filter(i=>i.lv === lv && mastered(i.c)).length; }
+function hardAcc7(){                  // 近 7 天挑戰模式的答對率；不到 30 題不算
+  let n = 0, r = 0;
+  for(let k = 0; k < 7; k++){ const d = new Date(); d.setDate(d.getDate() - k); const i = (SHARED.days[dayKey(d)] || {}).i; if(i){ n += i.hn || 0; r += i.hr || 0; } }
+  return n >= 30 ? r / n : 0;
+}
+function slotsOpen(){ return SLOT_RULES.filter(r=>r.ok()).length; }
+function nextSlotRule(){ const p = pet(); const have = p ? p.cats.length : 0; return SLOT_RULES[have] || null; }
+/* 用遊戲時間換：故意比自己練貴一倍，忙的日子有退路，平常還是練比較划算 */
+const MIN_PER_FEED = 10, FEED_PER_TRADE = 10, MIN_PER_TICKET = 15;
+function bankLeft(){                  // 英文那本分鐘存摺（含家長送的），跟單字闖關同一條公式
+  const b = SHARED.bank || {}, g = (SHARED.gifts || []).filter(x=>!x.kind || x.kind === "min").reduce((a, x)=>a + (+x.m || 0), 0);
+  return Math.max(0, (b.earned || 0) + (b.bonus || 0) + g - (b.used || 0));
+}
+function tradeMinutes(kind){
+  const cost = kind === "ticket" ? MIN_PER_TICKET : MIN_PER_FEED;
+  if(bankLeft() < cost){ toast(`要 ${cost} 分鐘，存摺只有 ${bankLeft()} 分鐘`); return; }
+  const what = kind === "ticket" ? "1 張轉蛋券" : `${FEED_PER_TRADE} 顆飼料`;
+  if(!confirm(`用 ${cost} 分鐘遊戲時間換${what}？
+（自己練 30 題標準模式也有 10 顆，比較划算）`)) return;
+  SHARED.bank.used = (SHARED.bank.used || 0) + cost;
+  const F = feedLedger();
+  if(kind === "ticket") F.tickets = (F.tickets || 0) + 1; else F.bonus = (F.bonus || 0) + FEED_PER_TRADE;
+  diary("trade", `用 ${cost} 分鐘遊戲時間換了${what}`);
+  saveShared(); renderPet(); refreshHeader(); toast(`換到${what}，存摺剩 ${bankLeft()} 分鐘`);
+}
 function stageOf(xp){ let st = STAGES[0]; STAGES.forEach(x=>{ if(xp >= x.xp) st = x; }); return st; }
 function nextStage(xp){ return STAGES.find(x=>x.xp > xp) || null; }
 function diary(ev, text){
@@ -1546,8 +1587,8 @@ function lastPractice(){
   return ks.length ? ks[ks.length - 1] : null;
 }
 function daysBetween(a, b){ return Math.round((new Date(b) - new Date(a)) / 86400000); }
-function idlePracticeDays(){          // 幾天沒練了；回家那天重新起算，不然搖完鈴鐺下一秒又離家
-  const c = cat(); if(!c) return 0;
+function idlePracticeDays(c0){        // 幾天沒練了；回家那天重新起算，不然搖完鈴鐺下一秒又離家
+  const c = c0 || cat(); if(!c) return 0;
   const last = [lastPractice() || "", c.adopted || "", c.homeAt || ""].sort().pop();
   return Math.max(0, daysBetween(last, dayKey()));
 }
@@ -1561,7 +1602,10 @@ function practicedSince(k){           // 從某天（不含）之後連續練了
 }
 /* 把時間算清楚：每天掉多少、該不該躲紙箱、該不該離家、該不該回家 */
 function tickPet(){
-  const p = pet(), c = cat(); if(!p || !c) return;
+  const p = pet(); if(!p || !p.cats) return;
+  p.cats.forEach(tickOne); saveShared();
+}
+function tickOne(c){
   const now = nowSec(), hrs = Math.max(0, (now - (c.last || now)) / 3600);
   if(hrs > 0){
     c.hunger = clamp(c.hunger - HUNGER_DAY / 24 * hrs, 0, 100);
@@ -1572,18 +1616,17 @@ function tickPet(){
   if(c.hunger <= 0 && !c.box){ c.box = true; diary("box", `${c.name}餓到躲進紙箱睡覺了`); }
   if(c.hunger > 0) c.box = false;
   // 離家
-  const idle = idlePracticeDays();
+  const idle = idlePracticeDays(c);
   if(!c.away && idle >= AWAY_DAYS){ c.away = {since:dayKey(), idle}; diary("away", `${c.name}離家了，留了一張「我出去走走」`); }
   if(c.away && practicedSince(c.away.since) >= HOME_DAYS){ c.away = null; c.homeAt = dayKey(); diary("home", `連續練了 ${HOME_DAYS} 天，${c.name}自己回來了`); c.bonus = 40; }
   // 階段
   const st = stageOf(c.xp);
   if(c.stage !== st.name){ if(c.stage) diary("stage", `${c.name}長成${st.name}了`); c.stage = st.name; }
-  saveShared();
 }
 function moodOf(c){ return c.away ? 0 : Math.round(clamp((c.hunger + c.clean) / 2 * .7 + (c.bonus || 0), 0, 100)); }
 function petState(c){                 // 現在該播哪一組動畫
   if(c.away) return "away";
-  if(idlePracticeDays() >= PEEK_DAYS) return "peek";
+  if(idlePracticeDays(c) >= PEEK_DAYS) return "peek";
   if(c.box) return "sleep";
   if(c.clean < 30) return "dirty";
   if(c.hunger < 30) return "hungry";
@@ -1599,11 +1642,18 @@ function rollBreed(){
 }
 let petAnim = null;
 function gacha(){
-  if(cat()){ toast("現在一次養一隻，多養是第三階的事"); return; }
-  const p = SHARED.pet || (SHARED.pet = {cats:[], diary:[], bell:null, free:true});
+  const p = SHARED.pet || (SHARED.pet = {cats:[], diary:[], bell:null, free:true, active:0});
+  const rule = nextSlotRule();
+  if(!rule){ toast(`最多養 ${MAX_CATS} 隻`); return; }
+  if(!rule.ok()){ toast(`第 ${rule.n} 隻要：${rule.text}`); return; }
   const F = feedLedger();
   if(!p.free){ if((F.tickets || 0) < 1){ toast("沒有轉蛋券。連續 7 天成語達標會送一張"); return; } F.tickets--; }
   const b = rollBreed();
+  if(p.cats.some(c=>c.breed === b.id)){               // 抽到已經有的花色：換 20 顆飼料
+    F.bonus = (F.bonus || 0) + 20; p.free = false;
+    diary("dup", `又抽到${b.name}，換成 20 顆飼料`);
+    saveShared(); renderPet(); toast(`又是${b.name}！換成 20 顆飼料 🍖`); return;
+  }
   $("egg").classList.add("shake");
   $("btnGacha").disabled = true;
   setTimeout(()=>{
@@ -1615,7 +1665,7 @@ function gacha(){
     name = cleanName(name) || b.name;
     const c = {id:nowSec().toString(36), name, breed:b.id, xp:0, hunger:70, clean:80, bonus:20, box:false, away:null,
                adopted:dayKey(), last:nowSec(), cleanDay:"", cleanN:0, tapDay:"", tapN:0, stage:"幼貓"};
-    p.cats.push(c); p.free = false;
+    p.cats.push(c); p.free = false; p.active = p.cats.length - 1;
     diary("adopt", `領養了${b.rarName}的${b.name}，取名「${name}」`);
     saveShared(); $("btnGacha").disabled = false; $("egg").textContent = "🥚"; rv.hidden = true;
     renderPet(); toast(`歡迎 ${name} 🐾`);
@@ -1701,14 +1751,21 @@ function startIdleWalk(){             // 閒著沒事會在房間走來走去
 }
 function renderPet(){
   tickPet();
-  const c = cat();
+  const c = cat(), p = pet(), F = feedLedger();
   $("gachaCard").hidden = !!c; $("petCard").hidden = !c;
   if(!c){
-    const p = pet(), F = feedLedger();
     $("gachaTitle").textContent = "還沒有貓";
     $("gachaSub").textContent = (!p || p.free) ? "第一隻免費。轉一顆蛋，看看是誰來了。" : `要 1 張轉蛋券（現在 ${F.tickets || 0} 張）。連續 7 天成語達標會送一張。`;
     return;
   }
+  // 選貓列：每隻一顆鈕；空槽顯示門檻
+  const rule = nextSlotRule();
+  $("catTabs").innerHTML = p.cats.map((x, k)=>`<button class="chip" data-cat="${k}" aria-pressed="${x === c}">${esc(x.name)}${x.away ? " 🚪" : x.box ? " 📦" : ""}</button>`).join("")
+    + (rule ? `<button class="chip" id="btnMore" ${rule.ok() ? "" : "disabled"} title="${esc(rule.text)}">＋ 第 ${rule.n} 隻${rule.ok() ? (p.free ? "" : "（1 張券）") : "🔒"}</button>` : "");
+  $("catTabs").querySelectorAll("[data-cat]").forEach(b=>b.onclick = ()=>{ p.active = +b.dataset.cat; saveShared(); setRoomState(petState(cat())); renderPet(); });
+  const more = $("btnMore"); if(more) more.onclick = ()=>{ if(!rule.ok()){ toast(`第 ${rule.n} 隻要：${rule.text}`); return; } gacha(); };
+  $("btnTradeFeed").disabled = bankLeft() < MIN_PER_FEED; $("btnTradeTicket").disabled = bankLeft() < MIN_PER_TICKET;
+  $("tradeHint").textContent = `存摺 ${bankLeft()} 分鐘`;
   const b = BREED[c.breed] || BREED.white, st = stageOf(c.xp), nx = nextStage(c.xp);
   const room = $("room");
   room.className = "room " + (b.cls || "") + " " + st.cls + " " + (room.className.match(/st-\S+/) || ["st-" + petState(c)])[0];
@@ -1737,7 +1794,7 @@ function renderPet(){
       回家的路有兩條：<b>連續練 3 天成語</b>（已經 ${since} 天）牠就自己回來；或搖<b>回家鈴鐺</b>，要 ${cost} 張轉蛋券。`;
   }else{
     $("awayBox").hidden = true;
-    const idle = idlePracticeDays();
+    const idle = idlePracticeDays(c);
     if(idle >= PEEK_DAYS){ $("awayBox").hidden = false; $("awayBox").innerHTML = `<b>${esc(c.name)}在門口張望</b>已經 ${idle} 天沒練成語了，再 ${AWAY_DAYS - idle} 天牠會離家。練一輪牠就回房間。`; }
   }
   const D = (pet().diary || []).slice().reverse().slice(0, 10);
@@ -1747,6 +1804,8 @@ function renderPet(){
   startIdleWalk();
 }
 $("btnGacha").onclick = gacha;
+$("btnTradeFeed").onclick = ()=>tradeMinutes("feed");
+$("btnTradeTicket").onclick = ()=>tradeMinutes("ticket");
 $("btnFeed").onclick = feedCat;
 $("btnClean").onclick = cleanLitter;
 $("btnBell").onclick = ringBell;

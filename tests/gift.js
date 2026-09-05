@@ -190,6 +190,26 @@ ok(JSON.stringify(coupons().map(c=>({d:c.d,on:c.on,why:c.why})))===snap2,
   `加倍券要原封不動還原: ${JSON.stringify(coupons())}`);
 ok(ev('couponStock().length')===1,'還沒用掉的券還原後仍要是未使用');
 
+// ⑮-2 送飼料、送轉蛋券（給成語ㄚ喵的貓）
+reset();
+run('btnGiftFeed','20','幫忙倒垃圾');
+ok(ev('SHARED.feed && SHARED.feed.bonus')===20,`送飼料要進飼料帳的 bonus, 實得 ${JSON.stringify(ev('SHARED.feed'))}`);
+ok(gifts().length===1&&gifts()[0].kind==='feed'&&gifts()[0].m===20,'帳本要記 kind:feed');
+ok(ev('bankLeft()')===0,'送飼料不得混進分鐘存摺');
+ok(ev('giftTotal()')===0,'giftTotal 只算分鐘');
+run('btnGiftTicket','2','考試進步');
+ok(ev('SHARED.feed.tickets')===2&&gifts()[1].kind==='ticket','送轉蛋券要進 tickets');
+run('btnGiftTicket','5','太多');
+ok(ev('SHARED.feed.tickets')===2,'轉蛋券一次最多 3 張');
+run('btnGiftFeed','31','太多');
+ok(ev('SHARED.feed.bonus')===20,'飼料一次最多 30 顆');
+run('btnGiftFeed','5','');
+ok(gifts().length===2,'送飼料也要填原因');
+ev('renderCal()');
+ok(ev(`dayNote(${T}, SHARED.days[${T}])`).includes('顆飼料')&&ev(`dayNote(${T}, SHARED.days[${T}])`).includes('張轉蛋券'),'日曆要看得到送的是飼料還是券');
+ev('renderBank()');
+ok(!/爸媽送 20/.test($('bankDetail').textContent),'存摺明細不得把飼料當分鐘顯示');
+
 // ⑯ 已經練到一半才發的券，不得靠「再答一題」把整天回頭加倍
 reset(); practise(200,200);
 const full=ev('SHARED.bank.earned');

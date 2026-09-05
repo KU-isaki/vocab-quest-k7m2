@@ -160,15 +160,15 @@ function dayStrip(sum){
 }
 function giftList(sum){
   const arr = x => Array.isArray(x) ? x : [];
-  const rows = [...arr(sum.gifts).map(g=>({d:g.d, t:"g", m:g.m, why:g.why})),
+  const rows = [...arr(sum.gifts).map(g=>({d:g.d, t:"g", m:g.m, why:g.why, kind:g.kind})),
                 ...arr(sum.coupons).map(c=>({d:c.on || c.d, t:"c", used:!!c.on, why:c.why}))]
                .sort((a,b)=>String(b.d).localeCompare(String(a.d))).slice(0, 12);
   if(!rows.length) return `<p class="muted">還沒有送過任何獎勵。</p>`;
   return `<ul class="g">` + rows.map(r=>{
     const tag = r.t === "c"
       ? `<span class="cp">${r.used ? "加倍券 ×2 用掉" : "加倍券（還沒用）"}</span>`
-      : (num(r.m) > 0 ? `<span class="plus">送 ${num(r.m)} 分鐘</span>`
-                      : `<span class="minus">沒收 ${-num(r.m)} 分鐘</span>`);
+      : (()=>{ const unit = r.kind === "feed" ? "顆飼料" : r.kind === "ticket" ? "張轉蛋券" : "分鐘";
+               return num(r.m) > 0 ? `<span class="plus">送 ${num(r.m)} ${unit}</span>` : `<span class="minus">沒收 ${-num(r.m)} ${unit}</span>`; })();
     return `<li><span class="d2">${esc(md(r.d))}</span>${tag}　${esc(r.why || "")}</li>`;
   }).join("") + `</ul>`;
 }

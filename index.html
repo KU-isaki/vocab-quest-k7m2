@@ -888,12 +888,18 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
     <button class="btn ghost" id="btnGift" style="margin-top:8px">🎁 贈送遊戲時間</button>
     <button class="btn quiet" id="btnTake" style="margin-top:8px">➖ 沒收遊戲時間</button>
     <button class="btn ghost" id="btnCoupon" style="margin-top:8px">✨ 發一張加倍券</button>
+    <button class="btn ghost" id="btnGiftFeed" style="margin-top:8px">🍖 送飼料（給貓）</button>
+    <button class="btn ghost" id="btnGiftTicket" style="margin-top:8px">🎟️ 送轉蛋券（給貓）</button>
     <details class="info"><summary>加倍券是什麼？</summary>
       <div class="info-in">發出去先存著，<b>小孩下一次練習的那天自動用掉</b>，那天賺到的分鐘 ×2
         （一天上限也跟著變成 120 分鐘）。沒練就不會被用掉，不會白發。<br>
         跟直接贈送不一樣的地方是：<b>券還是要練才拿得到</b>，所以「練習才有獎勵」這件事不會被稀釋。<br>
         <b>答錯的倒扣也一樣加倍</b>——券的意思是「這天每一題都值雙倍」，
         不然持券亂猜就變得划算了。一次一張，可以先發著存起來。</div>
+    </details>
+    <details class="info"><summary>送飼料、送轉蛋券是什麼？</summary>
+      <div class="info-in">給成語ㄚ喵的貓用的。飼料進成語那邊的飼料帳（記成「非練習來的」），轉蛋券可以抽貓或叫離家的貓回來。
+        跟送分鐘一樣要密碼、要原因，日曆上看得到。一次最多 30 顆飼料、3 張券。</div>
     </details>
     <details class="info"><summary>贈送和沒收是怎麼算的？</summary>
       <div class="info-in">贈送的分鐘<b>跟練習賺的完全分開記</b>，不會被當成「今天有練習」——
@@ -988,7 +994,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.05-c";
+const VERSION = "2026.09.05-d";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（兩個題庫共用，key 用小寫單字） =================
@@ -4929,13 +4935,16 @@ const X2 = 2;                          // 加倍券的倍率
 const GIFT_MAX = 60;                   // 一次最多送/沒收幾分鐘，擋手滑打錯位數
 const WHY_MAX  = 20;                   // 原因限長，不要變成留言板
 function giftsOn(k){ return (SHARED.gifts || []).filter(g => g.d === k); }
-function giftSum(list){ return list.reduce((s, g) => s + (+g.m || 0), 0); }
+const isMinGift = g => !g.kind || g.kind === "min";              // 飼料與轉蛋券的贈送不進分鐘存摺
+function giftSum(list){ return list.filter(isMinGift).reduce((s, g) => s + (+g.m || 0), 0); }
+const GIFT_UNIT = {min:"分鐘", feed:"顆飼料", ticket:"張轉蛋券"};
+function feedLedgerIx(){ return SHARED.feed || (SHARED.feed = {earned:0, used:0, bonus:0, tickets:0}); }
 function giftTotal(){ return giftSum(SHARED.gifts || []); }
 function cleanWhy(s){                  // 備份碼用 | ~ ; : , = 當分隔符，原因裡不能有
   return String(s || "").replace(/[|~;:,=]/g, " ").replace(/\s+/g, " ").trim().slice(0, WHY_MAX);
 }
 function giftLine(g){
-  return `${g.m > 0 ? "爸媽送" : "沒收"} ${Math.abs(g.m)} 分鐘（${g.why || "沒寫原因"}）`;
+  return `${g.m > 0 ? "爸媽送" : "沒收"} ${Math.abs(g.m)} ${GIFT_UNIT[g.kind || "min"]}（${g.why || "沒寫原因"}）`;
 }
 /* 先兌換、之後答錯被倒扣，餘額是會變成負的（等於欠著，之後賺的先拿去補）。
    畫面上顯示 0 沒問題，但家長贈送時一定要看得到真實數字 ——
@@ -5230,7 +5239,7 @@ function packDeck(o){                  // 緊湊格式，備份碼才貼得進�
   const dy = Object.keys(o.days || {}).map(k=>{
     const v = o.days[k], i = v.i;
     return `${sd(k)}:${v.n||0},${v.r||0},${paidOf(v)}`      // 存實際分鐘，不是有沒有達標
-      + (i ? `,${i.n||0},${i.r||0},${+i.paid||0}` : "");     // 成語ㄚ喵那天的題數與飼料
+      + (i ? `,${i.n||0},${i.r||0},${+i.paid||0},${i.hn||0},${i.hr||0}` : "");     // 成語ㄚ喵那天的題數、飼料、挑戰模式題數
   }).join(";");
   const F = o.feed;
   const fd = F ? `${F.earned||0},${F.used||0},${F.bonus||0},${F.tickets||0}` : "";
@@ -5239,7 +5248,7 @@ function packDeck(o){                  // 緊湊格式，備份碼才貼得進�
   const pt = P ? [`${P.free?1:0},${P.bell ? P.bell.month.replace("-","") + "/" + (P.bell.n||0) : ""}`, (P.cats||[]).map(ct).join(";")].join("^")
                + "^" + (P.diary||[]).slice(-20).map(e=>`${sd(e.d)}:${e.ev||""}:${String(e.text||"").replace(/[|~;:,=^]/g," ")}`).join(";") : "";
   const ev = e => `${e.dev || ""}:${+e.seq || 0}:${+e.ts || 0}`;   // 事件身分：哪台、第幾號、什麼時候
-  const gf = (o.gifts || []).map(g=>`${sd(g.d)}:${+g.m||0}:${ev(g)}:${g.why||""}`).join(";");
+  const gf = (o.gifts || []).map(g=>`${sd(g.d)}:${g.kind === "feed" ? "f" : g.kind === "ticket" ? "t" : ""}${+g.m||0}:${ev(g)}:${g.why||""}`).join(";");
   const cp = (o.coupons || []).map(c=>`${sd(c.d)}:${sd(c.on)}:${ev(c)}:${c.why||""}`).join(";");
   return [o.done||0, o.right||0, b.earned||0, b.used||0, b.bonus||0, st, dy, gf, cp, fd, pt].join("|");
 }
@@ -5265,6 +5274,7 @@ function unpackDeck(str, ver){
     if(n.length >= 6 && (+n[3] || 0) > 0){                 // CQ5 起：成語ㄚ喵那一份
       day.i = {n:+n[3] || 0, r:+n[4] || 0};
       if(+n[5]) day.i.paid = +n[5];
+      if(+n[6]){ day.i.hn = +n[6]; day.i.hr = +n[7] || 0; }
     }
     o.days[ld(k)] = day;
   });
@@ -5297,11 +5307,15 @@ function unpackDeck(str, ver){
   (p[7] || "").split(";").filter(Boolean).forEach((seg, i)=>{
     const f = cut(seg, wide ? 5 : 2);
     if(!f) return;
-    const d = ld(f[0]), m = +f[1] || 0;
+    const d = ld(f[0]);
+    const kind = /^f/.test(f[1]) ? "feed" : /^t/.test(f[1]) ? "ticket" : "";
+    const m = +String(f[1]).replace(/^[ft]/, "") || 0;
     if(!d || !m) return;
-    o.gifts.push(wide
+    const g = wide
       ? {d, m, dev:f[2] || "bk", seq:+f[3] || i + 1, ts:+f[4] || 0, why:cleanWhy(f[5])}
-      : {d, m, dev:"bk", seq:i + 1, ts:0, why:cleanWhy(f[2])});
+      : {d, m, dev:"bk", seq:i + 1, ts:0, why:cleanWhy(f[2])};
+    if(kind) g.kind = kind;
+    o.gifts.push(g);
   });
   (p[8] || "").split(";").filter(Boolean).forEach((seg, i)=>{
     const f = cut(seg, wide ? 5 : 2);
@@ -5549,35 +5563,46 @@ $("btnPin").onclick = () => {
 };
 
 /* ---- 家長贈送 / 沒收 ---- */
-function giftFlow(sign){
+function giftFlow(sign, kind){
   if(!checkPin()) return;
-  const give = sign > 0, verb = give ? "贈送" : "沒收";
-  // 送不受一天 60 分鐘上限管（那是練習的上限）；沒收最多只能沒收到存摺歸零
-  const cap = give ? GIFT_MAX : Math.min(GIFT_MAX, bankLeft());
-  if(cap < 1){ toast("存摺沒有分鐘可以沒收"); return; }
+  kind = kind || "min";
+  const unit = GIFT_UNIT[kind], give = sign > 0, verb = give ? "贈送" : "沒收";
+  // 分鐘：送不受一天 60 分鐘上限管；沒收最多到存摺歸零。飼料一次最多 30 顆、轉蛋券最多 3 張（給貓用的）
+  const maxOf = {min:GIFT_MAX, feed:30, ticket:3}[kind];
+  const F = feedLedgerIx();
+  const have = kind === "min" ? bankLeft() : kind === "feed" ? Math.max(0, F.earned + F.bonus - F.used) : (F.tickets || 0);
+  const cap = give ? maxOf : Math.min(maxOf, have);
+  if(cap < 1){ toast(`沒有${unit}可以沒收`); return; }
 
-  const t = prompt(`要${verb}幾分鐘？（1～${cap} 分鐘）`);
+  const t = prompt(`要${verb}幾${unit}？（1～${cap}）`);
   if(t === null || String(t).trim() === "") return;
   const m = Math.floor(+String(t).trim());
-  if(!Number.isFinite(m) || m < 1 || m > cap){ toast(`請輸入 1 到 ${cap} 之間的分鐘數`); return; }
+  if(!Number.isFinite(m) || m < 1 || m > cap){ toast(`請輸入 1 到 ${cap} 之間的數字`); return; }
 
   const raw = prompt(`為什麼${verb}？（一定要填，${WHY_MAX} 字以內）`);
   if(raw === null) return;
   const why = cleanWhy(raw);
   if(!why){ toast("要填原因才送得出去"); return; }
 
-  const debt = bankRaw() < 0 ? -bankRaw() : 0;      // 之前先兌換、後來答錯倒扣欠下的
-  const after = Math.max(0, bankRaw() + sign * m);
-  if(!confirm(`${verb} ${m} 分鐘\n原因：${why}\n\n`
-    + (debt ? `目前存摺欠著 ${debt} 分鐘（先兌換又答錯被倒扣），會先拿去補。\n` : "")
-    + `存摺會變成 ${after} 分鐘。`)) return;
-
-  SHARED.gifts.push(stamp({d:dayKey(), m:sign * m, why}));
+  if(kind === "min"){
+    const debt = bankRaw() < 0 ? -bankRaw() : 0;    // 之前先兌換、後來答錯倒扣欠下的
+    const after = Math.max(0, bankRaw() + sign * m);
+    if(!confirm(`${verb} ${m} 分鐘\n原因：${why}\n\n`
+      + (debt ? `目前存摺欠著 ${debt} 分鐘（先兌換又答錯被倒扣），會先拿去補。\n` : "")
+      + `存摺會變成 ${after} 分鐘。`)) return;
+  }else{
+    if(!confirm(`${verb} ${m} ${unit}\n原因：${why}\n\n給成語ㄚ喵的貓用的。`)) return;
+    if(kind === "feed") F.bonus = (F.bonus || 0) + sign * m;        // 飼料帳：bonus 是「非練習來的」
+    else F.tickets = Math.max(0, (F.tickets || 0) + sign * m);
+  }
+  SHARED.gifts.push(stamp(kind === "min" ? {d:dayKey(), m:sign * m, why} : {d:dayKey(), m:sign * m, why, kind}));
   saveShared(); refreshHeader(); renderBank(); renderCal(); syncPush();
-  toast(`🎁 已${verb} ${m} 分鐘（${why}），存摺剩 ${bankLeft()} 分鐘`);
+  toast(`🎁 已${verb} ${m} ${unit}（${why}）` + (kind === "min" ? `，存摺剩 ${bankLeft()} 分鐘` : ""));
 }
 $("btnGift").onclick = () => giftFlow(1);
 $("btnTake").onclick = () => giftFlow(-1);
+$("btnGiftFeed").onclick = () => giftFlow(1, "feed");
+$("btnGiftTicket").onclick = () => giftFlow(1, "ticket");
 
 $("btnCoupon").onclick = () => {
   if(!checkPin()) return;
