@@ -67,7 +67,7 @@ ok(og.why==='舊紀錄'&&oc.why==='舊券','補身分不得動到原本的內容
 // ④ 新版備份碼要把身分原封不動帶著走
 const snap=all();
 const code=ev('exportCode()');
-ok(code.startsWith('CQ4:'),`備份碼要升到 CQ4, 實得 ${code.slice(0,4)}`);
+ok(code.startsWith(ev('BK_PREFIX')),`備份碼前綴要是目前的版本, 實得 ${code.slice(0,4)}`);
 reset();
 ok(ev(`importCode(${JSON.stringify(code)})`)==='','新版備份碼要還原得回來');
 ok(all()===snap,`身分欄位要原封不動:\n  還原前 ${snap}\n  還原後 ${all()}`);
