@@ -571,7 +571,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 
 <script>
 /* 版本標示：每次改版都更新，跟單字闖關同一套規矩 */
-const IDIOM_VERSION = "2026.09.05-d";
+const IDIOM_VERSION = "2026.09.05-e";
 
 /* ================= 成語題庫 =================
    格式：["成語", "注音（四組，空格分開）", "解釋", "例句", 級, {選填}]
@@ -1732,7 +1732,8 @@ function renderPet(){
     const F = feedLedger(), cost = bellCost(), since = practicedSince(c.away.since);
     $("bellHint").textContent = `${cost} 張券（有 ${F.tickets || 0} 張）`;
     $("awayBox").hidden = false;
-    $("awayBox").innerHTML = `<b>${esc(c.name)}離家了</b>牠 ${c.away.idle} 天沒看到你練成語，${esc(c.away.since)} 出門去了。成長值、階段、名字都還在。<br>
+    const idleAway = c.away.idle || AWAY_DAYS;              // 從備份碼還原的沒有 idle，用門檻天數講
+    $("awayBox").innerHTML = `<b>${esc(c.name)}離家了</b>牠 ${idleAway} 天沒看到你練成語，${esc(c.away.since)} 出門去了。成長值、階段、名字都還在。<br>
       回家的路有兩條：<b>連續練 3 天成語</b>（已經 ${since} 天）牠就自己回來；或搖<b>回家鈴鐺</b>，要 ${cost} 張轉蛋券。`;
   }else{
     $("awayBox").hidden = true;
