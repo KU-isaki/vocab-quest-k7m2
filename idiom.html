@@ -308,7 +308,17 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 .room{position:relative; height:210px; overflow:hidden; border-radius:12px; margin:0 0 12px;
       background:linear-gradient(var(--surface-2) 0 74%, color-mix(in srgb,var(--ink) 8%,var(--surface-2)) 74%)}
 .catsvg{position:absolute; left:0; bottom:8px; width:150px; height:auto; overflow:visible; z-index:2;
-        transform:translateX(var(--x,90px)) scale(var(--sz,1)); transform-origin:50% 100%; transition:transform .6s linear}
+        transform:translateX(var(--x,90px)) translateY(var(--dy,0px)) scale(var(--sz,1)); transform-origin:50% 100%; transition:transform .6s linear}
+/* 長大不是只有整隻放大：幼貓頭大、腿短、身子圓，長大之後腿變長、頭相對變小、身子拉長。
+   頭跟身體各多包一層，是因為 .chead／.cbody 的 transform 已經被咀嚼、呼吸的動畫佔走了。
+   腿一變短腳就離地，所以整隻用 --dy 往下挪一點補回來。 */
+.headwrap{transform:scale(var(--head,1)); transform-origin:50% 100%}
+.bodywrap{transform:scale(var(--bodyx,1),var(--bodyy,1)); transform-origin:50% 100%}
+.legs{transform:scaleY(var(--legs,1)); transform-origin:50% 0}
+.room.s1{--head:1.16; --legs:.62; --bodyx:.94; --bodyy:1.02; --dy:5px}
+.room.s2{--head:1.07; --legs:.82; --bodyx:.97; --bodyy:1.01; --dy:3px}
+.room.s3{--head:1;    --legs:1;   --bodyx:1;   --bodyy:1;    --dy:0px}
+.room.s4{--head:.95;  --legs:1.14;--bodyx:1.06;--bodyy:.98;  --dy:-3px}
 /* 左右翻面獨立一層，而且不做過場 —— 本來 scaleX 從 1 慢慢變到 -1，中間會被壓成一條線，
    看起來就像一張紙在轉。現在改成：轉身瞬間切到背影，翻完再切回側面。 */
 .flip{transform:scaleX(var(--dir,1))}
@@ -528,11 +538,12 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
       <div class="stage" id="petStage"></div>
       <div class="room" id="room">
         <!-- 房間裡的固定擺設。跟貓分開放，才不會跟著貓一起移動。 -->
-        <svg class="rmwindow" viewBox="0 0 60 52" aria-hidden="true">
-          <rect x="2" y="2" width="56" height="48" rx="4" fill="#BFD9EE" stroke="var(--out)" stroke-width="2.6"/>
-          <path d="M6 40 q14 -12 26 -4 q10 3 22 -6" fill="#9CC4E4"/>
-          <circle cx="44" cy="14" r="6" fill="#FFF3C4"/>
-          <path d="M30 3 v46 M3 26 h54" stroke="var(--out)" stroke-width="2.6"/>
+        <!-- 窗戶不畫框也不畫窗格：那是牆上的東西，線一粗就跟貓搶戲。只留一塊柔和的光。 -->
+        <svg class="rmwindow" viewBox="0 0 64 54" aria-hidden="true">
+          <rect x="3" y="3" width="58" height="48" rx="10" fill="#CFE0EE" opacity=".55"/>
+          <rect x="3" y="3" width="58" height="48" rx="10" fill="none" stroke="#B7CBDC" stroke-width="1.6" opacity=".7"/>
+          <circle cx="46" cy="16" r="7" fill="#FFF3C4" opacity=".75"/>
+          <path d="M7 40 q14 -11 26 -3 q11 3 24 -7" fill="#BBD2E4" opacity=".5"/>
         </svg>
         <svg class="rmboard" viewBox="0 0 44 78" aria-hidden="true">
           <rect x="6" y="6" width="30" height="70" rx="4" fill="#D9B98A" stroke="var(--out)" stroke-width="2.6"/>
@@ -587,7 +598,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
               <g class="leg"><rect class="fur" x="80" y="112" width="16" height="28" rx="8" stroke="var(--out)" stroke-width="3.2"/></g>
               <g class="leg"><rect class="fur" x="138" y="112" width="16" height="28" rx="8" stroke="var(--out)" stroke-width="3.2"/></g>
             </g>
-            <g class="cbody">
+            <g class="bodywrap"><g class="cbody">
               <ellipse class="fur" cx="110" cy="108" rx="48" ry="33" stroke="var(--out)" stroke-width="3.6"/>
               <g class="patches">
                 <path d="M72 96 q16 -14 28 -2 q9 9 -3 18 q-18 11 -26 0 q-6 -9 1 -16 z" fill="#3A3632"/>
@@ -595,14 +606,14 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
               </g>
               <g class="stripes"><path d="M82 84 q7 11 0 24 M100 79 q7 13 0 28 M119 80 q7 12 0 26" stroke="var(--stripe)" stroke-width="5.5" stroke-linecap="round" fill="none"/></g>
               <ellipse class="fur2" cx="116" cy="120" rx="27" ry="16"/>
-            </g>
+            </g></g>
             <g class="legs front">
               <g class="leg"><rect class="fur" x="98" y="116" width="16" height="26" rx="8" stroke="var(--out)" stroke-width="3.2"/>
                 <path d="M102 136 v4 M107 136 v4" stroke="var(--out)" stroke-width="1.8" stroke-linecap="round"/></g>
               <g class="leg"><rect class="fur" x="120" y="116" width="16" height="26" rx="8" stroke="var(--out)" stroke-width="3.2"/>
                 <path d="M124 136 v4 M129 136 v4" stroke="var(--out)" stroke-width="1.8" stroke-linecap="round"/></g>
             </g>
-            <g class="chead">
+            <g class="headwrap"><g class="chead">
               <path class="earL fur" d="M116 46 l4 -25 l22 13 z" stroke="var(--out)" stroke-width="3.4" stroke-linejoin="round"/>
               <path class="earR fur" d="M164 46 l-4 -25 l-22 13 z" stroke="var(--out)" stroke-width="3.4" stroke-linejoin="round"/>
               <path d="M121 46 l3 -15 l13 8 z" style="fill:var(--nose);opacity:.5"/><path d="M159 46 l-3 -15 l-13 8 z" style="fill:var(--nose);opacity:.5"/>
@@ -622,7 +633,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
               <ellipse class="mouth-open" cx="140" cy="94" rx="4.5" ry="4" fill="#B5342A" stroke="var(--out)" stroke-width="1.6"/>
               <path d="M105 74 h11 M105 81 h11 M107 88 l9 -3 M175 74 h-11 M175 81 h-11 M173 88 l-9 -3" stroke="var(--out)" stroke-width="2" opacity=".75" stroke-linecap="round"/>
               <g class="hat"><path d="M118 44 q22 -22 44 0 l-3 4 q-19 -10 -38 0 z" fill="#1F4FA9" stroke="var(--out)" stroke-width="2.4" stroke-linejoin="round"/><rect x="114" y="43" width="52" height="6" rx="3" fill="#172242"/></g>
-            </g>
+            </g></g>
             <g class="scarf"><path d="M116 96 q24 13 48 0 l0 9 q-24 13 -48 0 z" fill="#B5342A" stroke="var(--out)" stroke-width="2.4" stroke-linejoin="round"/><path d="M156 104 l9 18 l-11 -3 z" fill="#B5342A" stroke="var(--out)" stroke-width="2.4" stroke-linejoin="round"/></g>
             </g>
             <!-- 背影：轉身那一下切到這張，翻面才不會像紙片在轉。背面左右對稱，翻過來看不出差別。 -->
@@ -635,13 +646,14 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
               <ellipse class="fur" cx="110" cy="110" rx="42" ry="34" stroke="var(--out)" stroke-width="3.6"/>
               <g class="stripes"><path d="M80 100 q30 -13 60 0 M82 114 q28 -11 56 0" stroke="var(--stripe)" stroke-width="5" fill="none" stroke-linecap="round"/></g>
               <g class="patches"><path d="M84 96 q16 -12 26 0 q6 8 -6 14 q-16 8 -22 -2 q-4 -6 2 -12 z" fill="#3A3632"/></g>
-              <ellipse class="fur" cx="95" cy="140" rx="9.5" ry="5.5" stroke="var(--out)" stroke-width="2.8"/>
-              <ellipse class="fur" cx="125" cy="140" rx="9.5" ry="5.5" stroke="var(--out)" stroke-width="2.8"/>
-              <path class="fur" d="M88 48 l2 -24 l22 14 z" stroke="var(--out)" stroke-width="3.4" stroke-linejoin="round"/>
+              <g class="legs"><ellipse class="fur" cx="95" cy="140" rx="9.5" ry="5.5" stroke="var(--out)" stroke-width="2.8"/>
+              <ellipse class="fur" cx="125" cy="140" rx="9.5" ry="5.5" stroke="var(--out)" stroke-width="2.8"/></g>
+              <g class="headwrap"><path class="fur" d="M88 48 l2 -24 l22 14 z" stroke="var(--out)" stroke-width="3.4" stroke-linejoin="round"/>
               <path class="fur" d="M132 48 l-2 -24 l-22 14 z" stroke="var(--out)" stroke-width="3.4" stroke-linejoin="round"/>
               <circle class="fur" cx="110" cy="70" r="28" stroke="var(--out)" stroke-width="3.6"/>
               <g class="stripes"><path d="M97 46 q4 8 0 14 M110 43 q4 9 0 15 M123 46 q4 8 0 14" stroke="var(--stripe)" stroke-width="4.5" fill="none" stroke-linecap="round"/></g>
               <g class="patches"><path d="M96 58 q13 -9 19 1 q4 8 -6 12 q-13 4 -16 -6 z" fill="#3A3632"/></g>
+              </g>
             </g>
             <g class="zzz" font-family="ui-monospace,monospace" font-weight="700" fill="var(--ink-soft)"><text x="170" y="54" font-size="12">z</text><text x="178" y="44" font-size="15">z</text><text x="188" y="32" font-size="18">Z</text></g>
             <g class="hearts" font-size="14"><text x="162" y="56">❤</text><text x="178" y="50">❤</text><text x="152" y="46">❤</text></g>
@@ -694,7 +706,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 
 <script>
 /* 版本標示：每次改版都更新，跟單字闖關同一套規矩 */
-const IDIOM_VERSION = "2026.09.06-b";
+const IDIOM_VERSION = "2026.09.06-d";
 
 /* ================= 成語題庫 =================
    格式：["成語", "注音（四組，空格分開）", "解釋", "例句", 級, {選填}]
