@@ -32,14 +32,27 @@ function boot(seed){
   return {w, d, $, ev, click, goCat, disp, cat, state};
 }
 const wait = ms => new Promise(r=>setTimeout(r, ms));
+/* 抽卡有一段動畫才會把貓寫進去。原本固定等 1800ms，機器一忙就等不到，變成偶發失敗。
+   改成等「貓真的多了一隻」，最多等 6 秒。 */
+const until = async (fn, ms = 6000) => { const t0 = Date.now();
+  while(Date.now() - t0 < ms){ if(fn()) return true; await wait(50); } return false; };
+const gacha = async (t, btn = "btnGacha") => {
+  await until(()=>t.$(btn) && !t.$(btn).disabled);           // 上一次的動畫還沒跑完就按，會被吃掉
+  const n0 = t.ev("(SHARED.pet && SHARED.pet.cats || []).length");
+  const bonus0 = t.ev("feedLedger().bonus || 0");
+  t.click(t.$(btn));
+  await until(()=>t.ev("(SHARED.pet && SHARED.pet.cats || []).length") > n0
+                || t.ev("feedLedger().bonus || 0") > bonus0);
+  await until(()=>!t.$(btn) || !t.$(btn).disabled);           // 等動畫收尾，下一次才按得下去
+  await wait(80);
+};
 
 (async () => {
 // ================= 轉蛋 =================
 {
   const t = boot(); t.goCat();
   ok(t.disp(t.$("gachaCard")) !== "none" && /第一隻免費/.test(t.$("gachaSub").textContent), "第一隻要免費");
-  t.click(t.$("btnGacha"));
-  await wait(1800);
+  await gacha(t);
   const c = t.cat();
   ok(!!c, "轉蛋之後要有一隻貓");
   ok(c.name === "小橘", `名字要用小孩取的, 實得 ${c && c.name}`);
@@ -63,7 +76,7 @@ const wait = ms => new Promise(r=>setTimeout(r, ms));
 
 // ================= 餵、清、長 =================
 {
-  const t = boot(); t.goCat(); t.click(t.$("btnGacha")); await wait(1800);
+  const t = boot(); t.goCat(); await gacha(t);
   const c0 = t.cat();
   ok(Math.round(c0.hunger) === 70, `剛領養飽足 70, 實得 ${c0.hunger}`);
   t.click(t.$("btnFeed"));
@@ -100,7 +113,7 @@ const wait = ms => new Promise(r=>setTimeout(r, ms));
 
 // ================= 時間會過：掉數值、躲紙箱、不會死 =================
 {
-  const t = boot(); t.goCat(); t.click(t.$("btnGacha")); await wait(1800);
+  const t = boot(); t.goCat(); await gacha(t);
   t.ev("cat().hunger = 70; cat().clean = 80; cat().last = nowSec() - 24*3600; renderPet();");
   ok(Math.round(t.cat().hunger) === 40 && Math.round(t.cat().clean) === 55, `一天飽足 −30、清潔 −25, 實得 ${t.cat().hunger} ${t.cat().clean}`);
   t.ev("cat().last = nowSec() - 10*24*3600; renderPet();");
@@ -118,13 +131,13 @@ const wait = ms => new Promise(r=>setTimeout(r, ms));
 {
   // 最後一次練成語是 3 天前 → 門口張望
   const t = boot((ls, sh)=>{ sh.days = {[daysAgo(3)]:{n:0, r:0, i:{n:30, r:28, paid:10}}}; ls.setItem("cq-shared-v1", JSON.stringify(sh)); });
-  t.goCat(); t.click(t.$("btnGacha")); await wait(1800);
+  t.goCat(); await gacha(t);
   t.ev(`cat().adopted = ${JSON.stringify(daysAgo(30))}; renderPet();`);
   ok(t.state() === "peek", `3 天沒練要在門口張望, 實得 ${t.state()}`);
   ok(!t.cat().away && /張望/.test(t.$("awayBox").textContent), "張望是預警，還沒離家");
   // 7 天 → 離家
   const t2 = boot((ls, sh)=>{ sh.days = {[daysAgo(7)]:{n:0, r:0, i:{n:30, r:28, paid:10}}}; ls.setItem("cq-shared-v1", JSON.stringify(sh)); });
-  t2.goCat(); t2.click(t2.$("btnGacha")); await wait(1800);
+  t2.goCat(); await gacha(t2);
   t2.ev(`cat().adopted = ${JSON.stringify(daysAgo(30))}; cat().xp = 250; cat().stage = '少年貓'; renderPet();`);
   ok(!!t2.cat().away, "7 天沒練要離家");
   ok(t2.state() === "away", `離家要播空房間, 實得 ${t2.state()}`);
@@ -139,7 +152,7 @@ const wait = ms => new Promise(r=>setTimeout(r, ms));
   ok(t2.cat().xp === 250, "回來的是同一隻（成長值沒變）");
   // 鈴鐺
   const t3 = boot((ls, sh)=>{ sh.days = {[daysAgo(8)]:{n:0, r:0, i:{n:30, r:28, paid:10}}}; sh.feed.tickets = 5; ls.setItem("cq-shared-v1", JSON.stringify(sh)); });
-  t3.goCat(); t3.click(t3.$("btnGacha")); await wait(1800);
+  t3.goCat(); await gacha(t3);
   t3.ev(`cat().adopted = ${JSON.stringify(daysAgo(30))}; renderPet();`);
   ok(!!t3.cat().away, "離家（鈴鐺測試）");
   ok(t3.ev("bellCost()") === 2, `鈴鐺 2 張起跳, 實得 ${t3.ev("bellCost()")}`);
@@ -157,19 +170,19 @@ const wait = ms => new Promise(r=>setTimeout(r, ms));
   t3.ev("renderPet(); renderPet();");
   ok(!t3.cat().away && t3.state() !== "away", "重畫幾次也不得又離家（倒數從回家那天重算）");
   // 練習之後（今天有 i）就不會離家
-  const t4 = boot(); t4.goCat(); t4.click(t4.$("btnGacha")); await wait(1800);
+  const t4 = boot(); t4.goCat(); await gacha(t4);
   t4.ev(`cat().adopted = ${JSON.stringify(daysAgo(30))}; renderPet();`);
   ok(!t4.cat().away && t4.state() !== "peek", "今天有練就不會張望或離家");
   // 剛領養的貓當天不會離家，就算之前很久沒練
   const t5 = boot((ls, sh)=>{ sh.days = {[daysAgo(20)]:{n:0, r:0, i:{n:30, r:28, paid:10}}}; ls.setItem("cq-shared-v1", JSON.stringify(sh)); });
-  t5.goCat(); t5.click(t5.$("btnGacha")); await wait(1800);
+  t5.goCat(); await gacha(t5);
   ok(!t5.cat().away && t5.state() === "idle", `剛領養的貓不會馬上離家（倒數從領養日起算）, 實得 ${t5.state()}`);
 }
 
 // ================= 多貓與門檻 =================
 {
   const t = boot((ls, sh)=>{ sh.feed.tickets = 9; sh.bank = {earned:60, used:0, bonus:0}; ls.setItem("cq-shared-v1", JSON.stringify(sh)); });
-  t.goCat(); t.click(t.$("btnGacha")); await wait(1800);
+  t.goCat(); await gacha(t);
   ok(t.ev("SHARED.pet.cats.length") === 1, "先有一隻");
   ok(!!t.$("btnMore") && t.$("btnMore").disabled, "第 2 隻的槽要出現但鎖住");
   t.click(t.$("btnMore"));
@@ -180,7 +193,7 @@ const wait = ms => new Promise(r=>setTimeout(r, ms));
   // 用固定花色抽，避免重複
   t.ev(`rollBreed = () => BREED[SHARED.pet.cats[0].breed === "black" ? "white" : "black"];`);
   t.w.prompt = ()=>"小黑";
-  t.click(t.$("btnMore")); await wait(1800);
+  await gacha(t, "btnMore");
   ok(t.ev("SHARED.pet.cats.length") === 2 && t.ev("feedLedger().tickets") === 8, `第 2 隻要扣 1 張券, 隻數 ${t.ev("SHARED.pet.cats.length")} 券 ${t.ev("feedLedger().tickets")}`);
   ok(t.cat().name === "小黑" && t.ev("SHARED.pet.active") === 1, "新抽的要變成目前的貓");
   ok(t.d.querySelectorAll("#catTabs [data-cat]").length === 2, "選貓列要兩顆");
@@ -202,13 +215,13 @@ const wait = ms => new Promise(r=>setTimeout(r, ms));
   // 重複花色 → 20 顆飼料，不新增貓
   t.ev(`rollBreed = () => BREED["black"];`);
   const fb = t.ev("feedLedger().bonus || 0");
-  t.click(t.$("btnMore")); await wait(200);
+  await gacha(t, "btnMore");
   ok(t.ev("SHARED.pet.cats.length") === 2 && t.ev("feedLedger().bonus") === fb + 20, "抽到重複花色要換成 20 顆飼料");
   ok(t.ev("feedLedger().tickets") === 7, "重複也要扣券");
   ok(/換成 20 顆/.test(t.$("diary").textContent), "重複要寫日記");
   // 第 3 隻成功，然後最多 3 隻
   t.ev(`rollBreed = () => BREED["orange"];`); t.w.prompt = ()=>"三花";
-  t.click(t.$("btnMore")); await wait(1800);
+  await gacha(t, "btnMore");
   ok(t.ev("SHARED.pet.cats.length") === 3, "第 3 隻要抽得到");
   ok(!t.$("btnMore"), "三隻之後不得再有空槽");
   // 練習後 tick 要算到每一隻
@@ -219,7 +232,7 @@ const wait = ms => new Promise(r=>setTimeout(r, ms));
 // ================= 用遊戲時間換 =================
 {
   const t = boot((ls, sh)=>{ sh.bank = {earned:40, used:5, bonus:0}; sh.gifts = [{d:today, m:10, why:"送", dev:"x", seq:1, ts:1}]; ls.setItem("cq-shared-v1", JSON.stringify(sh)); });
-  t.goCat(); t.click(t.$("btnGacha")); await wait(1800);
+  t.goCat(); await gacha(t);
   ok(t.ev("bankLeft()") === 45, `成語頁算的存摺要跟單字闖關一樣（40+10−5）, 實得 ${t.ev("bankLeft()")}`);
   const f0 = t.ev("feedLeft()");
   t.click(t.$("btnTradeFeed"));
@@ -241,7 +254,7 @@ const wait = ms => new Promise(r=>setTimeout(r, ms));
 {
   const t = boot(); t.goCat();
   [...t.d.querySelectorAll("#vCat [hidden]")].forEach(el=>ok(t.disp(el) === "none", `#${el.id} hidden 卻仍顯示`));
-  t.click(t.$("btnGacha")); await wait(1800);
+  await gacha(t);
   [...t.d.querySelectorAll("#vCat [hidden]")].forEach(el=>ok(t.disp(el) === "none", `#${el.id} hidden 卻仍顯示（有貓之後）`));
   ok(t.disp(t.$("btnBell")) === "none", "沒離家時鈴鐺要藏起來");
 }
