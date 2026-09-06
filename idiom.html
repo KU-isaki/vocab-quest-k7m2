@@ -305,10 +305,17 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 .pet .who b{font-size:19px}
 .pet .who span{font-size:12px; color:var(--ink-faint)}
 .pet .stage{font-size:12.5px; color:var(--ink-faint); margin:0 0 10px}
-.room{position:relative; height:200px; overflow:hidden; border-radius:12px; margin:0 0 12px;
+.room{position:relative; height:210px; overflow:hidden; border-radius:12px; margin:0 0 12px;
       background:linear-gradient(var(--surface-2) 0 74%, color-mix(in srgb,var(--ink) 8%,var(--surface-2)) 74%)}
-.catsvg{position:absolute; left:0; bottom:8px; width:150px; height:auto; overflow:visible;
-        transform:translateX(var(--x,90px)) scaleX(var(--dir,1)) scale(var(--sz,1)); transform-origin:50% 100%; transition:transform .6s linear}
+.catsvg{position:absolute; left:0; bottom:8px; width:150px; height:auto; overflow:visible; z-index:2;
+        transform:translateX(var(--x,90px)) scale(var(--sz,1)); transform-origin:50% 100%; transition:transform .6s linear}
+/* 左右翻面獨立一層，而且不做過場 —— 本來 scaleX 從 1 慢慢變到 -1，中間會被壓成一條線，
+   看起來就像一張紙在轉。現在改成：轉身瞬間切到背影，翻完再切回側面。 */
+.flip{transform:scaleX(var(--dir,1))}
+.catback{opacity:0}
+.turning .catback{opacity:1} .turning .catside{opacity:0}
+.turning .cat{animation:turnhop .42s ease-in-out}
+@keyframes turnhop{0%,100%{transform:translateY(0) scaleY(1)} 45%{transform:translateY(-7px) scaleY(.93)}}
 .catsvg *{transform-box:fill-box}
 .fur{fill:var(--fur)} .fur2{fill:var(--fur2)} .ink{fill:var(--ink)}
 .room{--fur:#F2A54A; --fur2:#FFD9A8; --stripe:#C97A22; --nose:#E8807A; --iris:#D9A03A; --out:#2E2823}
@@ -341,6 +348,11 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 .st-happy .cat{animation:jump .8s ease-in-out infinite} .st-happy .hearts{opacity:1} .st-happy .mouth-open{opacity:1} .st-happy .mouth{opacity:0}
 .st-hungry .earL{animation:none; transform:rotate(-32deg)} .st-hungry .earR{transform:rotate(32deg)} .st-hungry .mouth{opacity:0} .st-hungry .mouth-sad{opacity:1} .st-hungry .ctail{animation-duration:4.5s} .st-hungry .eye{transform:scaleY(.75)}
 .st-dirty .flies{opacity:1} .st-dirty .mouth{opacity:0} .st-dirty .mouth-sad{opacity:1} .st-dirty .earR{transform:rotate(20deg)}
+.st-scratch .legs.front .leg{animation:scratchpaw .3s infinite} .st-scratch .legs.front .leg:nth-child(2){animation-delay:.15s}
+.st-scratch .cat{transform-origin:50% 100%; transform:rotate(-9deg)} .st-scratch .ctail{animation-duration:1s}
+.room.st-scratch .rmboard{animation:boardshake .3s infinite}
+@keyframes scratchpaw{0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)}}
+@keyframes boardshake{0%,100%{transform:translateX(0)} 25%{transform:translateX(-1.6px)} 75%{transform:translateX(1.6px)}}
 .st-play .yarn{opacity:1} .st-play .leg{animation:step .28s infinite} .st-play .chead{animation:chew 1.1s ease-in-out infinite}
 .st-peek .door{opacity:1} .st-peek .chead{animation:chew 2.4s ease-in-out infinite}
 .st-away .cat{opacity:0; transition:opacity .5s} .st-away .door,.st-away .noteg{opacity:1}
@@ -349,6 +361,18 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 .zzz text{animation:floatup 2.4s ease-out infinite} .zzz text:nth-child(2){animation-delay:.8s} .zzz text:nth-child(3){animation-delay:1.6s}
 .flies circle{animation:buzz 1.1s linear infinite} .flies circle:nth-child(2){animation-delay:.4s} .flies circle:nth-child(3){animation-delay:.7s}
 .bell{transform-origin:50% 0}
+.rmwindow,.rmboard,.rmtower,.rmplant,.rmrug{position:absolute; height:auto; --out:#2E2823}
+.rmwindow{left:14px; top:14px; width:58px}
+.rmboard{left:10px; bottom:8px; width:40px; z-index:3}
+.rmtower{right:8px; bottom:8px; width:84px}
+.rmplant{right:100px; bottom:8px; width:30px}
+.rmrug{left:50%; bottom:10px; width:132px; transform:translateX(-50%)}
+.tball{animation:tswing 3.4s ease-in-out infinite; transform-origin:50% -300%}
+@keyframes tswing{0%,100%{transform:rotate(-9deg)} 50%{transform:rotate(9deg)}}
+.hud{position:absolute; right:8px; top:8px; z-index:4; display:grid; grid-template-columns:1fr 1fr; gap:3px 10px;
+     padding:7px 9px; border-radius:10px; background:color-mix(in srgb,var(--surface) 82%, transparent); border:1px solid var(--line)}
+.hud .pbar{grid-template-columns:30px 1fr 22px; gap:5px; font-size:10.5px}
+.hud .pbar i{height:6px}
 .bars{display:grid; gap:7px; margin:0 0 12px}
 .pbar{display:grid; grid-template-columns:46px 1fr 40px; gap:8px; align-items:center; font-size:12.5px; color:var(--ink-soft)}
 .pbar i{display:block; height:9px; background:var(--surface-2); border-radius:99px; overflow:hidden}
@@ -503,6 +527,43 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
       <div class="who"><b id="petName"></b><span id="petRar"></span></div>
       <div class="stage" id="petStage"></div>
       <div class="room" id="room">
+        <!-- 房間裡的固定擺設。跟貓分開放，才不會跟著貓一起移動。 -->
+        <svg class="rmwindow" viewBox="0 0 60 52" aria-hidden="true">
+          <rect x="2" y="2" width="56" height="48" rx="4" fill="#BFD9EE" stroke="var(--out)" stroke-width="2.6"/>
+          <path d="M6 40 q14 -12 26 -4 q10 3 22 -6" fill="#9CC4E4"/>
+          <circle cx="44" cy="14" r="6" fill="#FFF3C4"/>
+          <path d="M30 3 v46 M3 26 h54" stroke="var(--out)" stroke-width="2.6"/>
+        </svg>
+        <svg class="rmboard" viewBox="0 0 44 78" aria-hidden="true">
+          <rect x="6" y="6" width="30" height="70" rx="4" fill="#D9B98A" stroke="var(--out)" stroke-width="2.6"/>
+          <path d="M8 16 h26 M8 26 h26 M8 36 h26 M8 46 h26 M8 56 h26 M8 66 h26" stroke="#B08D5C" stroke-width="2"/>
+          <path d="M14 30 l6 14 M22 28 l6 14" stroke="#A97F4C" stroke-width="1.6" opacity=".8"/>
+          <rect x="2" y="72" width="38" height="6" rx="3" fill="#A97F4C" stroke="var(--out)" stroke-width="2.2"/>
+        </svg>
+        <svg class="rmtower" viewBox="0 0 88 104" aria-hidden="true">
+          <rect x="8" y="92" width="72" height="10" rx="4" fill="#A97F4C" stroke="var(--out)" stroke-width="2.6"/>
+          <rect x="36" y="44" width="16" height="50" fill="#D9C08A" stroke="var(--out)" stroke-width="2.6"/>
+          <path d="M37 52 h14 M37 60 h14 M37 68 h14 M37 76 h14 M37 84 h14" stroke="#B08D5C" stroke-width="1.8"/>
+          <rect x="6" y="30" width="76" height="14" rx="6" fill="#C9A06A" stroke="var(--out)" stroke-width="2.6"/>
+          <ellipse cx="44" cy="30" rx="26" ry="8" fill="#E8CFA8" stroke="var(--out)" stroke-width="2.2"/>
+          <path d="M62 30 q10 8 8 18" stroke="var(--out)" stroke-width="2" fill="none"/>
+          <circle class="tball" cx="70" cy="52" r="7" fill="#E07A6E" stroke="var(--out)" stroke-width="2.2"/>
+        </svg>
+        <svg class="rmplant" viewBox="0 0 34 46" aria-hidden="true">
+          <path d="M17 26 q-13 -4 -12 -18 q11 0 12 18 z" fill="#6FA36F" stroke="var(--out)" stroke-width="2.2" stroke-linejoin="round"/>
+          <path d="M17 26 q13 -6 12 -20 q-11 2 -12 20 z" fill="#87B887" stroke="var(--out)" stroke-width="2.2" stroke-linejoin="round"/>
+          <path d="M8 26 h18 l-3 18 h-12 z" fill="#C97A22" stroke="var(--out)" stroke-width="2.4" stroke-linejoin="round"/>
+        </svg>
+        <svg class="rmrug" viewBox="0 0 140 30" aria-hidden="true">
+          <ellipse cx="70" cy="15" rx="66" ry="12" fill="#E4D5C3" stroke="var(--out)" stroke-width="2.4"/>
+          <ellipse cx="70" cy="15" rx="46" ry="7" fill="none" stroke="#C9B49C" stroke-width="2.2"/>
+        </svg>
+        <div class="hud" id="petBars">
+          <div class="pbar">飽足<i><b id="bHunger"></b></i><span id="vHunger"></span></div>
+          <div class="pbar">清潔<i><b id="bClean"></b></i><span id="vClean"></span></div>
+          <div class="pbar">心情<i><b id="bMood"></b></i><span id="vMood"></span></div>
+          <div class="pbar">成長<i><b class="grow" id="bXp"></b></i><span id="vXp"></span></div>
+        </div>
         <svg class="catsvg" id="catsvg" viewBox="0 0 220 150" role="img" aria-label="你的貓">
           <!-- 光影用半透明的白與褐疊在毛色上，這樣九種花色共用同一組漸層，不必每種各配一次 -->
           <defs>
@@ -513,7 +574,8 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
           <ellipse class="floorsh" cx="112" cy="144" rx="56" ry="8" fill="url(#floorSh)"/>
           <g class="bowl"><ellipse cx="190" cy="140" rx="18" ry="6" fill="#8FB2E0"/><ellipse cx="190" cy="136" rx="14" ry="4" fill="#C97A22"/></g>
           <g class="yarn"><circle cx="196" cy="134" r="9" fill="#E07A6E"/><path d="M190 130 q6 8 12 0 M189 136 q7 6 14 -2" stroke="#B5342A" stroke-width="1.5" fill="none"/></g>
-          <g class="cat">
+          <g class="flip"><g class="cat">
+            <g class="catside">
             <!-- 畫法：粗外框＋平塗花色（參考使用者給的兩張圖）。外框用同一條路徑先描粗深色再疊毛色，
                  身體、頭、腳互相疊在一起，看起來才有厚度，不會像一張紙片。 -->
             <g class="ctail">
@@ -562,9 +624,28 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
               <g class="hat"><path d="M118 44 q22 -22 44 0 l-3 4 q-19 -10 -38 0 z" fill="#1F4FA9" stroke="var(--out)" stroke-width="2.4" stroke-linejoin="round"/><rect x="114" y="43" width="52" height="6" rx="3" fill="#172242"/></g>
             </g>
             <g class="scarf"><path d="M116 96 q24 13 48 0 l0 9 q-24 13 -48 0 z" fill="#B5342A" stroke="var(--out)" stroke-width="2.4" stroke-linejoin="round"/><path d="M156 104 l9 18 l-11 -3 z" fill="#B5342A" stroke="var(--out)" stroke-width="2.4" stroke-linejoin="round"/></g>
+            </g>
+            <!-- 背影：轉身那一下切到這張，翻面才不會像紙片在轉。背面左右對稱，翻過來看不出差別。 -->
+            <g class="catback">
+              <g class="ctailb">
+                <path d="M136 116 q26 -8 22 -36 q-3 -14 -15 -10" fill="none" stroke="var(--out)" stroke-width="14" stroke-linecap="round"/>
+                <path d="M136 116 q26 -8 22 -36 q-3 -14 -15 -10" fill="none" stroke="var(--fur)" stroke-width="8.5" stroke-linecap="round"/>
+                <path class="stripes" d="M136 116 q26 -8 22 -36 q-3 -14 -15 -10" fill="none" stroke="var(--stripe)" stroke-width="8.5" stroke-linecap="round" stroke-dasharray="5 10"/>
+              </g>
+              <ellipse class="fur" cx="110" cy="110" rx="42" ry="34" stroke="var(--out)" stroke-width="3.6"/>
+              <g class="stripes"><path d="M80 100 q30 -13 60 0 M82 114 q28 -11 56 0" stroke="var(--stripe)" stroke-width="5" fill="none" stroke-linecap="round"/></g>
+              <g class="patches"><path d="M84 96 q16 -12 26 0 q6 8 -6 14 q-16 8 -22 -2 q-4 -6 2 -12 z" fill="#3A3632"/></g>
+              <ellipse class="fur" cx="95" cy="140" rx="9.5" ry="5.5" stroke="var(--out)" stroke-width="2.8"/>
+              <ellipse class="fur" cx="125" cy="140" rx="9.5" ry="5.5" stroke="var(--out)" stroke-width="2.8"/>
+              <path class="fur" d="M88 48 l2 -24 l22 14 z" stroke="var(--out)" stroke-width="3.4" stroke-linejoin="round"/>
+              <path class="fur" d="M132 48 l-2 -24 l-22 14 z" stroke="var(--out)" stroke-width="3.4" stroke-linejoin="round"/>
+              <circle class="fur" cx="110" cy="70" r="28" stroke="var(--out)" stroke-width="3.6"/>
+              <g class="stripes"><path d="M97 46 q4 8 0 14 M110 43 q4 9 0 15 M123 46 q4 8 0 14" stroke="var(--stripe)" stroke-width="4.5" fill="none" stroke-linecap="round"/></g>
+              <g class="patches"><path d="M96 58 q13 -9 19 1 q4 8 -6 12 q-13 4 -16 -6 z" fill="#3A3632"/></g>
+            </g>
             <g class="zzz" font-family="ui-monospace,monospace" font-weight="700" fill="var(--ink-soft)"><text x="170" y="54" font-size="12">z</text><text x="178" y="44" font-size="15">z</text><text x="188" y="32" font-size="18">Z</text></g>
             <g class="hearts" font-size="14"><text x="162" y="56">❤</text><text x="178" y="50">❤</text><text x="152" y="46">❤</text></g>
-          </g>
+          </g></g>
           <g class="door"><rect x="4" y="52" width="34" height="90" rx="3" fill="#A97F4C"/><rect x="8" y="56" width="26" height="82" rx="2" fill="#C9A06A"/><circle cx="30" cy="98" r="2.2" fill="#5B4223"/></g>
           <g class="bell"><path d="M180 26 q-12 0 -12 14 v10 h24 v-10 q0 -14 -12 -14 z" fill="#FFD84D" stroke="#C99A00" stroke-width="1.5"/><circle cx="180" cy="53" r="3" fill="#C99A00"/><path d="M176 22 h8" stroke="#C99A00" stroke-width="2"/></g>
           <g class="noteg"><rect x="86" y="120" width="60" height="22" rx="3" fill="#FFF8DC" stroke="#E2D8A0"/><text x="92" y="135" font-size="10" fill="#5B4223" font-family="ui-monospace,monospace">我出去走走 🐾</text></g>
@@ -574,12 +655,6 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
         </svg>
       </div>
       <div class="away" id="awayBox" hidden></div>
-      <div class="bars">
-        <div class="pbar">飽足<i><b id="bHunger"></b></i><span id="vHunger"></span></div>
-        <div class="pbar">清潔<i><b id="bClean"></b></i><span id="vClean"></span></div>
-        <div class="pbar">心情<i><b id="bMood"></b></i><span id="vMood"></span></div>
-        <div class="pbar">成長<i><b class="grow" id="bXp"></b></i><span id="vXp"></span></div>
-      </div>
       <p class="stage" id="petNext" style="margin:-4px 0 12px"></p>
       <div class="pacts">
         <button class="btn" id="btnFeed">🍖 餵 1 顆<small id="feedHint"></small></button>
@@ -619,7 +694,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 
 <script>
 /* 版本標示：每次改版都更新，跟單字闖關同一套規矩 */
-const IDIOM_VERSION = "2026.09.06-a";
+const IDIOM_VERSION = "2026.09.06-b";
 
 /* ================= 成語題庫 =================
    格式：["成語", "注音（四組，空格分開）", "解釋", "例句", 級, {選填}]
@@ -2990,14 +3065,26 @@ function ringBell(){
 }
 
 /* ---- 畫面 ---- */
-let stTimer = null, walkTimer = null, walkX = 90, walkDir = 1;
+let stTimer = null, walkTimer = null, walkX = 90, walkDir = 1, turnTimer = null;
+/* 轉身。本來是讓 scaleX 從 1 慢慢跑到 -1，中間會被壓成一條線，看起來像紙片在轉。
+   改成：先切成背影並跳一下，翻面在那一瞬間完成（背面左右對稱，看不出翻過）。 */
+function faceDir(dir){
+  const svg = $("catsvg"), room = $("room");
+  const cur = +svg.style.getPropertyValue("--dir") || 1;
+  if(cur === dir){ svg.style.setProperty("--dir", dir); return; }
+  clearTimeout(turnTimer);
+  room.classList.add("turning");
+  setTimeout(()=>svg.style.setProperty("--dir", dir), 170);
+  turnTimer = setTimeout(()=>room.classList.remove("turning"), 430);
+}
 function setRoomState(st){
   const room = $("room");
   room.className = room.className.replace(/\bst-\S+/g, "").trim() + " st-" + st;
   const svg = $("catsvg");
   clearInterval(walkTimer); walkTimer = null;
-  const put = (x, dir) => { walkX = x; walkDir = dir; svg.style.setProperty("--x", x + "px"); svg.style.setProperty("--dir", dir); };
+  const put = (x, dir) => { walkX = x; walkDir = dir; svg.style.setProperty("--x", x + "px"); faceDir(dir); };
   if(st === "walk"){ walkTimer = setInterval(()=>{ walkX += 14 * walkDir; if(walkX > 150) walkDir = -1; if(walkX < 10) walkDir = 1; put(walkX, walkDir); }, 600); }
+  else if(st === "scratch") put(4, -1);
   else if(st === "eat") put(60, 1);
   else if(st === "play") put(70, 1);
   else if(st === "dirty") put(120, 1);
@@ -3017,7 +3104,9 @@ function startIdleWalk(){             // 閒著沒事會在房間走來走去
   petAnim = setInterval(()=>{
     const cc = cat(); if(!cc || petState(cc) !== "idle") return;
     const room = $("room");
-    if(/st-idle/.test(room.className) && Math.random() < .5) playState("walk", 3000 + Math.random() * 3000);
+    if(!/st-idle/.test(room.className) || Math.random() >= .55) return;
+    if(Math.random() < .35) playState("scratch", 2600);       // 偶爾去磨個爪子
+    else playState("walk", 3000 + Math.random() * 3000);
   }, 6000);
 }
 function renderPet(){
