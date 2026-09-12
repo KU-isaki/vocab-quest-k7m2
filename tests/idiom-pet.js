@@ -61,6 +61,13 @@ const gacha = async (t, btn = "btnGacha") => {
   ok(c.xp === 0 && c.stage === "幼貓", "一開始是幼貓");
   ok(t.disp(t.$("petCard")) !== "none" && t.disp(t.$("gachaCard")) === "none", "有貓之後要顯示貓卡");
   ok(/領養/.test(t.$("diary").textContent), "日記要記領養");
+  // 這一段用的是真正的抽卡（沒有換掉 rollBreed），以前別的測試都換成 BREED 物件，才一直沒抓到 undefined
+  ok(!/undefined/.test(t.$("diary").textContent), `日記不得出現 undefined, 實得「${t.$("diary").textContent.slice(0, 40)}」`);
+  ok(!!t.ev("rollBreed().rarName") && typeof t.ev("rollBreed().rar") === "number", "真正的抽卡要回傳帶稀有度的花色");
+  // 舊版留下的日記要自己修好：塞一筆壞的，重新載入
+  t.ev(`SHARED.pet.diary.push({d:dayKey(), ev:"adopt", text:"領養了undefined的三花，取名「38」", ts:1}); saveShared(); loadShared();`);
+  ok(t.ev(`SHARED.pet.diary.some(e=>e.text === "領養了少見的三花，取名「38」")`), "舊日記的 undefined 要補回稀有度");
+  ok(!/undefined/.test(t.ev("JSON.parse(localStorage.getItem('cq-shared-v1')).pet.diary.map(e=>e.text).join()")), "修好的日記要存回去");
   ok(!!t.d.querySelector("#room svg .cat"), "要有會動的貓（SVG）");
   ok(t.$("petName").textContent === "小橘", "貓卡要顯示名字");
   // 現在一次只能養一隻

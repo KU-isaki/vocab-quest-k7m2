@@ -125,5 +125,22 @@ run('btnWho','');
 ok(ev('getWho()')==='','留空要能清掉名字');
 ok($('whoState').textContent==='還沒填','清掉後設定頁要標示還沒填');
 
+// ⑨ 有家長密碼時，改名字要密碼。清掉名字雲端備份會悄悄停、改名字會存成另一個小孩，
+//    不鎖的話等於繞過有鎖的「關閉雲端備份」。
+w.localStorage.setItem('cq-pin','1234');
+run('btnWho','大寶');                         // 第一次填名字：沒有名字可改，不用密碼
+ok(ev('getWho()')==='大寶',`第一次填名字不用密碼（那是設定的第一步）, 實得 ${ev('getWho()')}`);
+run('btnWho','9999','壞寶');                  // 打錯密碼
+ok(ev('getWho()')==='大寶',`密碼錯了不得改名字, 實得 ${ev('getWho()')}`);
+run('btnWho','9999','');                      // 打錯密碼想清掉
+ok(ev('getWho()')==='大寶','密碼錯了也不得清掉名字（清掉會讓雲端備份悄悄停止）');
+run('btnWho','1234','三寶');                  // 打對密碼
+ok(ev('getWho()')==='三寶',`密碼對了才改得了, 實得 ${ev('getWho()')}`);
+let asked=0; w.prompt=()=>{ asked++; return null; }; click($('btnWho'));
+ok(asked===1 && ev('getWho()')==='三寶','按取消（密碼那一步就取消）不得改動');
+run('btnWho','1234','');
+ok(ev('getWho()')==='','密碼對了可以清掉名字');
+w.localStorage.removeItem('cq-pin');
+
 console.log(`\n通過 ${pass} / 失敗 ${fail}`);
 process.exit(fail?1:0);

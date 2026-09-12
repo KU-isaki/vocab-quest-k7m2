@@ -720,7 +720,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 
 <script>
 /* 版本標示：每次改版都更新，跟單字闖關同一套規矩 */
-const IDIOM_VERSION = "2026.09.06-g";
+const IDIOM_VERSION = "2026.09.12-a";
 
 /* ================= 成語題庫 =================
    格式：["成語", "注音（四組，空格分開）", "解釋", "例句", 級, {選填}]
@@ -2327,8 +2327,23 @@ function loadShared(){
         coupons:Array.isArray(r.coupons) ? r.coupons : []
       });
       sharedOK = true;
+      fixAdoptDiary();
     }
   }catch(e){}
+}
+/* 修舊日記：2026-09-12 以前抽到貓時，日記寫成「領養了undefined的三花」。
+   從句子裡認出是哪種花色、補回稀有度；認不出來就只把 undefined 拿掉。
+   （BREED 在這之前就建好了，loadShared 是在它後面才呼叫的） */
+function fixAdoptDiary(){
+  const ds = SHARED.pet && Array.isArray(SHARED.pet.diary) ? SHARED.pet.diary : [];
+  let n = 0;
+  ds.forEach(e=>{
+    if(!e || typeof e.text !== "string" || !e.text.includes("undefined的")) return;
+    const b = Object.values(BREED).find(x=>e.text.includes("undefined的" + x.name));
+    e.text = e.text.replace("undefined的", b ? b.rarName + "的" : "");
+    n++;
+  });
+  if(n) saveShared();
 }
 function saveShared(){
   if(!sharedOK) return;                // 從沒開過單字闖關的裝置：不要憑空造一份出來
@@ -3010,7 +3025,9 @@ function bellCost(){ const p = pet(); const b = p && p.bell; return BELL_BASE + 
 function rollBreed(){
   const r = Math.random(); let acc = 0, R = RARS[0];
   for(const x of RARS){ acc += x.p; if(r < acc){ R = x; break; } }
-  return R.breeds[Math.floor(Math.random() * R.breeds.length)];
+  // 要回傳 BREED 對照表裡的那一份：清單裡的原始花色沒有 rar／rarName，
+  // 之前直接回傳原始物件，領養日記就寫成「領養了undefined的三花」
+  return BREED[R.breeds[Math.floor(Math.random() * R.breeds.length)].id];
 }
 let petAnim = null;
 function gacha(){

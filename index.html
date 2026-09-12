@@ -977,7 +977,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 
 <script>
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.05-f";
+const VERSION = "2026.09.12-a";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（key 用小寫單字） =================
@@ -4916,6 +4916,9 @@ function renderSettings(){
 }
 $("btnWho").onclick = () => {
   const cur = getWho();
+  // 已經有名字就要家長密碼。清掉名字，雲端備份會悄悄停（沒名字就不上傳）；改名字，會存成另一個小孩。
+  // 不鎖的話，等於不用密碼就能繞過有鎖的「關閉雲端備份」。第一次填名字不用密碼，那是設定的第一步。
+  if(cur && !checkPin()) return;
   const t = prompt(cur ? "改成誰在用？（留空 = 清掉）" : `這台裝置是誰在用？（${WHY_MAX} 字以內）`, cur);
   if(t === null) return;
   setWho(cleanWhy(t));
