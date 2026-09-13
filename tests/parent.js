@@ -214,6 +214,57 @@ await wait();
 ok(/404/.test(t.d.body.textContent), "取不到要顯示原因");
 ok(!g2.disabled && /取得備份碼/.test(g2.textContent), "失敗後按鈕要能再按一次");
 
+// ---------- ⑨ 活頁：最上面切小孩，每個小孩再分幾頁，不用一路往下拉 ----------
+{
+  const click = (t, el) => el.dispatchEvent(new t.w.MouseEvent("click", {bubbles:true}));
+  const t = boot(seedConf, () => okRes(LIST)); await wait();
+  const kt = [...t.d.querySelectorAll('.kids [role="tab"]')];
+  const kp = [...t.d.querySelectorAll(".kidpanel")];
+  ok(kt.length === 2, `兩個小孩要有兩個活頁, 實得 ${kt.length}`);
+  if(kt.length === 2 && kp.length === 2){   // 活頁不見時只記一條失敗，不要讓整支測試當掉、看不出後面哪裡壞
+  ok(kt[0].getAttribute("aria-selected") === "true" && kt[1].getAttribute("aria-selected") === "false", "預設選第一個小孩");
+  ok(kp.length === 2 && !kp[0].hidden && kp[1].hidden, "一次只顯示一個小孩");
+  ok(t.d.querySelectorAll("[data-grab]").length === 2, "另一個小孩的資料還在頁面上，只是收起來");
+  click(t, kt[1]);
+  ok(kp[0].hidden && !kp[1].hidden && kt[1].getAttribute("aria-selected") === "true", "點第二個小孩要切過去");
+  ok(kt[1].tabIndex === 0 && kt[0].tabIndex === -1, "只有選中的活頁在 Tab 鍵順序裡");
+  const secs = i => [...kp[i].querySelectorAll('.tabs [role="tab"]')].map(b=>b.textContent.trim()).join();
+  ok(secs(0) === "總覽,單字,成語,貓,獎勵", `大寶的分頁, 實得 ${secs(0)}`);
+  ok(secs(1) === "總覽,單字,獎勵", `沒練成語、沒養貓就不要那兩頁, 實得 ${secs(1)}`);
+  click(t, kt[0]);
+  const st = n => [...kp[0].querySelectorAll('.tabs [role="tab"]')].find(b=>b.textContent.trim() === n);
+  const sp = n => t.d.getElementById(st(n).getAttribute("aria-controls"));
+  ok(!sp("總覽").hidden && sp("單字").hidden, "預設停在總覽");
+  click(t, st("單字"));
+  ok(sp("總覽").hidden && !sp("單字").hidden && /honest/.test(sp("單字").textContent), "點單字要換成單字那頁");
+  st("單字").dispatchEvent(new t.w.KeyboardEvent("keydown", {key:"ArrowRight", bubbles:true}));
+  ok(!sp("成語").hidden && st("成語").getAttribute("aria-selected") === "true", "按右鍵要換到下一頁");
+  ok(t.d.activeElement === st("成語"), "鍵盤換頁時焦點要跟過去");
+  st("成語").dispatchEvent(new t.w.KeyboardEvent("keydown", {key:"End", bubbles:true}));
+  ok(!sp("獎勵").hidden, "按 End 要到最後一頁");
+  click(t, st("成語"));
+  click(t, kt[1]);
+  const vis = [...kp[1].querySelectorAll(".sec")].filter(p=>!p.hidden);
+  ok(vis.length === 1 && /這兩週有沒有在練/.test(vis[0].textContent), "另一個小孩沒有那一頁時要退回總覽，不能整片空白");
+  click(t, kt[0]);
+  ok(!sp("成語").hidden, "切回來要停在原本看的那一頁");
+  click(t, st("貓"));
+  click(t, t.d.getElementById("rf")); await wait();
+  const kt2 = [...t.d.querySelectorAll('.kids [role="tab"]')];
+  const vis2 = [...t.d.querySelectorAll(".kidpanel:not([hidden]) .sec:not([hidden])")];
+  ok(kt2[0].getAttribute("aria-selected") === "true" && vis2.length === 1 && /小橘/.test(vis2[0].textContent),
+     "按重新整理之後要停在原本的小孩和分頁");
+  ok(t.d.querySelectorAll("[onclick],[onkeydown]").length === 0, "活頁不得用行內事件屬性");
+  }
+}
+// 只有一個小孩：不要多一排只有一個選項的活頁
+{
+  const t = boot(seedConf, () => okRes({children:[LIST.children[0]]})); await wait();
+  ok(!t.d.querySelector(".kids"), "只有一個小孩時不要顯示小孩活頁");
+  ok(t.d.querySelectorAll('.tabs [role="tab"]').length === 5, "分頁照樣要有");
+  ok(!t.d.querySelector(".kidpanel[aria-labelledby]"), "沒有小孩活頁時，面板不能指向不存在的標籤");
+}
+
 console.log(`\n通過 ${pass} / 失敗 ${fail}`);
 process.exit(fail ? 1 : 0);
 })();

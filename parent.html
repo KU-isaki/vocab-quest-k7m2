@@ -80,6 +80,19 @@ input{font:inherit; width:100%; padding:11px 12px; border-radius:11px; margin:0 
 .bk .meta{font-size:11.5px; color:var(--ink-faint); margin:6px 0 8px}
 .ro{display:inline-block; font-size:11px; color:var(--ink-soft); background:var(--surface-2);
     border-radius:999px; padding:2px 9px; margin-left:6px; vertical-align:2px}
+/* 活頁：最上面切小孩（捲動時黏在頂端），每個小孩再分幾頁，一頁一個手機畫面，不用一路往下拉 */
+.kids{position:sticky; top:0; z-index:5; display:flex; gap:6px; overflow-x:auto;
+      margin:0 -16px 12px; padding:8px 16px; border-bottom:1px solid var(--line);
+      background:color-mix(in srgb, var(--ground) 92%, transparent); backdrop-filter:blur(8px)}
+.kids button{width:auto; flex:1 0 auto; padding:9px 14px; border-radius:999px; font-weight:600;
+      background:var(--surface); color:var(--ink-soft); border:1px solid var(--line)}
+.kids button[aria-selected="true"]{background:var(--brand); color:var(--btn-fg); border-color:transparent}
+.tabs{display:flex; gap:4px; overflow-x:auto; margin:0 0 14px; padding:3px; background:var(--surface-2); border-radius:12px}
+.tabs button{width:auto; flex:1 0 auto; padding:8px 12px; border-radius:9px; font-size:13.5px;
+      background:transparent; color:var(--ink-soft); border:0}
+.tabs button[aria-selected="true"]{background:var(--surface); color:var(--brand); font-weight:600; box-shadow:0 1px 2px rgba(23,34,66,.14)}
+.kids button:focus-visible,.tabs button:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+.sec > h3:first-child{margin-top:0}
 </style>
 </head>
 <body>
@@ -223,43 +236,88 @@ function petSection(sum){
     </div>
     ${diary.length ? `<ul class="g">` + diary.map(e=>`<li><span class="d2">${esc(md(e.d))}</span>${esc(e.text)}</li>`).join("") + `</ul>` : ""}`;
 }
-function card(c){
+/* 分頁：總覽、單字、成語、貓、獎勵。沒練成語、沒養貓的小孩就不給那兩頁，免得點進去一片空白。
+   選的小孩（用名字記，順序變了也不會跳錯人）和分頁存在這兩個變數，按「重新整理」不會跳回第一頁。 */
+const SECS = [["sum","總覽"], ["words","單字"], ["idiom","成語"], ["cat","貓"], ["gift","獎勵"]];
+let curKid = null, curSec = "sum", kidNames = [];
+function card(c, i){
   const sum = c.sum;
   if(!sum) return `<div class="card"><p class="kid">${esc(c.child)}</p>
     <p class="muted">這台裝置傳上來的資料看不懂，可能是版本太舊。</p></div>`;
   const days = (sum.days && typeof sum.days === "object") ? sum.days : {};
   const week = Object.keys(days).sort().slice(-7).reduce((a,k)=>a + num(days[k].n), 0);
   const b = (sum.bank && typeof sum.bank === "object") ? sum.bank : {};
+  const name = sum.who || c.child;
+  const body = {
+    sum: `<h3>這兩週有沒有在練</h3>
+      ${dayStrip(sum)}
+      <div class="row">
+        <div class="stat"><b>${num(sum.streak)}</b><span>連續天數</span></div>
+        <div class="stat"><b>${week}</b><span>近 7 天題數</span></div>
+        <div class="stat"><b>${num(b.left)}</b><span>存摺剩餘（分）</span></div>
+      </div>`,
+    words: `<h3>哪幾個字一直錯</h3>${weakList(sum)}`,
+    idiom: idiomSection(sum),
+    cat: petSection(sum),
+    gift: `<h3>送的獎勵有沒有效</h3>
+      <p class="muted">🎁 標記的是有送獎勵的日子，看看那之後幾天的柱子有沒有變高。</p>
+      <div class="row" style="margin-bottom:10px">
+        <div class="stat"><b>${num(b.earned) + num(b.bonus)}</b><span>練習賺到（分）</span></div>
+        <div class="stat"><b>${num(b.gift)}</b><span>爸媽送的（分）</span></div>
+        <div class="stat"><b>${num(b.used)}</b><span>已用掉（分）</span></div>
+      </div>
+      ${giftList(sum)}`
+  };
+  const secs = SECS.filter(([k])=>body[k]);
+  const sel = secs.some(([k])=>k === curSec) ? curSec : "sum";
+  const tabs = secs.map(([k, label])=>`<button type="button" role="tab" id="st-${i}-${k}" data-sec="${k}"
+      aria-controls="sp-${i}-${k}" aria-selected="${k === sel}" tabindex="${k === sel ? 0 : -1}">${label}</button>`).join("");
+  const panels = secs.map(([k])=>`<div class="sec" role="tabpanel" id="sp-${i}-${k}" aria-labelledby="st-${i}-${k}"${k === sel ? "" : " hidden"}>${body[k]}</div>`).join("");
   return `<div class="card">
-    <p class="kid">${esc(sum.who || c.child)}</p>
+    <p class="kid">${esc(name)}</p>
     <p class="when">最後同步 ${esc(ago(c.at))}　·　版本 ${esc(sum.v || "?")}</p>
-
-    <h3>這兩週有沒有在練</h3>
-    ${dayStrip(sum)}
-    <div class="row">
-      <div class="stat"><b>${num(sum.streak)}</b><span>連續天數</span></div>
-      <div class="stat"><b>${week}</b><span>近 7 天題數</span></div>
-      <div class="stat"><b>${num(b.left)}</b><span>存摺剩餘（分）</span></div>
-    </div>
-
-    <h3>哪幾個字一直錯</h3>
-    ${weakList(sum)}
-
-    ${idiomSection(sum)}
-    ${petSection(sum)}
-
-    <h3>送的獎勵有沒有效</h3>
-    <p class="muted">🎁 標記的是有送獎勵的日子，看看那之後幾天的柱子有沒有變高。</p>
-    <div class="row" style="margin-bottom:10px">
-      <div class="stat"><b>${num(b.earned) + num(b.bonus)}</b><span>練習賺到（分）</span></div>
-      <div class="stat"><b>${num(b.gift)}</b><span>爸媽送的（分）</span></div>
-      <div class="stat"><b>${num(b.used)}</b><span>已用掉（分）</span></div>
-    </div>
-    ${giftList(sum)}
-
+    <div class="tabs" role="tablist" aria-label="${esc(name)} 的資料">${tabs}</div>
+    ${panels}
     <div class="acts"><button class="ghost" data-grab="${esc(c.child)}">⬇️ 取得備份碼</button></div>
     <div class="bk" data-box="${esc(c.child)}" hidden></div>
   </div>`;
+}
+
+/* 活頁的操作：點一下換頁；鍵盤左右鍵、Home、End 也能換，焦點跟著走（只有選中的那個在 Tab 順序裡）。 */
+function pickTab(tablist, tab, focus){
+  const tabs = [...tablist.querySelectorAll('[role="tab"]')];
+  tabs.forEach(x=>{
+    const on = x === tab;
+    x.setAttribute("aria-selected", on); x.tabIndex = on ? 0 : -1;
+    const p = document.getElementById(x.getAttribute("aria-controls")); if(p) p.hidden = !on;
+  });
+  if(focus) tab.focus();
+}
+function showSecIn(panel){                // 換小孩時，盡量停在同一種分頁；他沒有那一頁就退回總覽
+  const tl = panel && panel.querySelector(".tabs"); if(!tl) return;
+  const want = tl.querySelector(`[data-sec="${curSec}"]`) || tl.querySelector('[data-sec="sum"]');
+  if(want) pickTab(tl, want, false);
+}
+function bindTabs(){
+  document.querySelectorAll('[role="tablist"]').forEach(tl=>{
+    const tabs = [...tl.querySelectorAll('[role="tab"]')];
+    const go = (t, focus) => {
+      pickTab(tl, t, focus);
+      if(tl.classList.contains("kids")){
+        curKid = kidNames[tabs.indexOf(t)];
+        showSecIn(document.getElementById(t.getAttribute("aria-controls")));
+      }else if(t.dataset.sec) curSec = t.dataset.sec;
+    };
+    tabs.forEach((t, idx)=>{
+      t.addEventListener("click", ()=>go(t, false));
+      t.addEventListener("keydown", e=>{
+        const n = tabs.length;
+        const j = e.key === "ArrowRight" ? (idx + 1) % n : e.key === "ArrowLeft" ? (idx - 1 + n) % n
+                : e.key === "Home" ? 0 : e.key === "End" ? n - 1 : null;
+        if(j !== null){ e.preventDefault(); go(tabs[j], true); }
+      });
+    });
+  });
 }
 
 /* 取完整備份碼。走 /p/snap/:child —— 家長那把鑰匙在 Worker 端本來就只能 GET，
@@ -332,12 +390,23 @@ function load(){
     return r.json();
   }).then(j=>{
     const list = j.children || [];
+    kidNames = list.map(c=>c.child);
+    let k = kidNames.indexOf(curKid); if(k < 0) k = 0;
+    curKid = kidNames[k];
+    const many = list.length > 1;           // 只有一個小孩就不要多一排只有一個選項的活頁
+    const switcher = many ? `<div class="kids" role="tablist" aria-label="選擇小孩">${list.map((c, i)=>
+        `<button type="button" role="tab" id="kt-${i}" aria-controls="kp-${i}" aria-selected="${i === k}"
+          tabindex="${i === k ? 0 : -1}">${esc((c.sum && c.sum.who) || c.child)}</button>`).join("")}</div>` : "";
+    const panels = list.map((c, i)=>many
+        ? `<section class="kidpanel" role="tabpanel" id="kp-${i}" aria-labelledby="kt-${i}"${i === k ? "" : " hidden"}>${card(c, i)}</section>`
+        : `<section class="kidpanel" id="kp-${i}">${card(c, i)}</section>`).join("");
     $("app").innerHTML = (list.length
-        ? list.map(card).join("")
+        ? switcher + panels
         : `<div class="card"><p class="muted">雲端還沒有任何資料 ——
              小孩那邊要先在設定頁開啟雲端備份，並且練完一輪才會傳上來。</p></div>`)
       + `<button class="ghost" id="rf">重新整理</button>`;
     $("rf").onclick = load;
+    bindTabs();
     bindGrab();
   }).catch(e=>{
     $("app").innerHTML = `<div class="card"><p class="err">${esc(e.message)}</p>
