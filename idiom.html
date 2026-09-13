@@ -719,8 +719,40 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
+/* ===== iPhone 主畫面 App：鍵盤收起後，底部工具列卡在半空 =====
+   跳出輸入框（prompt）、確認框，或畫面上的輸入框叫出鍵盤，收起來之後，
+   iPhone 主畫面 App 有時不會把畫面歸位，固定在底部的工具列就停在半空中（不是每支都會）。
+   2026-09-13 使用者回報；用背景 Edge 量過版面本身沒問題，是 iPhone 的毛病。
+   做法：對話框關掉、或可見高度一下子變大（鍵盤收起），就把畫面上下輕推 1px 再推回，逼它重新定位。 */
+(function(){
+  const raf = window.requestAnimationFrame ? window.requestAnimationFrame.bind(window) : (f=>setTimeout(f, 16));
+  function settleViewport(){
+    raf(()=>{
+      const x = window.scrollX || 0, y = window.scrollY || 0;
+      try{
+        window.scrollTo(x, y > 0 ? y - 1 : y + 1);
+        raf(()=>{ try{ window.scrollTo(x, y); }catch(e){} });
+      }catch(e){}
+    });
+  }
+  window.settleViewport = settleViewport;
+  ["prompt", "confirm"].forEach(k=>{
+    const orig = window[k];
+    if(typeof orig !== "function") return;
+    window[k] = function(){ try{ return orig.apply(window, arguments); } finally{ settleViewport(); } };
+  });
+  const vv = window.visualViewport;
+  if(vv && vv.addEventListener){
+    let lastH = vv.height;
+    vv.addEventListener("resize", ()=>{
+      const h = vv.height;
+      if(h - lastH > 80) settleViewport();          // 可見高度一下子變大 = 鍵盤收起來了
+      lastH = h;
+    });
+  }
+})();
 /* 版本標示：每次改版都更新，跟單字闖關同一套規矩 */
-const IDIOM_VERSION = "2026.09.12-a";
+const IDIOM_VERSION = "2026.09.13-a";
 
 /* ================= 成語題庫 =================
    格式：["成語", "注音（四組，空格分開）", "解釋", "例句", 級, {選填}]
