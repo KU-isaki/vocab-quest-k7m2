@@ -142,7 +142,17 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 }
 .grouphead b{font-size:15.5px}
 .grouphead span{font-size:12px; color:var(--ink-faint); font-family:var(--font-num)}
-.info{border:1px solid var(--line); border-radius:11px; margin:10px 0; background:var(--surface-2)}
+/* 收起來的時候只剩右邊一顆「?」，不佔一整條。問題那句話還留在 summary 裡（字級 0）：
+   螢幕閱讀器照樣念得到，打開之後也會顯示出來當標題。 */
+.info{border:1px solid transparent; border-radius:11px; margin:2px 0}
+.info[open]{border-color:var(--line); margin:10px 0; background:var(--surface-2)}
+.info:not([open]){display:inline-block; vertical-align:top; margin:2px 6px 2px 0}   /* 連著好幾顆就排成一列，不要一顆一行 */
+.info:not([open])>summary{padding:4px 2px; font-size:0}
+.info:not([open])>summary::before{
+  content:"?"; width:26px; height:26px; border-radius:50%; display:grid; place-items:center;
+  border:1px solid var(--line); background:var(--surface-2); font-size:14px; font-weight:600;
+}
+.info:not([open])>summary::after{display:none}
 .info>summary{
   cursor:pointer; padding:10px 13px; font-size:13px; color:var(--ink-soft);
   display:flex; align-items:center; gap:6px; list-style:none;
@@ -152,6 +162,12 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 .info[open]>summary::after{transform:rotate(180deg)}
 .info .info-in{padding:0 13px 12px; font-size:12.5px; line-height:1.8; color:var(--ink-faint)}
 .info .info-in b{color:var(--ink-soft)}
+/* 說明的「?」跟它在講的那顆按鈕（或標題）排同一列；打開之後整塊掉到下一行、佔滿寬度 */
+.qrow{display:flex; flex-wrap:wrap; align-items:center; gap:0 6px}
+.qrow>:first-child{flex:1 1 0; min-width:0; width:auto}
+.qrow>.info{margin:0}
+.qrow>.info[open]{flex:1 0 100%; margin:8px 0 2px}
+.qhead{align-items:flex-end} .qhead>.info:not([open]){margin-bottom:6px}
 .segbtns{display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end}
 .segbtns button{
   border:1px solid var(--line); background:var(--surface); color:var(--ink-soft);
@@ -398,6 +414,9 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 .pacts{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:0 0 6px}
 .pacts .btn{padding:12px 8px; font-size:14.5px}
 .pacts .btn small{display:block; font-size:10.5px; font-weight:400; opacity:.75}
+#shopCard{margin-top:12px; padding:16px}
+#shopCard .grouphead:first-child, #shopCard .qhead .grouphead{margin-top:0}
+#btnPatch, #furnList .btn{flex-direction:column; gap:2px}        /* 名稱一行、價錢與狀態一行 */
 .away{padding:14px; border-radius:12px; background:var(--no-soft); margin:0 0 12px; font-size:14px; line-height:1.7}
 .away b{display:block; margin-bottom:4px}
 .gacha{text-align:center; padding:26px 18px}
@@ -518,12 +537,12 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
         <div class="stat"><b id="stStreak">0</b><span>連續天數</span></div>
         <div class="stat"><b id="stMastered">0</b><span>已熟練</span></div>
       </div>
-      <div class="grouphead"><b>熟練進度</b><span>連對 2 次算熟練</span></div>
-      <div class="lvbars" id="lvBars"></div>
       <details class="info"><summary>連續天數為什麼跟單字闖關一樣？</summary>
         <div class="info-in">練習日曆是兩個 App 共用的：<b>不管練英文還是成語，今天都算「有練」</b>。
           但獎勵分開——英文賺遊戲時間、成語賺飼料——各自的達標紀錄互不影響。</div>
       </details>
+      <div class="grouphead"><b>熟練進度</b><span>連對 2 次算熟練</span></div>
+      <div class="lvbars" id="lvBars"></div>
     </div>
   </section>
 
@@ -540,7 +559,17 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 
     <div class="card pet" id="petCard" hidden>
       <div class="chiprow" id="catTabs" style="justify-content:flex-start; margin:0 0 10px"></div>
-      <div class="who"><b id="petName"></b><span id="petRar"></span></div>
+      <div class="qrow">
+        <div class="who"><b id="petName"></b><span id="petRar"></span></div>
+        <details class="info"><summary>牠是怎麼運作的？</summary>
+          <div class="info-in">飽足每天掉 30、清潔每天掉 25。1 顆飼料 +10 飽足；<b>吃飽（80 以上）再餵，多的變成長值</b>。
+            清貓砂免費、一天最多兩次。飽足歸零會躲進紙箱睡覺，餵了就出來，<b>永遠不會死</b>。<br>
+            <b>3 天沒練成語</b>牠會站在門口張望，<b>7 天</b>會離家（留一張紙條）；連續練 3 天自己回來，
+            或搖回家鈴鐺（2 張轉蛋券起跳，同一個月第二次起每次多 1 張）。成長值、階段、名字離家時全部保留。<br>
+            <b>想多養</b>：第 2 隻要會考重點熟練 100 條，第 3 隻要 250 條、挑戰模式近 7 天答對率 85%。每多一隻每天多吃 3 顆。<br>
+            遊戲時間可以換飼料和轉蛋券，但<b>故意比自己練貴一倍</b>——忙的日子有退路，平常練比較划算。</div>
+        </details>
+      </div>
       <div class="stage" id="petStage"></div>
       <div class="room" id="room">
         <!-- 房間裡的固定擺設。跟貓分開放，才不會跟著貓一起移動。 -->
@@ -688,20 +717,33 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
         <button class="btn ghost" id="btnPlay">🎮 玩接龍<small>心情 +10</small></button>
         <button class="btn ghost" id="btnBell" hidden>🔔 回家鈴鐺<small id="bellHint"></small></button>
       </div>
-      <div class="pacts" style="margin-top:4px">
-        <button class="btn quiet" id="btnTradeFeed">⏱ 10 分鐘 → 10 顆飼料<small id="tradeHint"></small></button>
-        <button class="btn quiet" id="btnTradeTicket">⏱ 15 分鐘 → 1 張轉蛋券</button>
-      </div>
-      <details class="info"><summary>牠是怎麼運作的？</summary>
-        <div class="info-in">飽足每天掉 30、清潔每天掉 25。1 顆飼料 +10 飽足；<b>吃飽（80 以上）再餵，多的變成長值</b>。
-          清貓砂免費、一天最多兩次。飽足歸零會躲進紙箱睡覺，餵了就出來，<b>永遠不會死</b>。<br>
-          <b>3 天沒練成語</b>牠會站在門口張望，<b>7 天</b>會離家（留一張紙條）；連續練 3 天自己回來，
-          或搖回家鈴鐺（2 張轉蛋券起跳，同一個月第二次起每次多 1 張）。成長值、階段、名字離家時全部保留。<br>
-          <b>想多養</b>：第 2 隻要會考重點熟練 100 條，第 3 隻要 250 條、挑戰模式近 7 天答對率 85%。每多一隻每天多吃 3 顆。<br>
-          遊戲時間可以換飼料和轉蛋券，但<b>故意比自己練貴一倍</b>——忙的日子有退路，平常練比較划算。</div>
-      </details>
       <div class="grouphead"><b>成長日記</b><span id="diaryN"></span></div>
       <div class="diary"><ul id="diary"></ul></div>
+    </div>
+
+    <!-- 時間商城：沒有貓也看得到（補簽券跟貓無關），家具那一段有貓才出現 -->
+    <div class="card" id="shopCard">
+      <div class="qrow qhead">
+        <div class="grouphead"><b>🛒 時間商城</b><span id="shopBank"></span></div>
+        <details class="info"><summary>商城怎麼算？</summary>
+          <div class="info-in">付的都是<b>遊戲時間存摺</b>裡的分鐘，買了不能退。<br>
+            <b>補簽券</b>：只能補昨天或前天，而且要補了真的接得回去才買得到。補一次之後 7 天內不能再補；
+            一張 20 分鐘，同一個月第二張起每張多 10 分鐘。日曆、英文連續達標、成語連續達標三條一起接回來，
+            但<b>那天的題數不會變</b>，補簽的那天本身也不發連續紅利。<br>
+            <b>家具</b>：純裝飾。有 🔒 的除了分鐘還要練到門檻才買得到。</div>
+        </details>
+      </div>
+      <div class="pacts">
+        <button class="btn quiet" id="btnTradeFeed">⏱ 10 分鐘 → 10 顆飼料</button>
+        <button class="btn quiet" id="btnTradeTicket">⏱ 15 分鐘 → 1 張轉蛋券</button>
+      </div>
+      <div class="pacts" style="grid-template-columns:1fr">
+        <button class="btn quiet" id="btnPatch">🩹 補簽券：把斷掉的連續天數接回來<small id="patchHint"></small></button>
+      </div>
+      <div id="furnBox" hidden>
+        <div class="grouphead"><b>貓房家具</b><span>買過就是你的，隨時可以換</span></div>
+        <div class="pacts" id="furnList"></div>
+      </div>
     </div>
   </section>
 
@@ -752,7 +794,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
   }
 })();
 /* 版本標示：每次改版都更新，跟單字闖關同一套規矩 */
-const IDIOM_VERSION = "2026.09.13-a";
+const IDIOM_VERSION = "2026.09.17-a";
 
 /* ================= 成語題庫 =================
    格式：["成語", "注音（四組，空格分開）", "解釋", "例句", 級, {選填}]
@@ -2385,12 +2427,24 @@ function dayKey(dt){
   const t = dt || new Date();
   return t.getFullYear() + "-" + String(t.getMonth()+1).padStart(2,"0") + "-" + String(t.getDate()).padStart(2,"0");
 }
-function streakDays(){                 // 跟單字闖關同一條：今天還沒練不算中斷
+/* 三條「連續」共用同一個數法：今天還沒做到不算中斷；補簽過的日子當作沒斷。
+   補簽不寫 days[k] —— 那天的題數、答對率是真的沒有，不能偽造；只在數連續的時候跳過那個洞。
+   買過的東西都記在 SHARED.buys（只增不改），補簽券的 it 是 "patch:日期"。 */
+const HAS = {
+  cal:  k => !!SHARED.days[k],                                                          // 日曆：那天有練
+  goal: k => { const d = SHARED.days[k]; return !!d && (d.paid === true || +d.paid > 0); },  // 英文達標
+  feed: k => { const d = SHARED.days[k]; return !!(d && d.i && +d.i.paid > 0); }        // 成語達標
+};
+const isPatch = b => /^patch:/.test(b.it || "");
+const patchedDays = () => new Set((SHARED.buys || []).filter(isPatch).map(b=>b.it.slice(6)));
+function runLen(has, extra){           // extra：假設這天也補了，連續會變幾天（商城試算用）
+  const pd = patchedDays(), ok = k => has(k) || pd.has(k) || k === extra;
   let n = 0, t = new Date();
-  if(!SHARED.days[dayKey(t)]) t.setDate(t.getDate() - 1);
-  while(SHARED.days[dayKey(t)]){ n++; t.setDate(t.getDate() - 1); }
+  if(!ok(dayKey(t))) t.setDate(t.getDate() - 1);
+  while(ok(dayKey(t))){ n++; t.setDate(t.getDate() - 1); }
   return n;
 }
+function streakDays(){ return runLen(HAS.cal); }       // 跟單字闖關同一條
 const nowSec = () => Math.floor(Date.now() / 1000);
 function feedLeft(){                   // 飼料帳：沒有就是 0
   const f = SHARED.feed || {earned:0, used:0, bonus:0};
@@ -2447,13 +2501,7 @@ function nextStep(d, net){
   const t = FEED_TIERS.find(x=>net < x.n); if(!t) return null;
   const k = t.n - net; return {k, m:feedFor(t.n, projMul(d, k) * accStep(projAcc(d, k)).m)};
 }
-function feedStreak(){                 // 成語連續達標幾天（今天還沒達標不算中斷）；跟英文的 goalStreak 分開算
-  const paid = k => { const d = SHARED.days[k]; return d && d.i && +d.i.paid > 0; };
-  let n = 0, t = new Date();
-  if(!paid(dayKey(t))) t.setDate(t.getDate() - 1);
-  while(paid(dayKey(t))){ n++; t.setDate(t.getDate() - 1); }
-  return n;
-}
+function feedStreak(){ return runLen(HAS.feed); }      // 成語連續達標幾天；跟英文的 goalStreak 分開算
 function feedLedger(){ return SHARED.feed || (SHARED.feed = {earned:0, used:0, bonus:0, tickets:0}); }
 function checkFeed(di){
   const net = netOf(di), target = dayFeed(di), got = +di.paid || 0;
@@ -2992,6 +3040,148 @@ function tradeMinutes(kind){
   diary("trade", `用 ${cost} 分鐘遊戲時間換了${what}`);
   saveShared(); renderPet(); refreshHeader(); toast(`換到${what}，存摺剩 ${bankLeft()} 分鐘`);
 }
+/* ================= 時間商城：補簽券、貓房家具 =================
+   付的都是分鐘存摺。每一筆記在 SHARED.buys（只增不改）：{d 哪天買的, ts, it 買了什麼, m 花幾分鐘}。
+   「擁有哪些家具」「哪幾天補簽過」都從這本帳推出來，不另外存一份，才不會兩邊對不起來。 */
+function spend(it, cost){
+  SHARED.bank.used = (SHARED.bank.used || 0) + cost;
+  (SHARED.buys = SHARED.buys || []).push({d:dayKey(), ts:nowSec(), it, m:cost});
+}
+/* 補簽券：只能補最近 PATCH_BACK 天內的洞、任兩次補簽至少隔 PATCH_GAP 天（所以 7 天紅利至少要實練 6 天），
+   同一個月第二張起每張多 PATCH_STEP 分鐘。補了要真的接得起來（連續至少 +2）才賣，不賣沒用的券。 */
+const PATCH_BASE = 20, PATCH_STEP = 10, PATCH_BACK = 2, PATCH_GAP = 7;
+const STREAK_BONUS = 30, BONUS_EVERY = 7;               // 英文連續達標的紅利，跟單字闖關同值
+const STREAK_NAME = {cal:"日曆連續", goal:"英文連續達標", feed:"成語連續達標"};
+function patchCost(){
+  const mon = dayKey().slice(0, 7);
+  return PATCH_BASE + PATCH_STEP * (SHARED.buys || []).filter(b=>isPatch(b) && String(b.d).slice(0, 7) === mon).length;
+}
+function patchOffer(){                 // 現在補哪一天有用；沒有就回 null
+  const pd = [...patchedDays()];
+  for(let back = 1; back <= PATCH_BACK; back++){
+    const t = new Date(); t.setDate(t.getDate() - back);
+    const k = dayKey(t);
+    if(pd.some(p=>Math.abs(daysBetween(p, k)) < PATCH_GAP)) continue;
+    const gains = Object.keys(HAS).map(id=>({id, from:runLen(HAS[id]), to:runLen(HAS[id], k)})).filter(g=>g.to - g.from >= 2);
+    if(gains.length) return {k, gains};
+  }
+  return null;
+}
+/* 先練了才補簽：補完才接起來的那一兩天，如果其實是第 every 天，紅利要補發。
+   不補的話「先補再練」有紅利、「先練再補」沒有，順序不該決定拿不拿得到。
+   補簽的那天本身不發 —— 那天沒有練。補簽前這幾天的連續最多 2，不可能已經領過。 */
+function lateBonus(has, k, every){
+  let len = runLen(has), n = 0;
+  const t = new Date();
+  if(!has(dayKey(t))) t.setDate(t.getDate() - 1);
+  while(len > 0 && dayKey(t) > k){ if(len % every === 0) n++; len--; t.setDate(t.getDate() - 1); }
+  return n;
+}
+function buyPatch(){
+  const o = patchOffer();
+  if(!o){ toast("最近兩天沒有補了能接回連續的缺口"); return; }
+  const cost = patchCost();
+  if(bankLeft() < cost){ toast(`補簽券要 ${cost} 分鐘，存摺只有 ${bankLeft()} 分鐘`); return; }
+  const day = `${+o.k.slice(5, 7)}/${+o.k.slice(8)}`;
+  if(!confirm(`用 ${cost} 分鐘遊戲時間補簽 ${day}？
+${o.gains.map(g=>`${STREAK_NAME[g.id]} ${g.from} → ${g.to} 天`).join("\n")}
+（只接回連續天數，那天的題數不會變）`)) return;
+  spend("patch:" + o.k, cost);
+  const mins = lateBonus(HAS.goal, o.k, BONUS_EVERY) * STREAK_BONUS, tix = lateBonus(HAS.feed, o.k, FEED_STREAK_EVERY);
+  if(mins) SHARED.bank.bonus = (SHARED.bank.bonus || 0) + mins;
+  if(tix){ const F = feedLedger(); F.tickets = (F.tickets || 0) + tix; }
+  diary("patch", `用 ${cost} 分鐘補簽了 ${day}`);
+  saveShared(); renderPet(); refreshHeader();
+  toast(`🩹 補簽了 ${day}` + (mins ? `，補發連續紅利 ${mins} 分鐘` : "") + (tix ? `，補發 ${tix} 張轉蛋券` : "") + `，存摺剩 ${bankLeft()} 分鐘`);
+}
+
+/* 家具：每個位置換的是 <svg> 裡面的內容，外層的 class（位置、大小）不動，所以 viewBox 要跟原本那個一樣。
+   need 是學習門檻：分鐘夠也要練到才買得到，跟「想多養就要練更難」同一個道理。
+   窗景一樣不畫粗框：那是牆上的東西，線一粗就跟貓搶戲。 */
+const SLOTS = {rug:{cls:"rmrug", name:"地毯"}, plant:{cls:"rmplant", name:"盆栽"}, win:{cls:"rmwindow", name:"窗景"}};
+const EN_KEY = "cq-vocab-v1:full";                      // 單字闖關的答題紀錄（只讀）
+function enMastered(){                 // 跟單字闖關的 mastered() 同一條：連對 2 次且還沒到複習日
+  try{
+    const st = (JSON.parse(localStorage.getItem(EN_KEY)) || {}).stats || {}, today = dayKey();
+    return Object.keys(st).filter(w=>(st[w].streak || 0) >= 2 && st[w].due && today < st[w].due).length;
+  }catch(e){ return 0; }
+}
+const FURN = [
+  {id:"rug_stripe", slot:"rug", name:"條紋地毯", m:15,
+   svg:`<ellipse cx="70" cy="15" rx="66" ry="12" fill="#E8A598" stroke="var(--out)" stroke-width="2.4"/>
+        <path d="M30 10 v10 M50 7 v16 M70 6 v18 M90 7 v16 M110 10 v10" stroke="#FFF3E6" stroke-width="5" stroke-linecap="round"/>`},
+  {id:"rug_fish", slot:"rug", name:"魚形地毯", m:40, need:{text:"成語會考重點熟練 100 條", ok:()=>masteredScope("exam") >= 100},
+   svg:`<path d="M110 15 l24 -12 v24 z" fill="#7FB5D5" stroke="var(--out)" stroke-width="2.4" stroke-linejoin="round"/>
+        <ellipse cx="62" cy="15" rx="56" ry="12" fill="#9CCBE6" stroke="var(--out)" stroke-width="2.4"/>
+        <circle cx="26" cy="12" r="2.4" fill="var(--out)"/>
+        <path d="M52 8 q8 7 0 14 M74 6 q8 9 0 18" stroke="#7FB5D5" stroke-width="2.2" fill="none" stroke-linecap="round"/>`},
+  {id:"plant_cactus", slot:"plant", name:"仙人掌", m:15,
+   svg:`<rect x="3" y="9" width="7" height="13" rx="3.5" fill="#6FA36F" stroke="var(--out)" stroke-width="2.2"/>
+        <rect x="24" y="6" width="7" height="14" rx="3.5" fill="#6FA36F" stroke="var(--out)" stroke-width="2.2"/>
+        <path d="M7 19 h8 M27 17 h-8" stroke="#6FA36F" stroke-width="5" stroke-linecap="round"/>
+        <rect x="11" y="4" width="12" height="24" rx="6" fill="#87B887" stroke="var(--out)" stroke-width="2.2"/>
+        <circle cx="17" cy="4" r="3" fill="#F2A7B8" stroke="var(--out)" stroke-width="1.8"/>
+        <path d="M8 26 h18 l-3 18 h-12 z" fill="#D98B5F" stroke="var(--out)" stroke-width="2.4" stroke-linejoin="round"/>`},
+  {id:"plant_grass", slot:"plant", name:"貓草盆", m:25,
+   svg:`<path d="M17 28 q-8 -10 -10 -21 M17 28 q-3 -12 -3 -24 M17 28 q3 -12 4 -23 M17 28 q8 -9 11 -19" stroke="#6FA36F" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+        <rect x="5" y="27" width="24" height="17" rx="3" fill="#E4D5C3" stroke="var(--out)" stroke-width="2.4"/>
+        <path d="M11 35 q6 5 12 0" stroke="#C9B49C" stroke-width="2" fill="none" stroke-linecap="round"/>`},
+  {id:"win_night", slot:"win", name:"星空窗", m:30,
+   svg:`<rect x="3" y="3" width="58" height="48" rx="10" fill="#34406B" opacity=".75"/>
+        <rect x="3" y="3" width="58" height="48" rx="10" fill="none" stroke="#8C97BD" stroke-width="1.6" opacity=".7"/>
+        <path d="M45 10 a7 7 0 1 0 7 7 a5.6 5.6 0 0 1 -7 -7 z" fill="#FFF3C4" opacity=".9"/>
+        <g fill="#FFF3C4" opacity=".85"><circle cx="14" cy="14" r="1.4"/><circle cx="26" cy="24" r="1.1"/><circle cx="19" cy="38" r="1.3"/><circle cx="38" cy="36" r="1.1"/><circle cx="52" cy="40" r="1.4"/><circle cx="31" cy="11" r="1"/></g>`},
+  {id:"win_moon", slot:"win", name:"滿月窗", m:45, need:{text:"英文單字已熟練 100 個", ok:()=>enMastered() >= 100},
+   svg:`<rect x="3" y="3" width="58" height="48" rx="10" fill="#2B3559" opacity=".78"/>
+        <rect x="3" y="3" width="58" height="48" rx="10" fill="none" stroke="#8C97BD" stroke-width="1.6" opacity=".7"/>
+        <circle cx="36" cy="24" r="13" fill="#FFE9A8" opacity=".95"/>
+        <g fill="#EBCF86" opacity=".8"><circle cx="31" cy="20" r="3"/><circle cx="41" cy="28" r="2.2"/><circle cx="35" cy="31" r="1.5"/></g>
+        <path d="M6 44 q10 -8 20 -2 q8 -6 16 0 q8 -5 16 1 v5 q0 3 -3 3 h-46 q-3 0 -3 -3 z" fill="#55618C" opacity=".8"/>`}
+];
+const furnOf = id => FURN.find(f=>f.id === id) || null;
+const owned = id => (SHARED.buys || []).some(b=>b.it === id);
+const slotEl = s => $("room").querySelector("." + SLOTS[s].cls);
+const ROOM0 = {};                                       // 原本的擺設：直接從畫面上記下來，不另外抄一份
+Object.keys(SLOTS).forEach(s=>{ ROOM0[s] = slotEl(s).innerHTML; });
+function roomPick(s){                  // 這個位置現在擺哪一款；還原回來的資料不可信，沒買過或認不得的一律當原本的
+  const id = ((pet() || {}).room || {})[s], f = furnOf(id);
+  return f && f.slot === s && owned(id) ? f : null;
+}
+function applyRoom(){ Object.keys(SLOTS).forEach(s=>{ const f = roomPick(s); slotEl(s).innerHTML = f ? f.svg : ROOM0[s]; }); }
+function pickFurn(id){
+  const f = furnOf(id), p = pet();
+  if(!f || !p) return;
+  if(!owned(id)){
+    if(f.need && !f.need.ok()){ toast(`🔒 ${f.name}要先做到：${f.need.text}`); return; }
+    if(bankLeft() < f.m){ toast(`${f.name}要 ${f.m} 分鐘，存摺只有 ${bankLeft()} 分鐘`); return; }
+    if(!confirm(`用 ${f.m} 分鐘遊戲時間買「${f.name}」？
+（買了就是你的，之後可以隨時換回原本的）`)) return;
+    spend(id, f.m);
+    diary("furn", `用 ${f.m} 分鐘買了${f.name}`);
+  }
+  p.room = p.room || {};
+  if(p.room[f.slot] === id) delete p.room[f.slot]; else p.room[f.slot] = id;      // 再按一次 = 換回原本的
+  saveShared(); renderPet(); refreshHeader();
+  toast(p.room[f.slot] ? `${SLOTS[f.slot].name}換成${f.name}了` : `${SLOTS[f.slot].name}換回原本的了`);
+}
+function renderShop(){
+  const left = bankLeft();
+  $("shopBank").textContent = `存摺 ${left} 分鐘`;
+  $("btnTradeFeed").disabled = left < MIN_PER_FEED; $("btnTradeTicket").disabled = left < MIN_PER_TICKET;
+  const o = patchOffer(), cost = patchCost();
+  $("btnPatch").disabled = !o || left < cost;
+  $("patchHint").textContent = !o ? "最近兩天沒有可以補的缺口"
+    : `${cost} 分鐘 · 補 ${+o.k.slice(5, 7)}/${+o.k.slice(8)}，${o.gains.map(g=>`${STREAK_NAME[g.id]} ${g.from}→${g.to} 天`).join("、")}`;
+  $("furnBox").hidden = !pet() || !cat();
+  if($("furnBox").hidden) return;
+  $("furnList").innerHTML = FURN.map(f=>{
+    const has = owned(f.id), on = roomPick(f.slot) === f, lock = !has && f.need && !f.need.ok();
+    return `<button class="btn quiet" data-furn="${f.id}" aria-pressed="${on}">${lock ? "🔒 " : on ? "✓ " : ""}${SLOTS[f.slot].name}：${esc(f.name)}<small>${
+      on ? "使用中 · 再按一次換回原本的" : has ? "已擁有 · 按一下換上" : `${f.m} 分鐘` + (f.need ? `${lock ? "" : " ✓"} · ${esc(f.need.text)}` : "")}</small></button>`;
+  }).join("");
+  $("furnList").querySelectorAll("[data-furn]").forEach(b=>b.onclick = ()=>pickFurn(b.dataset.furn));
+  applyRoom();
+}
 function stageOf(xp){ let st = STAGES[0]; STAGES.forEach(x=>{ if(xp >= x.xp) st = x; }); return st; }
 function nextStage(xp){ return STAGES.find(x=>x.xp > xp) || null; }
 function diary(ev, text){
@@ -3194,6 +3384,7 @@ function startIdleWalk(){             // 閒著沒事會在房間走來走去
 }
 function renderPet(){
   tickPet();
+  renderShop();
   const c = cat(), p = pet(), F = feedLedger();
   $("gachaCard").hidden = !!c; $("petCard").hidden = !c;
   if(!c){
@@ -3207,8 +3398,6 @@ function renderPet(){
     + (rule ? `<button class="chip" id="btnMore" ${rule.ok() ? "" : "disabled"} title="${esc(rule.text)}">＋ 第 ${rule.n} 隻${rule.ok() ? (p.free ? "" : "（1 張券）") : "🔒"}</button>` : "");
   $("catTabs").querySelectorAll("[data-cat]").forEach(b=>b.onclick = ()=>{ p.active = +b.dataset.cat; saveShared(); setRoomState(petState(cat())); renderPet(); });
   const more = $("btnMore"); if(more) more.onclick = ()=>{ if(!rule.ok()){ toast(`第 ${rule.n} 隻要：${rule.text}`); return; } gacha(); };
-  $("btnTradeFeed").disabled = bankLeft() < MIN_PER_FEED; $("btnTradeTicket").disabled = bankLeft() < MIN_PER_TICKET;
-  $("tradeHint").textContent = `存摺 ${bankLeft()} 分鐘`;
   const b = BREED[c.breed] || BREED.white, st = stageOf(c.xp), nx = nextStage(c.xp);
   const room = $("room");
   room.className = "room " + (b.cls || "") + " " + st.cls + " " + (room.className.match(/st-\S+/) || ["st-" + petState(c)])[0];
@@ -3251,6 +3440,7 @@ function renderPet(){
 $("btnGacha").onclick = gacha;
 $("btnTradeFeed").onclick = ()=>tradeMinutes("feed");
 $("btnTradeTicket").onclick = ()=>tradeMinutes("ticket");
+$("btnPatch").onclick = buyPatch;
 $("btnFeed").onclick = feedCat;
 $("btnClean").onclick = cleanLitter;
 $("btnBell").onclick = ringBell;
@@ -3336,6 +3526,10 @@ loadShared(); loadS();
 $("heroVer").textContent = "版本 " + IDIOM_VERSION;
 $("verline").textContent = "成語ㄚ喵 · 版本 " + IDIOM_VERSION + " · 題庫 " + IDIOMS.length + " 條";
 renderPickers(); refreshHeader(); renderList(); renderStats(); chainNext(null);
+if(location.hash === "#shop"){         // 單字闖關的存摺卡有一條連結直接到商城
+  document.querySelector('.nav button[data-view="vCat"]').click();
+  if($("shopCard").scrollIntoView) $("shopCard").scrollIntoView();
+}
 
 /* ================= 離線（service worker） =================
    註冊的是同一支 sw.js（同一個 scope），所以裝成 App 之後兩頁互跳都在同一個殼裡。 */

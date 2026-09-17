@@ -114,6 +114,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
   transition:transform .1s ease, filter .15s ease;
 }
 .btn:active{transform:scale(.985); filter:brightness(.94)}
+a.btn{text-decoration:none}
 .btn.ghost{background:var(--surface); color:var(--ink); border-color:var(--line); font-weight:500}
 .btn.quiet{background:transparent; color:var(--ink-soft); border-color:transparent; font-size:14.5px; padding:10px}
 /* 結束這輪：不能全寬貼著作答區，否則按「下一題」後版面上移，手快就誤觸 */
@@ -530,7 +531,17 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 /* ---------- 點一下才展開的說明 ----------
    規則細節（分鐘怎麼算、圖例、備份說明）平常收起來，需要時才看，
    免得每一頁都是一大段小字。<details> 是瀏覽器原生的，不用自己寫展開邏輯。 */
-.info{border:1px solid var(--line); border-radius:11px; margin:10px 0; background:var(--surface-2)}
+/* 收起來的時候只剩右邊一顆「?」，不佔一整條。問題那句話還留在 summary 裡（字級 0）：
+   螢幕閱讀器照樣念得到，打開之後也會顯示出來當標題。 */
+.info{border:1px solid transparent; border-radius:11px; margin:2px 0}
+.info[open]{border-color:var(--line); margin:10px 0; background:var(--surface-2)}
+.info:not([open]){display:inline-block; vertical-align:top; margin:2px 6px 2px 0}   /* 連著好幾顆就排成一列，不要一顆一行 */
+.info:not([open])>summary{padding:4px 2px; font-size:0}
+.info:not([open])>summary::before{
+  content:"?"; width:26px; height:26px; border-radius:50%; display:grid; place-items:center;
+  border:1px solid var(--line); background:var(--surface-2); font-size:14px; font-weight:600;
+}
+.info:not([open])>summary::after{display:none}
 .info>summary{
   cursor:pointer; padding:10px 13px; font-size:13px; color:var(--ink-soft);
   display:flex; align-items:center; gap:6px; list-style:none;
@@ -540,6 +551,12 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 .info[open]>summary::after{transform:rotate(180deg)}
 .info .info-in{padding:0 13px 12px; font-size:12.5px; line-height:1.8; color:var(--ink-faint)}
 .info .info-in b{color:var(--ink-soft)}
+/* 說明的「?」跟它在講的那顆按鈕（或標題）排同一列；打開之後整塊掉到下一行、佔滿寬度 */
+.qrow{display:flex; flex-wrap:wrap; align-items:center; gap:0 6px}
+.qrow>:first-child{flex:1 1 0; min-width:0; width:auto}
+.qrow>.info{margin:0}
+.qrow>.info[open]{flex:1 0 100%; margin:8px 0 2px}
+.qhead{align-items:flex-end} .qhead>.info:not([open]){margin-bottom:6px}
 
 /* ---------- 練習日曆（GitHub 風格） ---------- */
 .ghwrap{overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; padding:5px 0 8px; margin-top:8px}
@@ -563,6 +580,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 /* 不能叫 .goal —— 會撞到每日目標區塊的 .goal{margin:16px 0 14px}，格子會被推歪 */
 .ghgrid .cell.met{border-color:var(--ok)}
 .ghgrid .cell.gift{box-shadow:inset 0 0 0 2px var(--mark)}
+.ghgrid .cell.patch{border:1px dashed var(--brand)}
 .ghgrid .cell.today{outline:2px solid var(--ink); outline-offset:0}
 /* ---------- 月檢視（預設）：一個月剛好排得下，不用左右捲 ---------- */
 #calMonthView[hidden]{display:none}
@@ -603,6 +621,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 .mcell.l3{background:color-mix(in srgb, var(--brand) 74%, var(--surface-2)); color:var(--btn-fg)}
 .mcell.l4{background:var(--brand); color:var(--btn-fg); font-weight:600}
 .mcell.met{border-color:var(--ok)}
+.mcell.patch{border:1px dashed var(--brand)}      /* 補簽過的日子：虛線框，沒有底色（那天沒練） */
 .mcell.today{outline:2px solid var(--ink); outline-offset:0}
 .calsum{margin:10px 0 0; font-size:12.5px; color:var(--ink-soft); text-align:center}
 .callegend{
@@ -745,11 +764,9 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
       </div>
 
       <button class="btn" id="btnAgain">再來一輪</button>
-      <button class="btn ghost" id="btnShare" style="margin-top:8px">📋 複製成績，貼給家長</button>
-      <details class="info"><summary>複製出去安全嗎？</summary>
-        <div class="info-in">只是把文字放進你手機的剪貼簿，要不要貼出去由你決定。<br>
-          內容<b>不含姓名</b>、不會上傳到任何地方，也<b>不會產生任何人點得開的網址</b>。</div>
-      </details>
+      <div class="qrow" style="margin-top:8px">
+        <button class="btn ghost" id="btnShare">📋 複製成績，貼給家長</button>
+      </div>
       <button class="btn quiet" id="btnBackHome">回主畫面</button>
     </div>
   </section>
@@ -781,10 +798,13 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
         <div class="bar"><i id="goalBar"></i></div>
       </div>
       <div class="timerbox" id="timerBox" hidden></div>
-      <button class="btn" id="btnSpend" aria-label="兌換遊戲時間">兌換遊戲時間</button>
-      <details class="info"><summary>分鐘是怎麼算的？</summary>
-        <div class="info-in" id="tierHint"></div>
-      </details>
+      <div class="qrow">
+        <button class="btn" id="btnSpend" aria-label="兌換遊戲時間">兌換遊戲時間</button>
+        <details class="info"><summary>分鐘是怎麼算的？</summary>
+          <div class="info-in" id="tierHint"></div>
+        </details>
+      </div>
+      <a class="btn quiet" id="shopLink" href="idiom.html#shop">🛒 時間商城：補簽券、貓房家具</a>
     </div>
 
     <div class="grouphead"><b id="statDeck">成績</b><span>只算英文單字</span></div>
@@ -828,7 +848,13 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
     <div class="grouphead"><b id="weakDeck">需要加強的字</b><span id="weakNum"></span></div>
     <ul class="wlist" id="weakList"></ul>
     <p class="empty" id="weakEmpty" hidden>目前沒有錯題，繼續保持！</p>
-    <button class="btn ghost" id="btnShareAll" style="margin-top:24px">📋 複製整體進度，貼給家長</button>
+    <div class="qrow" style="margin-top:24px">
+      <button class="btn ghost" id="btnShareAll">📋 複製整體進度，貼給家長</button>
+          <details class="info"><summary>複製出去安全嗎？</summary>
+            <div class="info-in">只是把文字放進你手機的剪貼簿，要不要貼出去由你決定。<br>
+              內容<b>不含姓名</b>、不會上傳到任何地方，也<b>不會產生任何人點得開的網址</b>。</div>
+          </details>
+    </div>
     <details class="info"><summary>複製出去安全嗎？</summary>
       <div class="info-in">只是把文字放進你手機的剪貼簿，要不要貼出去由你決定。<br>
         內容<b>不含姓名</b>、不會上傳到任何地方，也<b>不會產生任何人點得開的網址</b>。</div>
@@ -858,72 +884,88 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
     </div>
 
     <div class="grouphead"><b>這台裝置</b><span id="whoState"></span></div>
-    <button class="btn ghost" id="btnWho">👤 這台是誰在用</button>
-    <details class="info"><summary>這個名字做什麼用？</summary>
-      <div class="info-in">只存在這台裝置裡，<b>不會傳到任何地方</b>，畫面上也只有這裡看得到，
-        填不填都不影響任何功能。<br>
-        先留著是為了以後：家裡不只一個小孩的話，之後要把兩個人的紀錄分開來看就需要它。
-        換手機時它會跟著備份碼一起搬過去。</div>
-    </details>
+    <div class="qrow">
+      <button class="btn ghost" id="btnWho">👤 這台是誰在用</button>
+      <details class="info"><summary>這個名字做什麼用？</summary>
+        <div class="info-in">只存在這台裝置裡，<b>不會傳到任何地方</b>，畫面上也只有這裡看得到，
+          填不填都不影響任何功能。<br>
+          先留著是為了以後：家裡不只一個小孩的話，之後要把兩個人的紀錄分開來看就需要它。
+          換手機時它會跟著備份碼一起搬過去。</div>
+      </details>
+    </div>
 
     <div class="grouphead"><b>家長設定</b><span id="pinState"></span></div>
-    <button class="btn ghost" id="btnPin">🔒 家長密碼</button>
-    <button class="btn ghost" id="btnGift" style="margin-top:8px">🎁 贈送遊戲時間</button>
+    <div class="qrow">
+      <button class="btn ghost" id="btnPin">🔒 家長密碼</button>
+      <details class="info"><summary>家長密碼會保護什麼？</summary>
+        <div class="info-in">設一組 4 位數密碼之後，這幾件事要輸入密碼才做得了：<br>
+          <b>兌換遊戲時間</b>　·　<b>贈送／沒收遊戲時間</b>　·　<b>發加倍券</b>　·　
+          <b>清除單字的答題紀錄</b>　·　<b>清除練習日曆與遊戲時間</b><br>
+          都是誤觸會出事的操作。密碼只存在這台手機裡。</div>
+      </details>
+    </div>
+    <div class="qrow" style="margin-top:8px">
+      <button class="btn ghost" id="btnGift">🎁 贈送遊戲時間</button>
+      <details class="info"><summary>贈送和沒收是怎麼算的？</summary>
+        <div class="info-in">贈送的分鐘<b>跟練習賺的完全分開記</b>，不會被當成「今天有練習」——
+          不算連續天數、不占一天最多 60 分鐘的上限、也不會被答錯倒扣。<br>
+          每一筆都要填原因（20字以內），日曆上那天會出現一個記號，點下去看得到送了幾分鐘、為什麼送。<br>
+          <b>送錯了不用刪</b>：用「沒收」記一筆負的沖銷掉就好，帳才查得出來歷。一次最多 60 分鐘。</div>
+      </details>
+    </div>
     <button class="btn quiet" id="btnTake" style="margin-top:8px">➖ 沒收遊戲時間</button>
-    <button class="btn ghost" id="btnCoupon" style="margin-top:8px">✨ 發一張加倍券</button>
-    <button class="btn ghost" id="btnGiftFeed" style="margin-top:8px">🍖 送飼料（給貓）</button>
+    <div class="qrow" style="margin-top:8px">
+      <button class="btn ghost" id="btnCoupon">✨ 發一張加倍券</button>
+      <details class="info"><summary>加倍券是什麼？</summary>
+        <div class="info-in">發出去先存著，<b>小孩下一次練習的那天自動用掉</b>，那天賺到的分鐘 ×2
+          （一天上限也跟著變成 120 分鐘）。沒練就不會被用掉，不會白發。<br>
+          跟直接贈送不一樣的地方是：<b>券還是要練才拿得到</b>，所以「練習才有獎勵」這件事不會被稀釋。<br>
+          <b>答錯的倒扣也一樣加倍</b>——券的意思是「這天每一題都值雙倍」，
+          不然持券亂猜就變得划算了。一次一張，可以先發著存起來。</div>
+      </details>
+    </div>
+    <div class="qrow" style="margin-top:8px">
+      <button class="btn ghost" id="btnGiftFeed">🍖 送飼料（給貓）</button>
+      <details class="info"><summary>送飼料、送轉蛋券是什麼？</summary>
+        <div class="info-in">給成語ㄚ喵的貓用的。飼料進成語那邊的飼料帳（記成「非練習來的」），轉蛋券可以抽貓或叫離家的貓回來。
+          跟送分鐘一樣要密碼、要原因，日曆上看得到。一次最多 30 顆飼料、3 張券。</div>
+      </details>
+    </div>
     <button class="btn ghost" id="btnGiftTicket" style="margin-top:8px">🎟️ 送轉蛋券（給貓）</button>
-    <details class="info"><summary>加倍券是什麼？</summary>
-      <div class="info-in">發出去先存著，<b>小孩下一次練習的那天自動用掉</b>，那天賺到的分鐘 ×2
-        （一天上限也跟著變成 120 分鐘）。沒練就不會被用掉，不會白發。<br>
-        跟直接贈送不一樣的地方是：<b>券還是要練才拿得到</b>，所以「練習才有獎勵」這件事不會被稀釋。<br>
-        <b>答錯的倒扣也一樣加倍</b>——券的意思是「這天每一題都值雙倍」，
-        不然持券亂猜就變得划算了。一次一張，可以先發著存起來。</div>
-    </details>
-    <details class="info"><summary>送飼料、送轉蛋券是什麼？</summary>
-      <div class="info-in">給成語ㄚ喵的貓用的。飼料進成語那邊的飼料帳（記成「非練習來的」），轉蛋券可以抽貓或叫離家的貓回來。
-        跟送分鐘一樣要密碼、要原因，日曆上看得到。一次最多 30 顆飼料、3 張券。</div>
-    </details>
-    <details class="info"><summary>贈送和沒收是怎麼算的？</summary>
-      <div class="info-in">贈送的分鐘<b>跟練習賺的完全分開記</b>，不會被當成「今天有練習」——
-        不算連續天數、不占一天最多 60 分鐘的上限、也不會被答錯倒扣。<br>
-        每一筆都要填原因（20字以內），日曆上那天會出現一個記號，點下去看得到送了幾分鐘、為什麼送。<br>
-        <b>送錯了不用刪</b>：用「沒收」記一筆負的沖銷掉就好，帳才查得出來歷。一次最多 60 分鐘。</div>
-    </details>
-    <details class="info"><summary>家長密碼會保護什麼？</summary>
-      <div class="info-in">設一組 4 位數密碼之後，這幾件事要輸入密碼才做得了：<br>
-        <b>兌換遊戲時間</b>　·　<b>贈送／沒收遊戲時間</b>　·　<b>發加倍券</b>　·　
-        <b>清除單字的答題紀錄</b>　·　<b>清除練習日曆與遊戲時間</b><br>
-        都是誤觸會出事的操作。密碼只存在這台手機裡。</div>
-    </details>
 
     <div class="grouphead"><b>備份進度</b><span>換手機、被清掉時用</span></div>
-    <button class="btn ghost" id="btnExport">📋 複製備份碼</button>
+    <div class="qrow">
+      <button class="btn ghost" id="btnExport">📋 複製備份碼</button>
+      <details class="info"><summary>為什麼需要備份碼？</summary>
+        <div class="info-in">紀錄存在這台手機的這個瀏覽器裡，換瀏覽器、清除瀏覽資料、或
+          iOS Safari 長時間沒開這個網站，都可能被清掉。<br>
+          按「複製備份碼」會把單字和成語的紀錄壓成一段文字，貼到 LINE 給自己留著，之後貼回來就能還原。</div>
+      </details>
+    </div>
     <button class="btn ghost" id="btnImport" style="margin-top:8px">📥 貼上備份碼還原</button>
-    <details class="info"><summary>為什麼需要備份碼？</summary>
-      <div class="info-in">紀錄存在這台手機的這個瀏覽器裡，換瀏覽器、清除瀏覽資料、或
-        iOS Safari 長時間沒開這個網站，都可能被清掉。<br>
-        按「複製備份碼」會把單字和成語的紀錄壓成一段文字，貼到 LINE 給自己留著，之後貼回來就能還原。</div>
-    </details>
 
     <div class="grouphead"><b>雲端備份</b><span id="syncState"></span></div>
-    <button class="btn ghost" id="btnSync">☁️ 設定雲端備份</button>
-    <details class="info"><summary>雲端備份會傳什麼出去？</summary>
-      <div class="info-in"><b>預設是關閉的</b>，沒開的話這個網頁一個請求都不會發出去。<br>
-        開啟之後，每練完一輪會自動把進度傳一份到爸媽的雲端空間，就不用再手動複製備份碼了。<br>
-        傳的是：<b>練習日曆、答對率、還要加強的字、遊戲時間存摺、爸媽送過什麼</b>。
-        沒有姓名以外的個人資料、沒有位置、沒有任何跟這個 App 無關的東西。<br>
-        爸媽那邊<b>只能看，不能改</b>——他們看到的頁面根本沒有寫入功能。<br>
-        開著的時候這裡會一直顯示「已開啟」和最後同步時間，不會偷偷傳。</div>
-    </details>
+    <div class="qrow">
+      <button class="btn ghost" id="btnSync">☁️ 設定雲端備份</button>
+      <details class="info"><summary>雲端備份會傳什麼出去？</summary>
+        <div class="info-in"><b>預設是關閉的</b>，沒開的話這個網頁一個請求都不會發出去。<br>
+          開啟之後，每練完一輪會自動把進度傳一份到爸媽的雲端空間，就不用再手動複製備份碼了。<br>
+          傳的是：<b>練習日曆、答對率、還要加強的字、遊戲時間存摺、爸媽送過什麼</b>。
+          沒有姓名以外的個人資料、沒有位置、沒有任何跟這個 App 無關的東西。<br>
+          爸媽那邊<b>只能看，不能改</b>——他們看到的頁面根本沒有寫入功能。<br>
+          開著的時候這裡會一直顯示「已開啟」和最後同步時間，不會偷偷傳。</div>
+      </details>
+    </div>
 
-    <div class="grouphead"><b>清除紀錄</b><span>要家長密碼</span></div>
+    <div class="qrow qhead">
+      <div class="grouphead"><b>清除紀錄</b><span>要家長密碼</span></div>
+      <details class="info"><summary>這兩個差在哪？</summary>
+        <div class="info-in"><b>單字的答題紀錄</b>（答對率、已熟練、待加強）只清英文這邊，成語ㄚ喵的不動。<br>
+          <b>練習日曆與遊戲時間</b>是跟成語ㄚ喵共用的，清了兩邊都會不見。</div>
+      </details>
+    </div>
     <button class="btn quiet" id="btnReset">清除答題紀錄</button>
     <button class="btn quiet" id="btnResetShared">清除練習日曆與遊戲時間</button>
-    <details class="info"><summary>這兩個差在哪？</summary>
-      <div class="info-in"><b>單字的答題紀錄</b>（答對率、已熟練、待加強）只清英文這邊，成語ㄚ喵的不動。<br>
-        <b>練習日曆與遊戲時間</b>是跟成語ㄚ喵共用的，清了兩邊都會不見。</div>
-    </details>
 
     <p class="foot">紀錄存在這台手機的這個瀏覽器裡<br>換瀏覽器開會從頭開始，請固定用同一個</p>
   </section>
@@ -1009,7 +1051,7 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
   }
 })();
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.13-a";
+const VERSION = "2026.09.17-a";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（key 用小寫單字） =================
@@ -4861,12 +4903,17 @@ function paidOf(day){                  // 舊版存的是 true，換算成分鐘
   const p = (day || {}).paid;
   return p === true ? REWARD : (+p || 0);
 }
-function goalStreak(){                 // 連續達標幾天（今天還沒達標不算中斷）
+/* 補簽券（成語ㄚ喵的時間商城賣的）：買了記在 SHARED.buys，it 是 "patch:日期"。
+   補簽不寫 days[k]，那天的題數是真的沒有；只在數連續的時候把那個洞當作沒斷。 */
+const patchedDays = () => new Set((SHARED.buys || []).filter(b=>/^patch:/.test(b.it || "")).map(b=>b.it.slice(6)));
+function runLen(has){                  // 今天還沒做到不算中斷
+  const pd = patchedDays(), ok = k => has(k) || pd.has(k);
   let n = 0, t = new Date();
-  if(!paidOf(SHARED.days[dayKey(t)])) t.setDate(t.getDate() - 1);
-  while(paidOf(SHARED.days[dayKey(t)])){ n++; t.setDate(t.getDate() - 1); }
+  if(!ok(dayKey(t))) t.setDate(t.getDate() - 1);
+  while(ok(dayKey(t))){ n++; t.setDate(t.getDate() - 1); }
   return n;
 }
+function goalStreak(){ return runLen(k=>!!paidOf(SHARED.days[k])); }     // 連續達標幾天
 function nextStep(day, net, x){        // 下一階：還要答對幾題、到了大約幾分鐘（含難度、答對率、加倍券）
   const t = TIERS.find(y=>net < y.n);
   if(!t) return null;
@@ -4961,12 +5008,7 @@ $("btnWho").onclick = () => {
 /* ================= 練習日曆 ================= */
 const CAL_WEEKS = 26;                  // 顯示最近半年
 function level(n){ return n >= 40 ? 4 : n >= 20 ? 3 : n >= DAILY ? 2 : 1; }
-function streakDays(){                 // 從今天往回數，連續練習幾天
-  let n = 0, t = new Date();
-  if(!SHARED.days[dayKey(t)]) t.setDate(t.getDate() - 1);   // 今天還沒練不算中斷
-  while(SHARED.days[dayKey(t)]){ n++; t.setDate(t.getDate() - 1); }
-  return n;
-}
+function streakDays(){ return runLen(k=>!!SHARED.days[k]); }           // 從今天往回數，連續練習幾天
 /* 兩種檢視：預設「這個月」（排得下、看得清楚），另一個是原本的半年熱力圖。
    半年那張在手機上一定要左右捲，八月才過一半就已經拉得很寬。 */
 let calView = "month";
@@ -4983,6 +5025,7 @@ function dayNote(k, rec){              // 點格子 / 螢幕閱讀器都用同�
   const zh = rec && rec.i && rec.i.n ? `成語 ${rec.i.n} 題，答對 ${rec.i.r || 0} 題` + (+rec.i.paid ? `，賺到 ${rec.i.paid} 顆飼料` : "") : "";
   return (rec && dayTotal(rec) ? `${+mm}/${+dd} ` + [en, zh].filter(Boolean).join("；")
               : `${+mm}/${+dd} 沒有練習紀錄`)
+         + (patchedDays().has(k) ? "。用補簽券補過，連續天數不算中斷" : "")
          + (cp.length ? `。用了加倍券 ×${X2}（${cp[0].why || "沒寫原因"}）` : "")
          + (gs.length ? "。" + gs.map(giftLine).join("、") : "");
 }
@@ -5010,6 +5053,7 @@ function renderCalMonth(){
   let html = ["日","一","二","三","四","五","六"].map(x=>`<span class="wd">${x}</span>`).join("");
   for(let i = 0; i < lead; i++) html += `<span class="mcell pad"></span>`;
   let sumDays = 0, sumN = 0, sumMin = 0, sumGift = 0, sumZh = 0;
+  const pd = patchedDays();
   for(let d = 1; d <= len; d++){
     const dt = new Date(y, m, d), k = dayKey(dt), rec = SHARED.days[k];
     const gs = giftsOn(k), cp = couponOn(k);
@@ -5020,6 +5064,7 @@ function renderCalMonth(){
       rec ? "l" + level(dayTotal(rec)) : "",
       rec && paidOf(rec) ? "met" : "",
       gs.length || cp.length ? "gift" : "",
+      pd.has(k) ? "patch" : "",
       k === todayK ? "today" : ""
     ].filter(Boolean).join(" ");
     html += `<button class="${cls}" data-day="${k}" aria-label="${esc(dayNote(k, rec))}">${d}</button>`;
@@ -5054,7 +5099,7 @@ function renderCalHalf(){
       if(cur > now){ cells += `<span class="cell pad"></span>`; }
       else{
         const rec = SHARED.days[k];
-        cells += `<button class="cell ${rec ? "l" + level(dayTotal(rec)) : ""} ${rec && paidOf(rec) ? "met" : ""} ${giftsOn(k).length || couponOn(k).length ? "gift" : ""} ${k === todayK ? "today" : ""}"
+        cells += `<button class="cell ${rec ? "l" + level(dayTotal(rec)) : ""} ${rec && paidOf(rec) ? "met" : ""} ${giftsOn(k).length || couponOn(k).length ? "gift" : ""} ${patchedDays().has(k) ? "patch" : ""} ${k === todayK ? "today" : ""}"
                   data-day="${k}" aria-label="${esc(dayNote(k, rec))}"></button>`;
       }
       cur.setDate(cur.getDate() + 1);
@@ -5114,6 +5159,7 @@ function cut(seg, n){                  // 切出前 n 段；最後一段是原�
 const sd = k => k ? k.replace(/-/g, "").slice(2) : "";        // 2026-08-16 → 260816
 const ld = s => s && s.length === 6 ? "20" + s.slice(0,2) + "-" + s.slice(2,4) + "-" + s.slice(4) : "";
 
+const bkId = x => String(x || "").replace(/[^\w-]/g, "");     // 商品代號只留英數、底線、連字號（patch:2026-09-15 → patch2026-09-15）
 function packDeck(o){                  // 緊湊格式，備份碼才貼得進一則 LINE 訊息
   const b = o.bank || {earned:0, used:0, bonus:0};
   const st = Object.keys(o.stats || {}).map(k=>{
@@ -5130,11 +5176,14 @@ function packDeck(o){                  // 緊湊格式，備份碼才貼得進�
   // 貓：成語ㄚ喵的 SHARED.pet。名字已經去掉分隔符；日記只帶最近 20 則
   const P = o.pet, ct = c => `${String(c.name||"").replace(/[|~;:,=^]/g," ")}:${c.breed||""}:${Math.round(c.xp||0)}:${Math.round(c.hunger||0)}:${Math.round(c.clean||0)}:${Math.round(c.bonus||0)}:${sd(c.adopted)}:${c.away ? sd(c.away.since) : ""}:${c.box?1:0}`;
   const pt = P ? [`${P.free?1:0},${P.bell ? P.bell.month.replace("-","") + "/" + (P.bell.n||0) : ""}`, (P.cats||[]).map(ct).join(";")].join("^")
-               + "^" + (P.diary||[]).slice(-20).map(e=>`${sd(e.d)}:${e.ev||""}:${String(e.text||"").replace(/[|~;:,=^]/g," ")}`).join(";") : "";
+               + "^" + (P.diary||[]).slice(-20).map(e=>`${sd(e.d)}:${e.ev||""}:${String(e.text||"").replace(/[|~;:,=^]/g," ")}`).join(";")
+               + "^" + Object.keys(P.room||{}).map(k=>`${bkId(k)}.${bkId(P.room[k])}`).join(";") : "";   // 第 4 段：貓房現在擺哪些家具
+  // 時間商城的購買帳（補簽券、家具）。仍然是 CQ5：欄位只往後加，舊版讀到會直接略過
+  const by = (o.buys || []).map(b=>`${sd(b.d)}:${bkId(b.it)}:${+b.m||0}:${+b.ts||0}`).join(";");
   const ev = e => `${e.dev || ""}:${+e.seq || 0}:${+e.ts || 0}`;   // 事件身分：哪台、第幾號、什麼時候
   const gf = (o.gifts || []).map(g=>`${sd(g.d)}:${g.kind === "feed" ? "f" : g.kind === "ticket" ? "t" : ""}${+g.m||0}:${ev(g)}:${g.why||""}`).join(";");
   const cp = (o.coupons || []).map(c=>`${sd(c.d)}:${sd(c.on)}:${ev(c)}:${c.why||""}`).join(";");
-  return [o.done||0, o.right||0, b.earned||0, b.used||0, b.bonus||0, st, dy, gf, cp, fd, pt].join("|");
+  return [o.done||0, o.right||0, b.earned||0, b.used||0, b.bonus||0, st, dy, gf, cp, fd, pt, by].join("|");
 }
 function unpackDeck(str, ver){
   const legacy = ver === 2;            // CQ2 的每天只記了「有沒有達標」，分鐘數已失傳
@@ -5167,7 +5216,7 @@ function unpackDeck(str, ver){
     o.feed = {earned:+f[0] || 0, used:+f[1] || 0, bonus:+f[2] || 0, tickets:+f[3] || 0};
   }
   if(p[10]){
-    const [head, cats, diary] = p[10].split("^");
+    const [head, cats, diary, room] = p[10].split("^");
     const [free, bell] = (head || "").split(",");
     const pet = {free:free === "1", bell:null, cats:[], diary:[]};
     if(bell){ const [m, k] = bell.split("/"); if(m && m.length === 6) pet.bell = {month:m.slice(0,4) + "-" + m.slice(4), n:+k || 0}; }
@@ -5183,7 +5232,20 @@ function unpackDeck(str, ver){
       const f = cut(seg, 2); if(!f) return;
       const d = ld(f[0]); if(d) pet.diary.push({d, ev:f[1], text:f[2], ts:0});
     });
+    (room || "").split(";").filter(Boolean).forEach(seg=>{
+      const [k, v] = seg.split(".");
+      if(k && v) (pet.room = pet.room || {})[k] = v;
+    });
     o.pet = pet;
+  }
+  if(p[11]){
+    o.buys = [];
+    p[11].split(";").filter(Boolean).forEach(seg=>{
+      const f = seg.split(":"), d = ld(f[0]);
+      if(f.length < 4 || !d || !f[1]) return;
+      const it = /^patch\d{4}-\d\d-\d\d$/.test(f[1]) ? "patch:" + f[1].slice(5) : f[1];
+      o.buys.push({d, it, m:+f[2] || 0, ts:+f[3] || 0});
+    });
   }
   /* CQ3 的事件沒有身分欄位。還原時補一組從備份碼內容推出來的（"bk" + 名次），
      同一張碼還原幾次都是同一組 id，之後做合併去重才不會把同一筆算成兩筆。 */
@@ -5240,6 +5302,7 @@ function importCode(code){
         SHARED = {days:o.days, bank:o.bank, gifts:o.gifts || [], coupons:o.coupons || []};
         if(o.feed) SHARED.feed = o.feed;
         if(o.pet) SHARED.pet = o.pet;
+        if(o.buys) SHARED.buys = o.buys;
         fixStamp(SHARED.gifts, "bk"); fixStamp(SHARED.coupons, "bk");
         saveShared(); restored++; return;
       }
