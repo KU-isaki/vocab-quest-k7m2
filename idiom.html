@@ -443,10 +443,10 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
    張望／離家／搖鈴鐺時換成打開的門洞（.dopen），貓站在門口，而不是「躲在門板後面」。 */
 .rmdoor{left:10px; bottom:calc(var(--floorh) - 12px); width:46px; z-index:1}
 .st-peek .dopen,.st-away .dopen,.st-bell .dopen{opacity:1}
-.rmnote{left:50%; top:80px; width:112px; transform:translateX(-50%) rotate(-3deg); z-index:5}
+.rmnote{left:57%; top:102px; width:112px; transform:translateX(-50%) rotate(-3deg); z-index:5}
 .rmboard{left:68px; bottom:var(--back); width:32px}
 .rmtower{right:10px; bottom:calc(var(--back) - 6px); width:72px}
-.rmplant{right:94px; bottom:var(--back); width:28px}
+.rmplant{left:110px; bottom:var(--back); width:28px}      /* 放窗戶下面：手機上右邊只剩貓塔，中間留給貓和地毯 */
 .rmrug{left:46%; bottom:9px; width:min(160px, 42%); transform:translateX(-50%)}
 .rmboard,.rmtower,.rmplant{z-index:1}                 /* 靠牆的家具疊在地毯上面、貓的後面 */
 .tball{animation:tswing 3.4s ease-in-out infinite; transform-origin:50% -300%}
@@ -850,7 +850,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
   }
 })();
 /* 版本標示：每次改版都更新，跟單字闖關同一套規矩 */
-const IDIOM_VERSION = "2026.09.17-c";
+const IDIOM_VERSION = "2026.09.17-d";
 
 /* ================= 成語題庫 =================
    格式：["成語", "注音（四組，空格分開）", "解釋", "例句", 級, {選填}]
@@ -3406,7 +3406,7 @@ function ringBell(){
 }
 
 /* ---- 畫面 ---- */
-let stTimer = null, walkTimer = null, walkX = 90, walkDir = 1, turnTimer = null;
+let stTimer = null, walkTimer = null, walkX = 104, walkDir = 1, turnTimer = null;
 /* 轉身。本來是讓 scaleX 從 1 慢慢跑到 -1，中間會被壓成一條線，看起來像紙片在轉。
    改成：先切成背影並跳一下，翻面在那一瞬間完成（背面左右對稱，看不出翻過）。 */
 function faceDir(dir){
@@ -3429,7 +3429,7 @@ function setRoomState(st){
   const atDoor = () => { svg.style.setProperty("--perch", DOOR_UP); svg.style.setProperty("--far", DOOR_FAR); };
   const put = (x, dir) => { walkX = x; walkDir = dir; svg.style.setProperty("--x", x + "px"); faceDir(dir); };
   if(st === "walk"){ walkTimer = setInterval(()=>{ walkX += 14 * walkDir; if(walkX > Math.max(150, (room.clientWidth || 320) - 190)) walkDir = -1; if(walkX < 10) walkDir = 1; put(walkX, walkDir); }, 600); }
-  else if(st === "scratch") put(44, -1);              // 貓抓板靠牆站在左邊，貓走到它前面
+  else if(st === "scratch") put(60, -1);              // 貓抓板靠牆站在左邊，貓走到它前面
   else if(st === "tower"){                              // 走到貓塔下面，再跳上平台
     const w = room.clientWidth || 320;
     put(Math.max(10, Math.round(w - 121)), -1);
@@ -3442,7 +3442,7 @@ function setRoomState(st){
   else if(st === "away") put(-140, 1);
   else if(st === "bell"){ put(-42, 1); atDoor();        // 從門口走進來，走到前面
     setTimeout(()=>{ svg.style.removeProperty("--perch"); svg.style.removeProperty("--far"); put(96, 1); }, 350); }
-  else put(walkX < 10 ? 90 : walkX, walkDir);          // 做完事就待在原地，不要每次都滑回固定的位置
+  else put(walkX < 10 ? 104 : walkX, walkDir);          // 做完事就待在原地，不要每次都滑回固定的位置
 }
 function playState(st, ms){           // 暫時播一組動畫，然後回到資料決定的狀態
   clearTimeout(stTimer);
