@@ -1051,7 +1051,7 @@ a.btn{text-decoration:none}
   }
 })();
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.17-a";
+const VERSION = "2026.09.17-f";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（key 用小寫單字） =================
@@ -3988,10 +3988,18 @@ function weight(w){                    // 錯得多、沒考過的優先；熟�
   if(s.streak >= 2) return isDue(w.w) ? 3 : 0.15;
   return 1 + s.x*3 + (s.r + s.x === 0 ? 1 : 0);
 }
+/* 到複習日的先排，最多佔一輪的 REVIEW_SHARE，剩下的才照權重抽（跟成語ㄚ喵同一個做法，理由見 README「到複習日的先出」）。
+   只靠權重的話，範圍一大，答對過一次的字權重比沒考過的還低，幾乎抽不回來，間隔重複就形同虛設。 */
+const REVIEW_SHARE = .7;
+function dueList(src){                 // 考過而且到期的；拖最久的先，同一天的隨機
+  const d = w => due(w.w) || "";
+  return shuffle(src.filter(w=>{ const t = stat(w.w); return t.r + t.x > 0 && isDue(w.w); }))
+    .sort((a, b)=>d(a) < d(b) ? -1 : d(a) > d(b) ? 1 : 0);
+}
 function drawRound(source, size){
   const N = size || ROUND;
   const ws = source.slice();
-  const picked = [];
+  const picked = dueList(ws).slice(0, Math.round(Math.min(N, ws.length) * REVIEW_SHARE));
   const bag = [];
   ws.forEach(w=>{ const n = Math.max(1, Math.round(weight(w)*2)); for(let i=0;i<n;i++) bag.push(w); });
   let pool2 = shuffle(bag);
