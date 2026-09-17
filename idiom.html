@@ -852,7 +852,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
   }
 })();
 /* 版本標示：每次改版都更新，跟單字闖關同一套規矩 */
-const IDIOM_VERSION = "2026.09.17-i";
+const IDIOM_VERSION = "2026.09.17-j";
 
 /* ================= 成語題庫 =================
    格式：["成語", "注音（四組，空格分開）", "解釋", "例句", 級, {選填}]
@@ -3116,6 +3116,7 @@ function spend(it, cost){
    備份碼不帶 nm、舊版買的也沒有 —— 開這一頁的時候補上（nameBuys）。 */
 function buyName(it, cost){
   if(/^patch:/.test(it)) return `補簽券（${cost === 0 ? "爸媽送的，" : ""}補 ${+it.slice(11, 13)}/${+it.slice(14)}）`;
+  if(/^reward_/.test(it)) return "爸媽的獎勵";             // 正常在單字闖關買的時候就寫好名稱了；這是備份碼還原後的退路
   if(it === "trade_feed") return `${FEED_PER_TRADE} 顆飼料`;
   if(it === "trade_ticket") return "1 張轉蛋券";
   const f = FURN.find(x=>x.id === it);
@@ -3211,7 +3212,8 @@ ${o.gains.map(g=>`${STREAK_NAME[g.id]} ${g.from} → ${g.to} 天`).join("\n")}
 /* 家具：每個位置換的是 <svg> 裡面的內容，外層的 class（位置、大小）不動，所以 viewBox 要跟原本那個一樣。
    need 是學習門檻：分鐘夠也要練到才買得到，跟「想多養就要練更難」同一個道理。
    窗景一樣不畫粗框：那是牆上的東西，線一粗就跟貓搶戲。 */
-const SLOTS = {rug:{cls:"rmrug", name:"地毯"}, plant:{cls:"rmplant", name:"盆栽"}, win:{cls:"rmwindow", name:"窗景"}};
+const SLOTS = {rug:{cls:"rmrug", name:"地毯"}, plant:{cls:"rmplant", name:"盆栽"}, win:{cls:"rmwindow", name:"窗景"},
+               tower:{cls:"rmtower", name:"貓塔"}, board:{cls:"rmboard", name:"貓抓板"}};
 const EN_KEY = "cq-vocab-v1:full";                      // 單字闖關的答題紀錄（只讀）
 function enMastered(){                 // 跟單字闖關的 mastered() 同一條：連對 2 次且還沒到複習日
   try{
@@ -3250,6 +3252,41 @@ const FURN = [
         <circle cx="36" cy="24" r="13" fill="#FFE9A8" opacity=".95"/>
         <g fill="#EBCF86" opacity=".8"><circle cx="31" cy="20" r="3"/><circle cx="41" cy="28" r="2.2"/><circle cx="35" cy="31" r="1.5"/></g>
         <path d="M6 44 q10 -8 20 -2 q8 -6 16 0 q8 -5 16 1 v5 q0 3 -3 3 h-46 q-3 0 -3 -3 z" fill="#55618C" opacity=".8"/>`},
+  /* 貓塔：平台一定要在原本的位置（橢圓 cx44 cy30、寬 52）—— 貓跳上去的高度（--perch）和走位是照它算的。
+     貓抓板：整張 svg 會在磨爪時左右抖，底座留在 y72～78。 */
+  {id:"tower_tree", slot:"tower", name:"樹屋貓塔", m:50,
+   svg:`<rect x="8" y="92" width="72" height="10" rx="4" fill="#7A5A36" stroke="var(--out)" stroke-width="2.6"/>
+        <path d="M35 94 q4 -24 1 -50 h16 q-3 26 1 50 z" fill="#9A7045" stroke="var(--out)" stroke-width="2.6" stroke-linejoin="round"/>
+        <path d="M40 56 q3 8 0 16 M47 62 q3 9 0 20" stroke="#7A5A36" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <path d="M52 70 q10 -2 16 -10" stroke="var(--out)" stroke-width="6.4" fill="none" stroke-linecap="round"/><path d="M52 70 q10 -2 16 -10" stroke="#9A7045" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <circle cx="70" cy="56" r="7" fill="#87B887" stroke="var(--out)" stroke-width="2.2"/>
+        <path d="M4 36 q-2 -12 10 -12 q4 -10 16 -6 q8 -8 18 -2 q12 -6 18 4 q14 0 14 12 q2 12 -12 12 h-52 q-12 0 -12 -8 z" fill="#6FA36F" stroke="var(--out)" stroke-width="2.6" stroke-linejoin="round"/>
+        <ellipse cx="44" cy="30" rx="26" ry="8" fill="#A9D3A0" stroke="var(--out)" stroke-width="2.2"/>
+        <path d="M16 42 v7" stroke="var(--out)" stroke-width="2"/>
+        <circle class="tball" cx="16" cy="54" r="5.5" fill="#E07A6E" stroke="var(--out)" stroke-width="2"/>`},
+  {id:"tower_rocket", slot:"tower", name:"火箭貓塔", m:60, need:{text:"英文單字已熟練 150 個", ok:()=>enMastered() >= 150},
+   svg:`<path d="M10 102 l10 -14 h48 l10 14 z" fill="#5B6B95" stroke="var(--out)" stroke-width="2.6" stroke-linejoin="round"/>
+        <path d="M24 90 l-12 12 M64 90 l12 12" stroke="var(--out)" stroke-width="2.4"/>
+        <rect x="34" y="44" width="20" height="46" rx="3" fill="#E6EBF5" stroke="var(--out)" stroke-width="2.6"/>
+        <rect x="34" y="58" width="20" height="7" fill="#D8483C" stroke="var(--out)" stroke-width="1.8"/>
+        <circle cx="44" cy="76" r="5" fill="#8FB2E0" stroke="var(--out)" stroke-width="2"/>
+        <rect x="6" y="30" width="76" height="14" rx="7" fill="#5B6B95" stroke="var(--out)" stroke-width="2.6"/>
+        <ellipse cx="44" cy="30" rx="26" ry="8" fill="#C9D4EE" stroke="var(--out)" stroke-width="2.2"/>
+        <path d="M66 36 q8 8 6 16" stroke="var(--out)" stroke-width="2" fill="none"/>
+        <path class="tball" d="M72 46 l2.2 4.6 l5 .6 l-3.7 3.4 l1 5 l-4.5 -2.5 l-4.5 2.5 l1 -5 l-3.7 -3.4 l5 -.6 z" fill="#F2C14E" stroke="var(--out)" stroke-width="1.8" stroke-linejoin="round"/>`},
+  {id:"board_cactus", slot:"board", name:"仙人掌抓板", m:20,
+   svg:`<rect x="4" y="30" width="9" height="20" rx="4.5" fill="#6FA36F" stroke="var(--out)" stroke-width="2.4"/>
+        <rect x="31" y="22" width="9" height="22" rx="4.5" fill="#6FA36F" stroke="var(--out)" stroke-width="2.4"/>
+        <path d="M9 46 h8 M35 40 h-8" stroke="var(--out)" stroke-width="9.6" stroke-linecap="round"/><path d="M9 46 h8 M35 40 h-8" stroke="#6FA36F" stroke-width="5" stroke-linecap="round"/>
+        <rect x="13" y="6" width="18" height="68" rx="9" fill="#87B887" stroke="var(--out)" stroke-width="2.6"/>
+        <path d="M15 24 h14 M15 33 h14 M15 42 h14 M15 51 h14 M15 60 h14" stroke="#5C8F5C" stroke-width="2"/>
+        <circle cx="22" cy="6" r="3.4" fill="#F2A7B8" stroke="var(--out)" stroke-width="1.8"/>
+        <rect x="2" y="72" width="38" height="6" rx="3" fill="#D98B5F" stroke="var(--out)" stroke-width="2.2"/>`},
+  {id:"board_carrot", slot:"board", name:"胡蘿蔔抓板", m:25,
+   svg:`<path d="M16 12 q-6 -8 -2 -11 q4 1 6 9 z M22 11 q0 -9 4 -10 q3 3 0 10 z M27 12 q5 -8 9 -6 q0 5 -7 9 z" fill="#6FA36F" stroke="var(--out)" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M10 14 q12 -6 24 0 q-2 36 -12 60 q-10 -24 -12 -60 z" fill="#F08A3C" stroke="var(--out)" stroke-width="2.6" stroke-linejoin="round"/>
+        <path d="M13 26 h10 M21 36 h10 M14 46 h9 M21 56 h6" stroke="#C9661F" stroke-width="2" stroke-linecap="round"/>
+        <rect x="2" y="72" width="38" height="6" rx="3" fill="#A97F4C" stroke="var(--out)" stroke-width="2.2"/>`},
   /* 季節限定：只在 sale 列的那幾段日期賣（含頭尾），買過的永遠留著。中秋是農曆，每年日期不同，明年要賣就再加一段。 */
   {id:"win_midautumn", slot:"win", name:"中秋賞月窗", m:30, sale:[["2026-09-17", "2026-10-01"]],
    svg:`<rect x="3" y="3" width="58" height="48" rx="10" fill="#27315A" opacity=".8"/>

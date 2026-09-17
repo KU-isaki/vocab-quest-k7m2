@@ -154,6 +154,20 @@ function boot(page, sh, store){
   r.ev(`importCode(${JSON.stringify(e.ev("exportCode()"))})`);
   ok(r.ev('SHARED.buys.some(b=>b.it === "trade_feed" && b.m === 10)'), "換飼料的帳要過得了備份碼往返");
 }
+{ // 貓塔與貓抓板也能換；貓塔的平台不得移位（貓跳上去的高度是照它算的）
+  const t = boot("idiom", shared([0])); t.goCat();
+  const towers = t.ev('FURN.filter(f=>f.slot === "tower").map(f=>({id:f.id, svg:f.svg}))');
+  ok(towers.length >= 2 && towers.every(f=>/<ellipse cx="44" cy="30" rx="26" ry="8"/.test(f.svg)), "每一款貓塔的平台都要在原本的位置");
+  ok(t.ev('FURN.filter(f=>f.slot === "board").length') >= 2, "貓抓板要有得換");
+  const tower0 = t.d.querySelector("#room .rmtower").innerHTML;
+  t.click(t.$("furnList").querySelector('[data-furn="tower_tree"]'));
+  ok(t.ev('owned("tower_tree")') && t.ev("SHARED.bank.used") === 50 && t.d.querySelector("#room .rmtower").innerHTML !== tower0, "買樹屋貓塔扣 50 分鐘並換上");
+  t.click(t.$("furnList").querySelector('[data-furn="board_cactus"]'));
+  ok(t.ev('roomPick("board").id') === "board_cactus" && t.d.querySelector("#room .rmboard").children.length > 0, "貓抓板換得上");
+  t.click(t.$("furnList").querySelector('[data-furn="tower_rocket"]'));
+  ok(!t.ev('owned("tower_rocket")'), "火箭貓塔沒到英文門檻買不到");
+  ok(t.ev('FURN.every(f=>SLOTS[f.slot] && document.querySelector("#room ." + SLOTS[f.slot].cls))'), "每一款家具的位置都要在房間裡找得到");
+}
 // ================= 爸媽送的補簽券 =================
 {
   const gift = n => [{d:today, m:n, why:"感冒", kind:"patch", dev:"x", seq:1, ts:1}];

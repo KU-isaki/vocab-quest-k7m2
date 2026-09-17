@@ -804,6 +804,10 @@ a.btn{text-decoration:none}
           <div class="info-in" id="tierHint"></div>
         </details>
       </div>
+      <div id="rewardBox" hidden>
+        <div class="grouphead" style="margin-top:14px"><b>爸媽的獎勵</b><span>用存摺的分鐘換，要家長在場</span></div>
+        <div id="rewardList"></div>
+      </div>
       <a class="btn quiet" id="shopLink" href="idiom.html#shop">🛒 時間商城：補簽券、貓房家具</a>
     </div>
 
@@ -940,6 +944,14 @@ a.btn{text-decoration:none}
           <b>那幾天的題數不會變</b>，日曆上是虛線框。一樣要密碼、要原因，一次最多 3 張。</div>
       </details>
     </div>
+    <div class="qrow" style="margin-top:8px">
+      <button class="btn ghost" id="btnRewards">🏆 自訂獎勵（看電影、吃冰…）</button>
+      <details class="info"><summary>自訂獎勵是什麼？</summary>
+        <div class="info-in">你自己訂的實體獎勵和價錢，例如「週末看電影 120 分鐘」。訂好之後會出現在「進度」頁的存摺卡，
+          小孩用存摺裡的分鐘換，<b>換的時候要輸入家長密碼</b>——所以一定是你在場、你同意的。<br>
+          換了會從存摺扣分鐘、記一筆，家長頁的「這週買了什麼」看得到。最多 8 個，每個 1～600 分鐘。</div>
+      </details>
+    </div>
 
     <div class="grouphead"><b>備份進度</b><span>換手機、被清掉時用</span></div>
     <div class="qrow">
@@ -1059,7 +1071,7 @@ a.btn{text-decoration:none}
   }
 })();
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.17-i";
+const VERSION = "2026.09.17-j";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（key 用小寫單字） =================
@@ -5000,7 +5012,61 @@ function renderBank(){
         : `${Math.round(t.p*100)}% 以上 ×${t.m}`).join("　·　")
     + `<br>一天最多 ${REWARD * x} 分鐘，連續 ${BONUS_EVERY} 天多送 ${STREAK_BONUS} 分鐘`;
   renderTimer();
+  renderRewards();
 }
+
+/* ---- 爸媽自訂的實體獎勵 ----
+   定義存在 SHARED.rewards（{id, name, m}），換的時候要家長密碼（跟兌換遊戲時間同一級：都是現實世界的東西），
+   扣的是同一本分鐘存摺，記進時間商城那本購買帳（it 是 "reward_代號"、nm 直接寫名稱，獎勵之後被刪掉紀錄也看得懂）。 */
+const REWARD_MAX_N = 8, REWARD_MAX_M = 600;
+function rewards(){                    // 存檔是小孩手機上的東西，不可信：格式不對的直接不算
+  return (Array.isArray(SHARED.rewards) ? SHARED.rewards : []).filter(r=>r && typeof r.id === "string" && r.id && typeof r.name === "string" && r.name
+    && Number.isInteger(r.m) && r.m >= 1 && r.m <= REWARD_MAX_M);
+}
+function renderRewards(){
+  const rs = rewards(), left = bankLeft();
+  $("rewardBox").hidden = !rs.length;
+  $("rewardList").innerHTML = rs.map(r=>`<button class="btn ghost" data-reward="${esc(r.id)}" style="margin-top:8px" ${left < r.m ? "disabled" : ""}>🏆 ${esc(r.name)}　${r.m} 分鐘${left < r.m ? `（還差 ${r.m - left}）` : ""}</button>`).join("");
+  $("rewardList").querySelectorAll("[data-reward]").forEach(b=>b.onclick = ()=>buyReward(b.dataset.reward));
+}
+function buyReward(id){
+  const r = rewards().find(x=>x.id === id);
+  if(!r) return;
+  if(bankLeft() < r.m){ toast(`「${r.name}」要 ${r.m} 分鐘，存摺只有 ${bankLeft()} 分鐘`); return; }
+  if(!checkPin()) return;
+  if(!confirm(`用 ${r.m} 分鐘換「${r.name}」？\n存摺會變成 ${bankLeft() - r.m} 分鐘。`)) return;
+  SHARED.bank.used += r.m;
+  (SHARED.buys = SHARED.buys || []).push({d:dayKey(), ts:nowSec(), it:"reward_" + r.id, m:r.m, nm:"獎勵：" + r.name});
+  saveShared(); refreshHeader(); renderBank(); syncPush();
+  toast(`🏆 換到「${r.name}」，存摺剩 ${bankLeft()} 分鐘`);
+}
+$("btnRewards").onclick = () => {
+  if(!checkPin()) return;
+  const rs = rewards();
+  const t = prompt((rs.length ? "現在有：\n" + rs.map((r, i)=>`${i + 1}. ${r.name}（${r.m} 分鐘）`).join("\n") + "\n\n" : "")
+    + (rs.length < REWARD_MAX_N ? `輸入新獎勵的名稱（${WHY_MAX} 字以內）` : `已經有 ${REWARD_MAX_N} 個了`)
+    + (rs.length ? "，或輸入編號刪掉那一個：" : "："));
+  if(t === null || !String(t).trim()) return;
+  const n = /^\d+$/.test(String(t).trim()) ? +String(t).trim() : 0;
+  if(n){
+    const r = rs[n - 1];
+    if(!r){ toast("沒有這個編號"); return; }
+    if(!confirm(`刪掉「${r.name}」？\n（已經換過的紀錄不受影響）`)) return;
+    SHARED.rewards = rs.filter(x=>x !== r);
+    saveShared(); renderBank(); toast(`已刪掉「${r.name}」`);
+    return;
+  }
+  if(rs.length >= REWARD_MAX_N){ toast(`最多 ${REWARD_MAX_N} 個，先刪掉一個`); return; }
+  const name = cleanWhy(t);
+  if(!name){ toast("名稱不能空白"); return; }
+  const mt = prompt(`「${name}」要幾分鐘？（1～${REWARD_MAX_M}）`);
+  if(mt === null) return;
+  const m = Math.floor(+String(mt).trim());
+  if(!Number.isFinite(m) || m < 1 || m > REWARD_MAX_M){ toast(`請輸入 1 到 ${REWARD_MAX_M} 之間的數字`); return; }
+  SHARED.rewards = rs.concat([{id:nowSec().toString(36) + Math.floor(Math.random() * 1296).toString(36), name, m}]);
+  saveShared(); renderBank();
+  toast(`🏆 已新增「${name}」${m} 分鐘，在「進度」頁的存摺卡`);
+};
 
 /* 設定頁：目前只有密碼狀態要跟著資料變，其他都是按了就生效的開關 */
 function renderSettings(){
@@ -5199,7 +5265,8 @@ function packDeck(o){                  // 緊湊格式，備份碼才貼得進�
   const ev = e => `${e.dev || ""}:${+e.seq || 0}:${+e.ts || 0}`;   // 事件身分：哪台、第幾號、什麼時候
   const gf = (o.gifts || []).map(g=>`${sd(g.d)}:${g.kind === "feed" ? "f" : g.kind === "ticket" ? "t" : g.kind === "patch" ? "p" : ""}${+g.m||0}:${ev(g)}:${g.why||""}`).join(";");
   const cp = (o.coupons || []).map(c=>`${sd(c.d)}:${sd(c.on)}:${ev(c)}:${c.why||""}`).join(";");
-  return [o.done||0, o.right||0, b.earned||0, b.used||0, b.bonus||0, st, dy, gf, cp, fd, pt, by].join("|");
+  const rw = (Array.isArray(o.rewards) ? o.rewards : []).map(r=>`${bkId(r.id)}:${+r.m||0}:${cleanWhy(r.name)}`).join(";");   // 第 13 欄：爸媽自訂的獎勵
+  return [o.done||0, o.right||0, b.earned||0, b.used||0, b.bonus||0, st, dy, gf, cp, fd, pt, by, rw].join("|");
 }
 function unpackDeck(str, ver){
   const legacy = ver === 2;            // CQ2 的每天只記了「有沒有達標」，分鐘數已失傳
@@ -5253,6 +5320,14 @@ function unpackDeck(str, ver){
       if(k && v) (pet.room = pet.room || {})[k] = v;
     });
     o.pet = pet;
+  }
+  if(p[12]){
+    o.rewards = [];
+    p[12].split(";").filter(Boolean).forEach(seg=>{
+      const f = cut(seg, 2);
+      if(!f || !f[0] || !(+f[1] > 0) || !cleanWhy(f[2])) return;
+      o.rewards.push({id:bkId(f[0]), m:Math.min(600, Math.floor(+f[1])), name:cleanWhy(f[2])});
+    });
   }
   if(p[11]){
     o.buys = [];
@@ -5319,6 +5394,7 @@ function importCode(code){
         if(o.feed) SHARED.feed = o.feed;
         if(o.pet) SHARED.pet = o.pet;
         if(o.buys) SHARED.buys = o.buys;
+        if(o.rewards) SHARED.rewards = o.rewards;
         fixStamp(SHARED.gifts, "bk"); fixStamp(SHARED.coupons, "bk");
         saveShared(); restored++; return;
       }
