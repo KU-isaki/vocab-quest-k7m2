@@ -7,7 +7,7 @@
 
    CACHE 的版本號每次改版都要換，舊快取才會被清掉。 */
 
-const CACHE = "vocab-quest-v45";
+const CACHE = "vocab-quest-v46";
 const ASSETS = [
   "./",
   "./index.html",

@@ -851,7 +851,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
   }
 })();
 /* 版本標示：每次改版都更新，跟單字闖關同一套規矩 */
-const IDIOM_VERSION = "2026.09.17-f";
+const IDIOM_VERSION = "2026.09.17-g";
 
 /* ================= 成語題庫 =================
    格式：["成語", "注音（四組，空格分開）", "解釋", "例句", 級, {選填}]
@@ -3200,8 +3200,23 @@ const FURN = [
         <rect x="3" y="3" width="58" height="48" rx="10" fill="none" stroke="#8C97BD" stroke-width="1.6" opacity=".7"/>
         <circle cx="36" cy="24" r="13" fill="#FFE9A8" opacity=".95"/>
         <g fill="#EBCF86" opacity=".8"><circle cx="31" cy="20" r="3"/><circle cx="41" cy="28" r="2.2"/><circle cx="35" cy="31" r="1.5"/></g>
-        <path d="M6 44 q10 -8 20 -2 q8 -6 16 0 q8 -5 16 1 v5 q0 3 -3 3 h-46 q-3 0 -3 -3 z" fill="#55618C" opacity=".8"/>`}
+        <path d="M6 44 q10 -8 20 -2 q8 -6 16 0 q8 -5 16 1 v5 q0 3 -3 3 h-46 q-3 0 -3 -3 z" fill="#55618C" opacity=".8"/>`},
+  /* 季節限定：只在 sale 列的那幾段日期賣（含頭尾），買過的永遠留著。中秋是農曆，每年日期不同，明年要賣就再加一段。 */
+  {id:"win_midautumn", slot:"win", name:"中秋賞月窗", m:30, sale:[["2026-09-17", "2026-10-01"]],
+   svg:`<rect x="3" y="3" width="58" height="48" rx="10" fill="#27315A" opacity=".8"/>
+        <rect x="3" y="3" width="58" height="48" rx="10" fill="none" stroke="#8C97BD" stroke-width="1.6" opacity=".7"/>
+        <circle cx="33" cy="25" r="15" fill="#FFE9A8" opacity=".96"/>
+        <g fill="#E3C272" opacity=".9"><ellipse cx="35" cy="30" rx="6.2" ry="4.6"/><circle cx="29" cy="25.5" r="3.4"/>
+          <ellipse cx="27.6" cy="19.5" rx="1.3" ry="4" transform="rotate(-12 27.6 19.5)"/><ellipse cx="31" cy="19.8" rx="1.3" ry="4" transform="rotate(10 31 19.8)"/>
+          <circle cx="41" cy="31" r="1.7"/></g>
+        <g stroke="#C9B49C" stroke-width=".9"><path d="M11 3 v8 M54 3 v6"/></g>
+        <g fill="#D8483C" stroke="#8E2A22" stroke-width=".8"><ellipse cx="11" cy="15.5" rx="4.2" ry="5"/><ellipse cx="54" cy="13" rx="3.6" ry="4.4"/></g>
+        <g fill="#F2C14E"><rect x="8.6" y="10" width="4.8" height="1.5" rx=".7"/><rect x="8.6" y="19.5" width="4.8" height="1.5" rx=".7"/><rect x="52" y="8.2" width="4" height="1.3" rx=".6"/><rect x="52" y="16.6" width="4" height="1.3" rx=".6"/>
+          <path d="M11 21 v4 M54 18 v3.5" stroke="#F2C14E" stroke-width="1"/></g>
+        <path d="M6 45 q10 -7 20 -2 q8 -5 16 0 q8 -4 16 1 v4 q0 3 -3 3 h-46 q-3 0 -3 -3 z" fill="#55618C" opacity=".85"/>`}
 ];
+const onSale = (f, day) => !f.sale || f.sale.some(([a, b])=>(day || dayKey()) >= a && (day || dayKey()) <= b);
+const saleEnd = f => { const w = (f.sale || []).find(([a, b])=>dayKey() >= a && dayKey() <= b); return w ? `${+w[1].slice(5, 7)}/${+w[1].slice(8)}` : ""; };
 const furnOf = id => FURN.find(f=>f.id === id) || null;
 const owned = id => (SHARED.buys || []).some(b=>b.it === id);
 const slotEl = s => $("room").querySelector("." + SLOTS[s].cls);
@@ -3216,6 +3231,7 @@ function pickFurn(id){
   const f = furnOf(id), p = pet();
   if(!f || !p) return;
   if(!owned(id)){
+    if(!onSale(f)){ toast(`${f.name}是季節限定，現在沒有賣`); return; }
     if(f.need && !f.need.ok()){ toast(`🔒 ${f.name}要先做到：${f.need.text}`); return; }
     if(bankLeft() < f.m){ toast(`${f.name}要 ${f.m} 分鐘，存摺只有 ${bankLeft()} 分鐘`); return; }
     if(!confirm(`用 ${f.m} 分鐘遊戲時間買「${f.name}」？
@@ -3238,10 +3254,10 @@ function renderShop(){
     : `${cost} 分鐘 · 補 ${+o.k.slice(5, 7)}/${+o.k.slice(8)}，${o.gains.map(g=>`${STREAK_NAME[g.id]} ${g.from}→${g.to} 天`).join("、")}`;
   $("furnBox").hidden = !pet() || !cat();
   if($("furnBox").hidden) return;
-  $("furnList").innerHTML = FURN.map(f=>{
+  $("furnList").innerHTML = FURN.filter(f=>owned(f.id) || onSale(f)).map(f=>{      // 限定款過了期間、又沒買過的就不列
     const has = owned(f.id), on = roomPick(f.slot) === f, lock = !has && f.need && !f.need.ok();
     return `<button class="btn quiet" data-furn="${f.id}" aria-pressed="${on}">${lock ? "🔒 " : on ? "✓ " : ""}${SLOTS[f.slot].name}：${esc(f.name)}<small>${
-      on ? "使用中 · 再按一次換回原本的" : has ? "已擁有 · 按一下換上" : `${f.m} 分鐘` + (f.need ? `${lock ? "" : " ✓"} · ${esc(f.need.text)}` : "")}</small></button>`;
+      on ? "使用中 · 再按一次換回原本的" : has ? "已擁有 · 按一下換上" : `${f.m} 分鐘` + (f.sale ? ` · 🎑 限定到 ${saleEnd(f)}` : "") + (f.need ? `${lock ? "" : " ✓"} · ${esc(f.need.text)}` : "")}</small></button>`;
   }).join("");
   $("furnList").querySelectorAll("[data-furn]").forEach(b=>b.onclick = ()=>pickFurn(b.dataset.furn));
   applyRoom();

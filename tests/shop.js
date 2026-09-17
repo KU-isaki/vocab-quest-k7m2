@@ -91,7 +91,7 @@ function boot(page, sh, store){
 // ================= 家具 =================
 {
   const t = boot("idiom", shared([0])); t.goCat();
-  ok(!t.$("furnBox").hidden && t.$("furnList").querySelectorAll("[data-furn]").length === t.ev("FURN.length"), "有貓就要列出家具");
+  ok(!t.$("furnBox").hidden && t.$("furnList").querySelectorAll("[data-furn]").length === t.ev("FURN.filter(f=>owned(f.id) || onSale(f)).length"), "有貓就要列出家具（限定款只在期間內）");
   const rug0 = t.d.querySelector("#room .rmrug").innerHTML;
   const btn = id => t.$("furnList").querySelector(`[data-furn="${id}"]`);
   t.click(btn("rug_stripe"));
@@ -124,6 +124,21 @@ function boot(page, sh, store){
   const r = boot("index", shared([]));
   r.ev(`importCode(${JSON.stringify(code)})`);
   ok(r.ev("SHARED.pet.room.win") === "win_moon" && r.ev('SHARED.buys.some(b=>b.it === "win_moon")'), `房間擺設與家具往返後要一致, 實得 ${JSON.stringify(r.ev("SHARED.pet.room"))}`);
+}
+{ // 季節限定：只在期間內賣（含頭尾）；過期沒買過的不列、也買不到；買過的永遠留著
+  const t = boot("idiom", shared([0])); t.goCat();
+  const f = 'furnOf("win_midautumn")';
+  ok(t.ev(`onSale(${f}, "2026-09-17")`) && t.ev(`onSale(${f}, "2026-10-01")`), "期間頭尾兩天都要買得到");
+  ok(!t.ev(`onSale(${f}, "2026-09-16")`) && !t.ev(`onSale(${f}, "2026-10-02")`) && !t.ev(`onSale(${f}, "2027-09-20")`), "期間外不賣（明年要賣得另外加一段）");
+  ok(t.ev('onSale(furnOf("rug_stripe"), "2030-01-01")'), "一般款隨時都賣");
+  t.ev('furnOf("win_midautumn").sale = [["2020-01-01", "2020-01-02"]]; renderPet();');          // 假裝已經過期
+  ok(!t.$("furnList").querySelector('[data-furn="win_midautumn"]'), "過期又沒買過的不列出來");
+  t.ev('pickFurn("win_midautumn")');
+  ok(!t.ev('owned("win_midautumn")') && t.ev("SHARED.bank.used") === 0, "過期的不得買（就算直接呼叫）");
+  t.ev('SHARED.buys = [{d:dayKey(), ts:1, it:"win_midautumn", m:30}]; renderPet();');
+  ok(!!t.$("furnList").querySelector('[data-furn="win_midautumn"]'), "買過的過期後還是列著");
+  t.ev('pickFurn("win_midautumn")');
+  ok(t.ev('roomPick("win")') && t.ev('roomPick("win").id') === "win_midautumn" && t.ev("SHARED.bank.used") === 0, "買過的過期後照樣換得上、不再扣錢");
 }
 { // 沒有貓：商城還在、家具不出現
   const sh = shared([0, 2, 3]); delete sh.pet;
