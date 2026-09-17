@@ -1051,7 +1051,7 @@ a.btn{text-decoration:none}
   }
 })();
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.17-f";
+const VERSION = "2026.09.17-h";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（key 用小寫單字） =================
@@ -5404,6 +5404,7 @@ function syncSummary(){
           gift:giftTotal(), left:bankLeft()},
     gifts:(SHARED.gifts || []).slice(-30),
     coupons:(SHARED.coupons || []).slice(-30),
+    buys:(SHARED.buys || []).slice(-30).map(b=>({d:b.d, m:+b.m || 0, nm:String(b.nm || b.it || "").slice(0, 30)})),   // 時間商城買了什麼（名稱是成語ㄚ喵那頁寫進去的）
     decks,
     feed:SHARED.feed || null,                       // 成語ㄚ喵的飼料帳
     pet:(()=>{                                      // 貓：只帶家長看得懂的幾個數字

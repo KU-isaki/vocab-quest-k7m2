@@ -28,6 +28,7 @@ const LIST = {children:[
     bank:{earned:120, bonus:30, used:60, gift:25, left:115},
     gifts:[{d:D2, m:30, why:"幫忙洗碗"}, {d:D2, m:-5, why:"亂發脾氣"}, {d:D, m:20, why:"倒垃圾", kind:"feed"}, {d:D, m:1, why:"月考", kind:"ticket"}],
     coupons:[{d:D2, on:D, why:"考試進步"}],
+    buys:[{d:D, m:30, nm:"窗景：中秋賞月窗"}, {d:D2, m:20, nm:"補簽券（補 9/15）"}, {d:dayAgo(20), m:15, nm:"地毯：條紋地毯"}],
     decks:{full:{label:"國中必備 1200", total:1207, done:200, right:170, mastered:60,
                    weak:[{w:"honest", zh:"誠實的", x:4}, {w:"nurse", zh:"護士", x:2}]}},
     feed:{earned:14, used:3, bonus:0, tickets:1},
@@ -98,6 +99,10 @@ ok(/連續天數/.test(txt) && />3</.test(t.d.body.innerHTML), "要顯示連續�
 ok(/115/.test(txt), "要顯示存摺剩餘");
 ok(/唯讀/.test(txt), "畫面上要標明這是唯讀的");
 ok(t.d.querySelectorAll(".d.gift").length > 0, "有送獎勵的日子要在圖上標出來");
+ok(/這週買了什麼/.test(txt) && /中秋賞月窗/.test(txt) && /補簽券/.test(txt), "要看得到這週在時間商城買了什麼");
+ok(/換了 2 樣東西，共 50 分鐘/.test(txt), "這週的筆數與分鐘要加總");
+ok(!/條紋地毯/.test(txt), "超過 7 天的不算這週");
+ok(/這週沒有在時間商城買東西/.test(txt), "沒買東西的小孩要明講（二寶）");
 ok(/2026\.09\.02-b/.test(txt), "要看得到小孩那台的版本");
 // 成語ㄚ喵
 ok(/成語ㄚ喵/.test(txt), "要有成語ㄚ喵這一段");
@@ -146,6 +151,7 @@ const EVIL = {children:[{child:"壞資料", dev:"x", at:1, sum:{
   bank:{earned:BOOM, bonus:BOOM, used:BOOM, gift:BOOM, left:BOOM},
   gifts:[{d:D, m:BOOM, why:BOOM}],
   coupons:[{d:D, on:D, why:BOOM}],
+  buys:[{d:D, m:BOOM, nm:BOOM}, {d:BOOM, m:BOOM, nm:BOOM}, BOOM, null],
   decks:{full:{label:BOOM, total:BOOM, done:BOOM, right:BOOM, mastered:BOOM,
                  weak:[{w:BOOM, zh:BOOM, x:BOOM}]}},
   feed:{earned:BOOM, used:BOOM, bonus:BOOM, tickets:BOOM},

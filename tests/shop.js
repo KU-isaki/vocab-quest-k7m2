@@ -140,6 +140,20 @@ function boot(page, sh, store){
   t.ev('pickFurn("win_midautumn")');
   ok(t.ev('roomPick("win")') && t.ev('roomPick("win").id') === "win_midautumn" && t.ev("SHARED.bank.used") === 0, "買過的過期後照樣換得上、不再扣錢");
 }
+{ // 家長頁要看得到買了什麼：買的當下寫進名稱；舊帳（沒有名稱）開頁面時補上；摘要帶出去
+  const old = [{d:today, ts:1, it:"rug_stripe", m:15}, {d:today, ts:2, it:"patch:" + daysAgo(9), m:20}];
+  const t = boot("idiom", shared([0], {buys:old})); t.goCat();
+  ok(t.ev("SHARED.buys[0].nm") === "地毯：條紋地毯" && /^補簽券（補 \d+\/\d+）$/.test(t.ev("SHARED.buys[1].nm")), `舊帳要補上名稱, 實得 ${JSON.stringify(t.ev("SHARED.buys.map(b=>b.nm)"))}`);
+  t.click(t.$("btnTradeFeed"));
+  ok(t.ev("SHARED.buys.length") === 3 && t.ev("SHARED.buys[2].it") === "trade_feed" && t.ev("SHARED.buys[2].nm") === "10 顆飼料" && t.ev("SHARED.buys[2].m") === 10, "分鐘換飼料也要記進購買帳");
+  const e = boot("index", JSON.parse(t.w.localStorage.getItem("cq-shared-v1")));
+  const sum = e.ev("syncSummary().buys");
+  ok(sum.length === 3 && sum[0].nm === "地毯：條紋地毯" && sum[0].m === 15 && !("ts" in sum[0]), `雲端摘要要帶購買紀錄（名稱、分鐘、日期）, 實得 ${JSON.stringify(sum[0])}`);
+  // 換飼料的帳也要過得了備份碼往返
+  const r = boot("index", shared([]));
+  r.ev(`importCode(${JSON.stringify(e.ev("exportCode()"))})`);
+  ok(r.ev('SHARED.buys.some(b=>b.it === "trade_feed" && b.m === 10)'), "換飼料的帳要過得了備份碼往返");
+}
 { // 沒有貓：商城還在、家具不出現
   const sh = shared([0, 2, 3]); delete sh.pet;
   const t = boot("idiom", sh); t.goCat();

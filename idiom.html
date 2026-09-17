@@ -851,7 +851,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
   }
 })();
 /* 版本標示：每次改版都更新，跟單字闖關同一套規矩 */
-const IDIOM_VERSION = "2026.09.17-g";
+const IDIOM_VERSION = "2026.09.17-h";
 
 /* ================= 成語題庫 =================
    格式：["成語", "注音（四組，空格分開）", "解釋", "例句", 級, {選填}]
@@ -3098,7 +3098,7 @@ function tradeMinutes(kind){
   const what = kind === "ticket" ? "1 張轉蛋券" : `${FEED_PER_TRADE} 顆飼料`;
   if(!confirm(`用 ${cost} 分鐘遊戲時間換${what}？
 （自己練 30 題標準模式也有 10 顆，比較划算）`)) return;
-  SHARED.bank.used = (SHARED.bank.used || 0) + cost;
+  spend(kind === "ticket" ? "trade_ticket" : "trade_feed", cost);      // 也記進購買帳，家長頁才看得到分鐘花去哪
   const F = feedLedger();
   if(kind === "ticket") F.tickets = (F.tickets || 0) + 1; else F.bonus = (F.bonus || 0) + FEED_PER_TRADE;
   diary("trade", `用 ${cost} 分鐘遊戲時間換了${what}`);
@@ -3109,7 +3109,21 @@ function tradeMinutes(kind){
    「擁有哪些家具」「哪幾天補簽過」都從這本帳推出來，不另外存一份，才不會兩邊對不起來。 */
 function spend(it, cost){
   SHARED.bank.used = (SHARED.bank.used || 0) + cost;
-  (SHARED.buys = SHARED.buys || []).push({d:dayKey(), ts:nowSec(), it, m:cost});
+  (SHARED.buys = SHARED.buys || []).push({d:dayKey(), ts:nowSec(), it, m:cost, nm:buyName(it)});
+}
+/* 家長頁的「這週買了什麼」要顯示名稱，但家具名稱只有這一頁知道，所以買的當下就把名稱寫進帳裡（nm）。
+   備份碼不帶 nm、舊版買的也沒有 —— 開這一頁的時候補上（nameBuys）。 */
+function buyName(it){
+  if(/^patch:/.test(it)) return `補簽券（補 ${+it.slice(11, 13)}/${+it.slice(14)}）`;
+  if(it === "trade_feed") return `${FEED_PER_TRADE} 顆飼料`;
+  if(it === "trade_ticket") return "1 張轉蛋券";
+  const f = FURN.find(x=>x.id === it);
+  return f ? `${SLOTS[f.slot].name}：${f.name}` : it;
+}
+function nameBuys(){
+  let n = 0;
+  (SHARED.buys || []).forEach(b=>{ if(b && !b.nm){ b.nm = buyName(b.it); n++; } });
+  if(n) saveShared();
 }
 /* 補簽券：只能補最近 PATCH_BACK 天內的洞、任兩次補簽至少隔 PATCH_GAP 天（所以 7 天紅利至少要實練 6 天），
    同一個月第二張起每張多 PATCH_STEP 分鐘。補了要真的接得起來（連續至少 +2）才賣，不賣沒用的券。 */
@@ -3634,7 +3648,7 @@ function refreshHeader(){
 })();
 
 /* ================= 啟動 ================= */
-loadShared(); loadS();
+loadShared(); loadS(); nameBuys();
 $("heroVer").textContent = "版本 " + IDIOM_VERSION;
 $("verline").textContent = "成語ㄚ喵 · 版本 " + IDIOM_VERSION + " · 題庫 " + IDIOMS.length + " 條";
 renderPickers(); refreshHeader(); renderList(); renderStats(); chainNext(null);

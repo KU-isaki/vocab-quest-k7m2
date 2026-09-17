@@ -185,6 +185,17 @@ function giftList(sum){
     return `<li><span class="d2">${esc(md(r.d))}</span>${tag}　${esc(r.why || "")}</li>`;
   }).join("") + `</ul>`;
 }
+/* 時間商城：最近 7 天把分鐘花去哪。名稱是小孩裝置傳上來的字串，一律當純文字。 */
+function buyList(sum){
+  const t = new Date(); t.setHours(0,0,0,0); t.setDate(t.getDate() - 6);
+  const from = t.getFullYear() + "-" + String(t.getMonth()+1).padStart(2,"0") + "-" + String(t.getDate()).padStart(2,"0");
+  const rows = (Array.isArray(sum.buys) ? sum.buys : []).filter(b=>b && typeof b === "object" && /^\d{4}-\d\d-\d\d$/.test(b.d) && b.d >= from)
+               .sort((a,b)=>String(b.d).localeCompare(String(a.d)));
+  if(!rows.length) return `<p class="muted">這週沒有在時間商城買東西。</p>`;
+  const total = rows.reduce((a, b)=>a + num(b.m), 0);
+  return `<p class="muted">這週用遊戲時間換了 ${rows.length} 樣東西，共 ${total} 分鐘。</p>
+    <ul class="g">` + rows.map(b=>`<li><span class="d2">${esc(md(b.d))}</span><span class="minus">−${num(b.m)} 分鐘</span>　${esc(String(b.nm || "").slice(0, 30))}</li>`).join("") + `</ul>`;
+}
 function weakList(sum){
   const decks = (sum.decks && typeof sum.decks === "object") ? sum.decks : {};
   const ks = Object.keys(decks).filter(k=>decks[k] && Array.isArray(decks[k].weak) && decks[k].weak.length);
@@ -266,7 +277,9 @@ function card(c, i){
         <div class="stat"><b>${num(b.gift)}</b><span>爸媽送的（分）</span></div>
         <div class="stat"><b>${num(b.used)}</b><span>已用掉（分）</span></div>
       </div>
-      ${giftList(sum)}`
+      ${giftList(sum)}
+      <h3>這週買了什麼</h3>
+      ${buyList(sum)}`
   };
   const secs = SECS.filter(([k])=>body[k]);
   const sel = secs.some(([k])=>k === curSec) ? curSec : "sum";
