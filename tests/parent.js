@@ -16,7 +16,11 @@ ok((html.match(/fetch\(/g) || []).length === 2, "只該有兩個 fetch（讀清�
 ok(!/["'`]\/s\/["'`+]|\+\s*"\/s\/"/.test(html), "不得出現寫入端點 /s/");
 
 // ---------- ② 行為 ----------
-const D = "2026-09-02", D2 = "2026-09-01";
+/* 日期要跟著今天走：家長頁的長條圖只畫最近 14 天。以前寫死 2026-09-01／02，
+   到 9/16 那兩天滑出圖外，「有送獎勵的日子要標出來」就開始失敗 —— 頁面沒壞，是測試過期了。 */
+const dayAgo = n => { const t = new Date(); t.setDate(t.getDate() - n);
+  return t.getFullYear() + "-" + String(t.getMonth()+1).padStart(2,"0") + "-" + String(t.getDate()).padStart(2,"0"); };
+const D = dayAgo(1), D2 = dayAgo(2);
 const LIST = {children:[
   {child:"大寶", dev:"aa11", at:Math.floor(Date.now()/1000) - 120, sum:{
     v:"2026.09.02-b", who:"大寶", streak:3,
