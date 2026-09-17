@@ -180,7 +180,7 @@ function giftList(sum){
   return `<ul class="g">` + rows.map(r=>{
     const tag = r.t === "c"
       ? `<span class="cp">${r.used ? "加倍券 ×2 用掉" : "加倍券（還沒用）"}</span>`
-      : (()=>{ const unit = r.kind === "feed" ? "顆飼料" : r.kind === "ticket" ? "張轉蛋券" : "分鐘";
+      : (()=>{ const unit = r.kind === "feed" ? "顆飼料" : r.kind === "ticket" ? "張轉蛋券" : r.kind === "patch" ? "張補簽券" : "分鐘";
                return num(r.m) > 0 ? `<span class="plus">送 ${num(r.m)} ${unit}</span>` : `<span class="minus">沒收 ${-num(r.m)} ${unit}</span>`; })();
     return `<li><span class="d2">${esc(md(r.d))}</span>${tag}　${esc(r.why || "")}</li>`;
   }).join("") + `</ul>`;

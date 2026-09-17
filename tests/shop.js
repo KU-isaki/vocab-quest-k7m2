@@ -154,6 +154,52 @@ function boot(page, sh, store){
   r.ev(`importCode(${JSON.stringify(e.ev("exportCode()"))})`);
   ok(r.ev('SHARED.buys.some(b=>b.it === "trade_feed" && b.m === 10)'), "換飼料的帳要過得了備份碼往返");
 }
+// ================= 爸媽送的補簽券 =================
+{
+  const gift = n => [{d:today, m:n, why:"感冒", kind:"patch", dev:"x", seq:1, ts:1}];
+  // 連缺三天（感冒）、手上 3 張：一次補三天，不花分鐘
+  let t = boot("idiom", shared([0, 4, 5, 6, 7], {gifts:gift(3)})); t.goCat();
+  ok(t.ev("patchStock()") === 3 && t.ev("patchOffer()") === null, "買的補不了連缺三天，但有 3 張爸媽送的");
+  const fo = t.ev("freeOffer()");
+  ok(fo && fo.ks.length === 3 && fo.ks[0] === daysAgo(1) && fo.ks[2] === daysAgo(3), `要提議用 3 張補昨天到大前天, 實得 ${JSON.stringify(fo && fo.ks)}`);
+  ok(!t.$("btnPatch").disabled && /爸媽送的 3 張/.test(t.$("patchHint").textContent), "按鈕要亮、要講是爸媽送的");
+  t.click(t.$("btnPatch"));
+  ok(t.ev("streakDays()") === 8 && t.ev("SHARED.bank.used") === 0 && t.ev("patchStock()") === 0, `連續接回 8 天、不扣分鐘、券用完, 實得 ${t.ev("streakDays()")} / ${t.ev("SHARED.bank.used")} / ${t.ev("patchStock()")}`);
+  ok(t.ev("SHARED.buys.length") === 3 && t.ev("SHARED.buys.every(b=>b.m === 0 && /爸媽送的/.test(b.nm))"), "三天各記一筆、0 分鐘、名稱標明是爸媽送的");
+  ok(!t.ev(`SHARED.days["${daysAgo(2)}"]`), "一樣不得偽造練習紀錄");
+  ok(t.ev("patchCost()") === 20, "爸媽送的不算進同月漲價");
+  // 兩頁要算得一樣、備份碼要帶得走（贈送的 p 前綴、m 為 0 的補簽）
+  const e = boot("index", JSON.parse(t.w.localStorage.getItem("cq-shared-v1")));
+  ok(e.ev("streakDays()") === 8, "單字闖關算出來也要是 8 天");
+  ok(e.ev("giftTotal()") === 0, "補簽券的贈送不得混進分鐘存摺");
+  const r = boot("index", shared([]));
+  r.ev(`importCode(${JSON.stringify(e.ev("exportCode()"))})`);
+  ok(r.ev('SHARED.gifts.some(g=>g.kind === "patch" && g.m === 3)') && r.ev('SHARED.buys.filter(b=>/^patch:/.test(b.it) && b.m === 0).length') === 3, "贈送與使用紀錄往返後要一致（庫存才不會還原後又長回來）");
+  const back = boot("idiom", JSON.parse(r.w.localStorage.getItem("cq-shared-v1")));
+  ok(back.ev("patchStock()") === 0, "還原之後用掉的券不得復活");
+
+  // 張數不夠接不回去：不得消耗
+  t = boot("idiom", shared([0, 4, 5, 6], {gifts:gift(2)})); t.goCat();
+  ok(t.ev("freeOffer()") === null && t.$("btnPatch").disabled && /有 2 張爸媽送的/.test(t.$("patchHint").textContent), "缺三天只有 2 張：接不回去就不給用，但要讓小孩知道手上有券");
+  // 只缺一天：只用 1 張，而且不受「7 天內補過」限制
+  t = boot("idiom", shared([0, 2, 3], {gifts:gift(2), buys:[{d:daysAgo(5), ts:1, it:"patch:" + daysAgo(5), m:20}]})); t.goCat();
+  ok(t.ev("patchOffer()") === null && (t.ev("freeOffer()") || {ks:[]}).ks.length === 1, "7 天內買過補簽也照樣能用爸媽送的，只用 1 張");
+  t.click(t.$("btnPatch"));
+  ok(t.ev("patchStock()") === 1 && t.ev("SHARED.bank.used") === 0, "用掉 1 張、剩 1 張");
+  // 沒有缺口：不得消耗
+  t = boot("idiom", shared([0, 1, 2], {gifts:gift(1)})); t.goCat();
+  ok(t.ev("freeOffer()") === null && t.ev("patchStock()") === 1, "沒斷就不用、券留著");
+}
+{ // 設定頁：送補簽券要密碼流程、要原因、記進贈送帳
+  const e = boot("index", shared([0]));
+  const answers = ["2", "感冒請假"]; e.w.prompt = () => answers.shift();
+  e.click(e.$("btnGiftPatch"));
+  ok(e.ev('SHARED.gifts.some(g=>g.kind === "patch" && g.m === 2 && g.why === "感冒請假")'), `送 2 張要記進贈送帳, 實得 ${JSON.stringify(e.ev("SHARED.gifts"))}`);
+  ok(e.ev("bankLeft()") === 200, "送補簽券不得動到分鐘存摺");
+  ok(/補簽券/.test(e.ev(`dayNote("${today}", SHARED.days["${today}"])`)), "日曆點那天要看得到送了補簽券");
+  e.w.prompt = () => "9"; e.click(e.$("btnGiftPatch"));
+  ok(e.ev('SHARED.gifts.filter(g=>g.kind === "patch").length') === 1, "一次最多 3 張，超過不得送出");
+}
 { // 沒有貓：商城還在、家具不出現
   const sh = shared([0, 2, 3]); delete sh.pet;
   const t = boot("idiom", sh); t.goCat();

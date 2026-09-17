@@ -787,6 +787,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
             <b>補簽券</b>：只能補昨天或前天，而且要補了真的接得回去才買得到。補一次之後 7 天內不能再補；
             一張 20 分鐘，同一個月第二張起每張多 10 分鐘。日曆、英文連續達標、成語連續達標三條一起接回來，
             但<b>那天的題數不會變</b>，補簽的那天本身也不發連續紅利。<br>
+          <b>爸媽送的補簽券</b>（生病、出遠門用）：不用花分鐘、可以連補好幾天，一天一張；有的話會先用它。<br>
             <b>家具</b>：純裝飾。有 🔒 的除了分鐘還要練到門檻才買得到。</div>
         </details>
       </div>
@@ -851,7 +852,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
   }
 })();
 /* 版本標示：每次改版都更新，跟單字闖關同一套規矩 */
-const IDIOM_VERSION = "2026.09.17-h";
+const IDIOM_VERSION = "2026.09.17-i";
 
 /* ================= 成語題庫 =================
    格式：["成語", "注音（四組，空格分開）", "解釋", "例句", 級, {選填}]
@@ -2494,8 +2495,8 @@ const HAS = {
 };
 const isPatch = b => /^patch:/.test(b.it || "");
 const patchedDays = () => new Set((SHARED.buys || []).filter(isPatch).map(b=>b.it.slice(6)));
-function runLen(has, extra){           // extra：假設這天也補了，連續會變幾天（商城試算用）
-  const pd = patchedDays(), ok = k => has(k) || pd.has(k) || k === extra;
+function runLen(has, extra){           // extra：假設這幾天也補了，連續會變幾天（商城試算用；一天或一串都行）
+  const pd = patchedDays(), ex = extra ? [].concat(extra) : [], ok = k => has(k) || pd.has(k) || ex.includes(k);
   let n = 0, t = new Date();
   if(!ok(dayKey(t))) t.setDate(t.getDate() - 1);
   while(ok(dayKey(t))){ n++; t.setDate(t.getDate() - 1); }
@@ -3109,12 +3110,12 @@ function tradeMinutes(kind){
    「擁有哪些家具」「哪幾天補簽過」都從這本帳推出來，不另外存一份，才不會兩邊對不起來。 */
 function spend(it, cost){
   SHARED.bank.used = (SHARED.bank.used || 0) + cost;
-  (SHARED.buys = SHARED.buys || []).push({d:dayKey(), ts:nowSec(), it, m:cost, nm:buyName(it)});
+  (SHARED.buys = SHARED.buys || []).push({d:dayKey(), ts:nowSec(), it, m:cost, nm:buyName(it, cost)});
 }
 /* 家長頁的「這週買了什麼」要顯示名稱，但家具名稱只有這一頁知道，所以買的當下就把名稱寫進帳裡（nm）。
    備份碼不帶 nm、舊版買的也沒有 —— 開這一頁的時候補上（nameBuys）。 */
-function buyName(it){
-  if(/^patch:/.test(it)) return `補簽券（補 ${+it.slice(11, 13)}/${+it.slice(14)}）`;
+function buyName(it, cost){
+  if(/^patch:/.test(it)) return `補簽券（${cost === 0 ? "爸媽送的，" : ""}補 ${+it.slice(11, 13)}/${+it.slice(14)}）`;
   if(it === "trade_feed") return `${FEED_PER_TRADE} 顆飼料`;
   if(it === "trade_ticket") return "1 張轉蛋券";
   const f = FURN.find(x=>x.id === it);
@@ -3122,7 +3123,7 @@ function buyName(it){
 }
 function nameBuys(){
   let n = 0;
-  (SHARED.buys || []).forEach(b=>{ if(b && !b.nm){ b.nm = buyName(b.it); n++; } });
+  (SHARED.buys || []).forEach(b=>{ if(b && !b.nm){ b.nm = buyName(b.it, +b.m || 0); n++; } });
   if(n) saveShared();
 }
 /* 補簽券：只能補最近 PATCH_BACK 天內的洞、任兩次補簽至少隔 PATCH_GAP 天（所以 7 天紅利至少要實練 6 天），
@@ -3132,7 +3133,7 @@ const STREAK_BONUS = 30, BONUS_EVERY = 7;               // 英文連續達標的
 const STREAK_NAME = {cal:"日曆連續", goal:"英文連續達標", feed:"成語連續達標"};
 function patchCost(){
   const mon = dayKey().slice(0, 7);
-  return PATCH_BASE + PATCH_STEP * (SHARED.buys || []).filter(b=>isPatch(b) && String(b.d).slice(0, 7) === mon).length;
+  return PATCH_BASE + PATCH_STEP * (SHARED.buys || []).filter(b=>isPatch(b) && +b.m > 0 && String(b.d).slice(0, 7) === mon).length;   // 爸媽送的不算進漲價
 }
 function patchOffer(){                 // 現在補哪一天有用；沒有就回 null
   const pd = [...patchedDays()];
@@ -3145,6 +3146,26 @@ function patchOffer(){                 // 現在補哪一天有用；沒有就�
   }
   return null;
 }
+/* 爸媽送的補簽券（單字闖關設定頁，贈送帳 kind:"patch"）：給生病、出遠門用，所以規則比買的寬 ——
+   不花分鐘、不受 7 天一次的限制、可以連補好幾天（一天一張，最多 FREE_RUN 天）。一樣要補了真的接得回去才用得掉。
+   沒有另一本庫存帳：庫存 = 送出的張數 − 用掉的（購買帳裡 m 為 0 的補簽）。 */
+const FREE_RUN = 7;
+const patchStock = () => Math.max(0,
+  (SHARED.gifts || []).filter(g=>g.kind === "patch").reduce((a, g)=>a + (+g.m || 0), 0)
+  - (SHARED.buys || []).filter(b=>isPatch(b) && !(+b.m > 0)).length);
+function freeOffer(){                  // 用最少的張數把連續接回來；沒有就回 null
+  const stock = Math.min(patchStock(), FREE_RUN), pd = patchedDays();
+  for(let n = 1; n <= stock; n++) for(let back = 1; back <= PATCH_BACK; back++){
+    const ks = [];
+    for(let j = 0; j < n; j++){ const t = new Date(); t.setDate(t.getDate() - back - j); ks.push(dayKey(t)); }
+    if(ks.some(k=>pd.has(k) || Object.keys(HAS).every(id=>HAS[id](k)))) continue;     // 補過的、本來就沒斷的不浪費券
+    const gains = Object.keys(HAS).map(id=>({id, from:runLen(HAS[id]), to:runLen(HAS[id], ks)})).filter(g=>g.to - g.from >= n + 1);
+    if(gains.length) return {ks, gains};
+  }
+  return null;
+}
+const dayLabel = k => `${+k.slice(5, 7)}/${+k.slice(8)}`;
+const spanLabel = ks => ks.length > 1 ? `${dayLabel(ks[ks.length - 1])}～${dayLabel(ks[0])}` : dayLabel(ks[0]);
 /* 先練了才補簽：補完才接起來的那一兩天，如果其實是第 every 天，紅利要補發。
    不補的話「先補再練」有紅利、「先練再補」沒有，順序不該決定拿不拿得到。
    補簽的那天本身不發 —— 那天沒有練。補簽前這幾天的連續最多 2，不可能已經領過。 */
@@ -3155,7 +3176,21 @@ function lateBonus(has, k, every){
   while(len > 0 && dayKey(t) > k){ if(len % every === 0) n++; len--; t.setDate(t.getDate() - 1); }
   return n;
 }
+function useFreePatch(o){
+  if(!confirm(`用 ${o.ks.length} 張爸媽送的補簽券補 ${spanLabel(o.ks)}？（不用花分鐘）
+${o.gains.map(g=>`${STREAK_NAME[g.id]} ${g.from} → ${g.to} 天`).join("\n")}
+（只接回連續天數，那幾天的題數不會變）`)) return;
+  o.ks.forEach(k=>spend("patch:" + k, 0));
+  const mins = lateBonus(HAS.goal, o.ks[0], BONUS_EVERY) * STREAK_BONUS, tix = lateBonus(HAS.feed, o.ks[0], FEED_STREAK_EVERY);
+  if(mins) SHARED.bank.bonus = (SHARED.bank.bonus || 0) + mins;
+  if(tix){ const F = feedLedger(); F.tickets = (F.tickets || 0) + tix; }
+  diary("patch", `用爸媽送的補簽券補簽了 ${spanLabel(o.ks)}`);
+  saveShared(); renderPet(); refreshHeader();
+  toast(`🩹 補簽了 ${spanLabel(o.ks)}` + (mins ? `，補發連續紅利 ${mins} 分鐘` : "") + (tix ? `，補發 ${tix} 張轉蛋券` : "") + `，還有 ${patchStock()} 張補簽券`);
+}
 function buyPatch(){
+  const fo = freeOffer();
+  if(fo){ useFreePatch(fo); return; }                   // 有爸媽送的就先用那個
   const o = patchOffer();
   if(!o){ toast("最近兩天沒有補了能接回連續的缺口"); return; }
   const cost = patchCost();
@@ -3262,9 +3297,10 @@ function renderShop(){
   const left = bankLeft();
   $("shopBank").textContent = `存摺 ${left} 分鐘`;
   $("btnTradeFeed").disabled = left < MIN_PER_FEED; $("btnTradeTicket").disabled = left < MIN_PER_TICKET;
-  const o = patchOffer(), cost = patchCost();
-  $("btnPatch").disabled = !o || left < cost;
-  $("patchHint").textContent = !o ? "最近兩天沒有可以補的缺口"
+  const o = patchOffer(), cost = patchCost(), fo = freeOffer(), stock = patchStock();
+  $("btnPatch").disabled = !fo && (!o || left < cost);
+  $("patchHint").textContent = fo ? `🎁 爸媽送的 ${stock} 張 · 用 ${fo.ks.length} 張補 ${spanLabel(fo.ks)}，${fo.gains.map(g=>`${STREAK_NAME[g.id]} ${g.from}→${g.to} 天`).join("、")}`
+    : !o ? (stock ? `🎁 有 ${stock} 張爸媽送的 · ` : "") + "現在沒有補了能接回連續的缺口"
     : `${cost} 分鐘 · 補 ${+o.k.slice(5, 7)}/${+o.k.slice(8)}，${o.gains.map(g=>`${STREAK_NAME[g.id]} ${g.from}→${g.to} 天`).join("、")}`;
   $("furnBox").hidden = !pet() || !cat();
   if($("furnBox").hidden) return;

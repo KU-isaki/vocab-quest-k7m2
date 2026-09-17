@@ -932,6 +932,14 @@ a.btn{text-decoration:none}
       </details>
     </div>
     <button class="btn ghost" id="btnGiftTicket" style="margin-top:8px">🎟️ 送轉蛋券（給貓）</button>
+    <div class="qrow" style="margin-top:8px">
+      <button class="btn ghost" id="btnGiftPatch">🩹 送補簽券</button>
+      <details class="info"><summary>送補簽券是什麼？</summary>
+        <div class="info-in">生病、出遠門這種<b>不是偷懶</b>的日子用的：小孩到成語ㄚ喵的時間商城按「補簽券」，不用花分鐘就能把斷掉的連續天數接回來。<br>
+          一天一張，連續缺幾天就要幾張（最多連補 7 天），而且要補了真的接得回去才用得掉，不會白白消耗。
+          <b>那幾天的題數不會變</b>，日曆上是虛線框。一樣要密碼、要原因，一次最多 3 張。</div>
+      </details>
+    </div>
 
     <div class="grouphead"><b>備份進度</b><span>換手機、被清掉時用</span></div>
     <div class="qrow">
@@ -1051,7 +1059,7 @@ a.btn{text-decoration:none}
   }
 })();
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.17-h";
+const VERSION = "2026.09.17-i";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（key 用小寫單字） =================
@@ -4868,7 +4876,7 @@ const WHY_MAX  = 20;                   // 原因限長，不要變成留言板
 function giftsOn(k){ return (SHARED.gifts || []).filter(g => g.d === k); }
 const isMinGift = g => !g.kind || g.kind === "min";              // 飼料與轉蛋券的贈送不進分鐘存摺
 function giftSum(list){ return list.filter(isMinGift).reduce((s, g) => s + (+g.m || 0), 0); }
-const GIFT_UNIT = {min:"分鐘", feed:"顆飼料", ticket:"張轉蛋券"};
+const GIFT_UNIT = {min:"分鐘", feed:"顆飼料", ticket:"張轉蛋券", patch:"張補簽券"};
 function feedLedgerIx(){ return SHARED.feed || (SHARED.feed = {earned:0, used:0, bonus:0, tickets:0}); }
 function giftTotal(){ return giftSum(SHARED.gifts || []); }
 function cleanWhy(s){                  // 備份碼用 | ~ ; : , = 當分隔符，原因裡不能有
@@ -5189,7 +5197,7 @@ function packDeck(o){                  // 緊湊格式，備份碼才貼得進�
   // 時間商城的購買帳（補簽券、家具）。仍然是 CQ5：欄位只往後加，舊版讀到會直接略過
   const by = (o.buys || []).map(b=>`${sd(b.d)}:${bkId(b.it)}:${+b.m||0}:${+b.ts||0}`).join(";");
   const ev = e => `${e.dev || ""}:${+e.seq || 0}:${+e.ts || 0}`;   // 事件身分：哪台、第幾號、什麼時候
-  const gf = (o.gifts || []).map(g=>`${sd(g.d)}:${g.kind === "feed" ? "f" : g.kind === "ticket" ? "t" : ""}${+g.m||0}:${ev(g)}:${g.why||""}`).join(";");
+  const gf = (o.gifts || []).map(g=>`${sd(g.d)}:${g.kind === "feed" ? "f" : g.kind === "ticket" ? "t" : g.kind === "patch" ? "p" : ""}${+g.m||0}:${ev(g)}:${g.why||""}`).join(";");
   const cp = (o.coupons || []).map(c=>`${sd(c.d)}:${sd(c.on)}:${ev(c)}:${c.why||""}`).join(";");
   return [o.done||0, o.right||0, b.earned||0, b.used||0, b.bonus||0, st, dy, gf, cp, fd, pt, by].join("|");
 }
@@ -5262,8 +5270,8 @@ function unpackDeck(str, ver){
     const f = cut(seg, wide ? 5 : 2);
     if(!f) return;
     const d = ld(f[0]);
-    const kind = /^f/.test(f[1]) ? "feed" : /^t/.test(f[1]) ? "ticket" : "";
-    const m = +String(f[1]).replace(/^[ft]/, "") || 0;
+    const kind = /^f/.test(f[1]) ? "feed" : /^t/.test(f[1]) ? "ticket" : /^p/.test(f[1]) ? "patch" : "";
+    const m = +String(f[1]).replace(/^[ftp]/, "") || 0;
     if(!d || !m) return;
     const g = wide
       ? {d, m, dev:f[2] || "bk", seq:+f[3] || i + 1, ts:+f[4] || 0, why:cleanWhy(f[5])}
@@ -5527,7 +5535,7 @@ function giftFlow(sign, kind){
   kind = kind || "min";
   const unit = GIFT_UNIT[kind], give = sign > 0, verb = give ? "贈送" : "沒收";
   // 分鐘：送不受一天 60 分鐘上限管；沒收最多到存摺歸零。飼料一次最多 30 顆、轉蛋券最多 3 張（給貓用的）
-  const maxOf = {min:GIFT_MAX, feed:30, ticket:3}[kind];
+  const maxOf = {min:GIFT_MAX, feed:30, ticket:3, patch:3}[kind];
   const F = feedLedgerIx();
   const have = kind === "min" ? bankLeft() : kind === "feed" ? Math.max(0, F.earned + F.bonus - F.used) : (F.tickets || 0);
   const cap = give ? maxOf : Math.min(maxOf, have);
@@ -5550,8 +5558,9 @@ function giftFlow(sign, kind){
       + (debt ? `目前存摺欠著 ${debt} 分鐘（先兌換又答錯被倒扣），會先拿去補。\n` : "")
       + `存摺會變成 ${after} 分鐘。`)) return;
   }else{
-    if(!confirm(`${verb} ${m} ${unit}\n原因：${why}\n\n給成語ㄚ喵的貓用的。`)) return;
+    if(!confirm(`${verb} ${m} ${unit}\n原因：${why}\n\n` + (kind === "patch" ? "小孩到成語ㄚ喵的時間商城用，不用花分鐘。" : "給成語ㄚ喵的貓用的。"))) return;
     if(kind === "feed") F.bonus = (F.bonus || 0) + sign * m;        // 飼料帳：bonus 是「非練習來的」
+    else if(kind === "patch"){}                                      // 補簽券沒有另一本帳：庫存 = 送出的張數 − 商城裡用掉的（m 為 0 的補簽）
     else F.tickets = Math.max(0, (F.tickets || 0) + sign * m);
   }
   SHARED.gifts.push(stamp(kind === "min" ? {d:dayKey(), m:sign * m, why} : {d:dayKey(), m:sign * m, why, kind}));
@@ -5562,6 +5571,7 @@ $("btnGift").onclick = () => giftFlow(1);
 $("btnTake").onclick = () => giftFlow(-1);
 $("btnGiftFeed").onclick = () => giftFlow(1, "feed");
 $("btnGiftTicket").onclick = () => giftFlow(1, "ticket");
+$("btnGiftPatch").onclick = () => giftFlow(1, "patch");
 
 $("btnCoupon").onclick = () => {
   if(!checkPin()) return;
