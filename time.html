@@ -59,7 +59,7 @@ body{
 }
 button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 :focus-visible{outline:2px solid var(--brand); outline-offset:2px; border-radius:6px}
-.shell{max-width:520px; margin:0 auto; padding:0 16px 40px}
+.shell{max-width:520px; margin:0 auto; padding:0 16px 108px}
 .top{
   position:sticky; top:0; z-index:20; background:var(--ground);
   padding:14px 0 10px; border-bottom:1px solid var(--line); margin-bottom:12px;
@@ -67,8 +67,24 @@ button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
 .top-row{display:flex; align-items:center; justify-content:space-between; gap:12px}
 .brandmark{display:flex; align-items:baseline; gap:8px; min-width:0}
 .brandmark b{font-size:17px; font-weight:700; letter-spacing:.02em; white-space:nowrap}
-.back{font-size:12.5px; color:var(--ink-faint); text-decoration:none; white-space:nowrap}
-.back:hover{color:var(--ink-soft)}
+/* 模組切換列：三頁同一位置、同一排，人在哪一頁都一步切得到別的模組 */
+.mods{display:flex; gap:6px; margin-top:10px}
+.mods a{flex:1; text-align:center; padding:7px 4px; border-radius:99px; border:1px solid var(--line); background:var(--surface);
+        color:var(--ink-soft); font-size:13px; text-decoration:none; font-weight:500; white-space:nowrap}
+.mods a[aria-current="page"]{background:var(--brand-soft); border-color:var(--brand); color:var(--brand); font-weight:700}
+.nav{
+  position:fixed; left:0; right:0; bottom:0; z-index:30;
+  background:color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter:saturate(1.6) blur(12px);
+  border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.nav-in{max-width:520px; margin:0 auto; display:grid; grid-template-columns:repeat(4,1fr)}
+.nav a{
+  background:none; border:0; padding:10px 4px 12px; display:flex; flex-direction:column; text-decoration:none;
+  align-items:center; gap:3px; font-size:11px; color:var(--ink-faint); font-weight:500;
+}
+.nav a em{font-style:normal; font-size:19px; line-height:1}
 .score{font-family:var(--font-num); font-variant-numeric:tabular-nums; font-size:13px; color:var(--ink-soft); white-space:nowrap}
 .card{
   background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
@@ -177,10 +193,13 @@ h1{margin:4px 0 2px; font-size:22px; line-height:1.3}
   <header class="top">
     <div class="top-row">
       <div class="brandmark">
-        <b>時間紀錄</b><a class="back" href="./">← 首頁</a>
+        <b>時間紀錄</b>
       </div>
       <div class="score" id="hClock"></div>
     </div>
+    <nav class="mods" aria-label="切換模組">
+      <a href="./">✏️ 單字</a><a href="idiom.html">🐈 成語</a><a href="time.html" aria-current="page">⏱️ 時間</a>
+    </nav>
   </header>
 
   <section class="card" id="nowCard">
@@ -193,7 +212,7 @@ h1{margin:4px 0 2px; font-size:22px; line-height:1.3}
     <div id="noShared" class="empty" hidden>這台裝置還沒開過單字闖關，紀錄存不下來。先回單字闖關開一次再來。</div>
   </section>
 
-  <section class="card">
+  <section class="card" id="todayCard">
     <div class="grouphead"><b>今天</b><span id="todaySum"></span></div>
     <div id="segList"></div>
     <button class="btn quiet" id="btnAdd">＋ 補記一段（忘了按的時候）</button>
@@ -209,7 +228,7 @@ h1{margin:4px 0 2px; font-size:22px; line-height:1.3}
     </form>
   </section>
 
-  <section class="card">
+  <section class="card" id="weekCard">
     <div class="grouphead"><b>這週</b><span id="bandRange">15:00 ～ 24:00</span></div>
     <div id="week"></div>
     <ul class="legend" id="legend"></ul>
@@ -222,6 +241,14 @@ h1{margin:4px 0 2px; font-size:22px; line-height:1.3}
 
   <p class="foot" id="verline"></p>
 </div>
+<nav class="nav">
+  <div class="nav-in">
+    <a href="#todayCard"><em>📝</em>今天</a>
+    <a href="#weekCard"><em>📅</em>這週</a>
+    <a href="./#stats"><em>📊</em>存摺</a>
+    <a href="./#set"><em>⚙️</em>設定</a>
+  </div>
+</nav>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>

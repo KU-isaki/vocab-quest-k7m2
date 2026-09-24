@@ -54,7 +54,7 @@ const wait = () => new Promise(r=>setTimeout(r, 60));
   ok(/prefers-color-scheme:dark[\s\S]*:root:not\(\[data-theme="light"\]\)/.test(css) && /:root\[data-theme="dark"\]/.test(css), "深色的兩種來源都要蓋得對");
   const probe = t.d.createElement("form"); probe.className = "addbox"; probe.hidden = true; t.d.body.appendChild(probe);
   ok(disp(t, probe) === "none", `hidden 元素掛著 grid 類別也必須 display:none, 實得 ${disp(t, probe)}`);
-  ok(!!t.d.querySelector('a.back[href="./"]'), "要有回單字闖關的路");
+  ok(!!t.d.querySelector('.mods a[href="./"]') && t.d.querySelector('.mods a[href="time.html"]').getAttribute("aria-current") === "page", "模組切換列要有、而且亮在時間");
   ok(!/https?:\/\//.test(timeHtml.replace(/<!--[\s\S]*?-->/g, "")) , "這頁不得有任何外部連結或資源（預設一個外部請求都不發）");
 }
 

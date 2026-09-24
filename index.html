@@ -126,6 +126,11 @@ a.btn{text-decoration:none}
 }
 .btn:disabled:active{transform:none; filter:none}
 
+/* 模組切換列：三頁同一位置、同一排，人在哪一頁都一步切得到別的模組 */
+.mods{display:flex; gap:6px; margin-top:10px}
+.mods a{flex:1; text-align:center; padding:7px 4px; border-radius:99px; border:1px solid var(--line); background:var(--surface);
+        color:var(--ink-soft); font-size:13px; text-decoration:none; font-weight:500; white-space:nowrap}
+.mods a[aria-current="page"]{background:var(--brand-soft); border-color:var(--brand); color:var(--brand); font-weight:700}
 /* ---------- 首頁「今天」總覽：三個模組的入口，各帶一行今天的狀態 ---------- */
 .card.today{margin-top:12px; padding:12px 15px 4px}
 .today-head{display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding-bottom:6px}
@@ -685,6 +690,9 @@ a.btn{text-decoration:none}
       <div class="score" id="hScore">再答對 <b id="hNeed">10</b> 題 → <span id="hGain">2</span> 分</div>
     </div>
     <div class="bar"><i id="hBar"></i></div>
+    <nav class="mods" aria-label="切換模組">
+      <a href="./" aria-current="page">✏️ 單字</a><a href="idiom.html">🐈 成語</a><a href="time.html">⏱️ 時間</a>
+    </nav>
   </header>
 
   <div class="notice" id="lineNotice">
@@ -1085,7 +1093,7 @@ a.btn{text-decoration:none}
   }
 })();
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.24-c";
+const VERSION = "2026.09.24-d";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（key 用小寫單字） =================
@@ -6042,4 +6050,7 @@ renderListCats();
 refreshHeader();
 renderList();
 syncRetry();
+// 從別的模組跳過來直接開分頁：成語頁、時間頁的底欄「存摺」「設定」連到 ./#stats、./#set
+{ const v = {"#stats":"vStats", "#set":"vSet", "#list":"vList"}[location.hash];
+  const b = v && document.querySelector(`.nav button[data-view="${v}"]`); if(b) b.click(); }
 </script>

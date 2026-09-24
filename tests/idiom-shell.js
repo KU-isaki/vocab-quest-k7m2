@@ -31,9 +31,11 @@ ok(issues.length === 0, "無障礙問題：\n      " + issues.join("\n      "));
 // ---------- ② 導覽 ----------
 let t = boot(idiomHtml, "idiom.html");
 const tabs = [...t.d.querySelectorAll(".nav button")];
-ok(tabs.length === 4, `導覽列要四個分頁, 實得 ${tabs.length}`);
+ok(tabs.length === 3, `導覽列要三個分頁（練習、成語表、貓）, 實得 ${tabs.length}`);
+const links = [...t.d.querySelectorAll(".nav a")];
+ok(links.length === 2 && links[0].getAttribute("href") === "./#stats" && links[1].getAttribute("href") === "./#set", "底欄最後兩格是共用的「存摺」「設定」，連到單字頁的分頁");
 const cols = /\.nav-in\{[^}]*grid-template-columns:\s*repeat\((\d+)/.exec(idiomHtml.match(/<style>([\s\S]*?)<\/style>/)[1]);
-ok(cols && +cols[1] === tabs.length, `導覽列欄數(${cols && cols[1]})要等於分頁數(${tabs.length})`);
+ok(cols && +cols[1] === tabs.length + links.length, `導覽列欄數(${cols && cols[1]})要等於格數(${tabs.length + links.length})`);
 const nav = v => tabs.find(b=>b.dataset.view === v);
 ok(nav("vQuiz").getAttribute("aria-current") === "true", "一開始要在練習頁");
 ok(disp(t, t.$("vQuiz")) !== "none" && disp(t, t.$("vList")) === "none", "一開始只有練習頁看得見");
@@ -47,7 +49,8 @@ t.click(cat);
 ok(cat.getAttribute("aria-current") === "true" && disp(t, t.$("vCat")) !== "none", "按貓要切過去");
 ok(disp(t, t.$("gachaCard")) !== "none" && disp(t, t.$("petCard")) === "none", "還沒有貓時要顯示轉蛋、不顯示貓");
 t.click(nav("vList"));
-ok(!!t.d.querySelector('a.back[href="./"]'), "要有回單字闖關的路");
+ok(!!t.d.querySelector('.mods a[href="./"]') && t.d.querySelector('.mods a[href="idiom.html"]').getAttribute("aria-current") === "page", "模組切換列要有、而且亮在成語");
+ok(t.$("vCat").contains(t.$("stFeed")) && t.$("vCat").contains(t.$("lvBars")), "飼料與熟練進度要在貓分頁裡");
 
 // ---------- ③ hidden 的東西真的不能看見（display:grid/flex 蓋掉 hidden 是這專案的老坑）----------
 {

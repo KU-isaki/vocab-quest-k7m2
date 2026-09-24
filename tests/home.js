@@ -54,11 +54,28 @@ const wait = () => new Promise(r=>setTimeout(r, 60));
   const u = boot({tl:{[today]:[{a:"hw", s:0}]}});
   ok(/現在：📝 寫功課，00:00 開始/.test(u.$("todayTl").textContent), `正在做的事要寫出來, 實得「${u.$("todayTl").textContent}」`);
 }
-{ // 返回鍵
-  ["idiom.html", "time.html"].forEach(f=>{
-    const h = fs.readFileSync(path.join(ROOT, f), "utf8");
-    ok(/class="back" href="\.\/">← 首頁</.test(h), `${f} 的返回鍵要寫「首頁」`);
+{ // 模組切換列：三頁都有、同一排、亮在自己那顆；底欄最後兩格共用
+  const pages = {"index.html":"./", "idiom.html":"idiom.html", "time.html":"time.html"};
+  Object.keys(pages).forEach(f=>{
+    const dom = new JSDOM(fs.readFileSync(path.join(ROOT, f), "utf8"), {url:"https://x.test/" + f});
+    const as = [...dom.window.document.querySelectorAll(".mods a")];
+    ok(as.length === 3 && as.map(a=>a.getAttribute("href")).join() === "./,idiom.html,time.html", `${f} 要有三顆模組切換`);
+    ok(as.filter(a=>a.getAttribute("aria-current") === "page").length === 1 && as.find(a=>a.getAttribute("href") === pages[f]).getAttribute("aria-current") === "page", `${f} 要亮在自己那顆`);
+    ok(!dom.window.document.querySelector("a.back"), `${f} 不再需要小小的返回鍵`);
+    if(f !== "index.html"){
+      const nav = [...dom.window.document.querySelectorAll(".nav a")].map(a=>a.getAttribute("href"));
+      ok(nav.slice(-2).join() === "./#stats,./#set", `${f} 底欄最後兩格要是存摺、設定, 實得 ${nav.join()}`);
+    }
   });
+  const tm = new JSDOM(fs.readFileSync(path.join(ROOT, "time.html"), "utf8"), {url:"https://x.test/time.html"}).window.document;
+  ok(!!tm.getElementById("todayCard") && !!tm.getElementById("weekCard") && [...tm.querySelectorAll(".nav a")].slice(0, 2).map(a=>a.getAttribute("href")).join() === "#todayCard,#weekCard", "時間頁底欄前兩格捲到今天、這週");
+  // 單字頁從網址開分頁
+  const boot2 = hash => { const dom = new JSDOM(indexHtml, {runScripts:"dangerously", pretendToBeVisual:true, url:"https://x.test/index.html" + hash,
+      beforeParse(win){ win.speechSynthesis = {speak(){}, cancel(){}, getVoices:()=>[], addEventListener(){}}; win.SpeechSynthesisUtterance = function(t){ this.text = t; }; win.scrollTo = ()=>{}; }});
+    return dom.window.document; };
+  ok(boot2("#stats").getElementById("vStats").classList.contains("on"), "./#stats 要直接開存摺分頁");
+  ok(boot2("#set").getElementById("vSet").classList.contains("on"), "./#set 要直接開設定分頁");
+  ok(boot2("").getElementById("vQuiz").classList.contains("on"), "沒帶就是練習頁");
 }
 { // 家長頁總覽多一行
   const mk = sum => ({children:[{child:"大寶", dev:"x", at:1, sum:Object.assign({v:"t", who:"大寶", streak:0, days:{}, bank:{left:0}, gifts:[], coupons:[], decks:{}}, sum)}]});
