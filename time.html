@@ -115,6 +115,11 @@ h1{margin:4px 0 2px; font-size:22px; line-height:1.3}
 .seg.trunc .sw{opacity:.45; background:repeating-linear-gradient(135deg, var(--c) 0 3px, transparent 3px 6px)}
 .seg.pt .sw{height:10px; width:10px; border-radius:50%; background:var(--ink-faint)}
 .gap{display:flex; align-items:center; gap:10px; padding:3px 2px 3px 22px; font-size:12px; color:var(--ink-faint); font-family:var(--font-num); font-variant-numeric:tabular-nums}
+.seg .nm .note{display:block; font-weight:400; font-size:12px; color:var(--ink-soft)}
+.seg .edit label.wide, .addbox label.wide{grid-column:1 / -1}
+.sleep{padding:8px 10px; margin:0 0 6px; border-radius:9px; background:var(--brand-soft); color:var(--ink-soft); font-size:13px}
+.sleep b{color:var(--ink); font-family:var(--font-num)}
+.legend li.sleep{background:none; padding:4px 0} .legend li.sleep::before{background:var(--brand-soft); border:1px solid var(--brand)}
 .gap::before{content:""; width:1px; height:14px; border-left:1px dashed var(--ink-faint); margin-left:4px}
 .seg .edit{display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:4px 2px 12px}
 .seg .edit label, .addbox label{font-size:12px; color:var(--ink-soft); display:flex; flex-direction:column; gap:3px}
@@ -196,6 +201,7 @@ h1{margin:4px 0 2px; font-size:22px; line-height:1.3}
       <label for="addAct">做了什麼<select id="addAct"></select></label>
       <label for="addS" id="addSLab">從<input type="time" id="addS" required></label>
       <label for="addE" id="addELab">到<input type="time" id="addE" required></label>
+      <label for="addN" id="addNLab" class="wide">備註<input type="text" id="addN" maxlength="20" placeholder="可留空"></label>
       <div class="btns">
         <button type="submit" class="btn">加進去</button>
         <button type="button" class="btn ghost" id="addCancel">取消</button>
@@ -204,7 +210,7 @@ h1{margin:4px 0 2px; font-size:22px; line-height:1.3}
   </section>
 
   <section class="card">
-    <div class="grouphead"><b>這週</b><span>15:00 ～ 24:00</span></div>
+    <div class="grouphead"><b>這週</b><span id="bandRange">15:00 ～ 24:00</span></div>
     <div id="week"></div>
     <ul class="legend" id="legend"></ul>
     <details class="info"><summary>這張圖在看什麼？</summary>
@@ -219,7 +225,7 @@ h1{margin:4px 0 2px; font-size:22px; line-height:1.3}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
-const TIME_VERSION = "2026.09.24-a";
+const TIME_VERSION = "2026.09.24-b";
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function toast(msg){
@@ -230,7 +236,7 @@ function toast(msg){
 
 /* ================= 跟單字闖關共用的紀錄 =================
    同一把鑰匙 cq-shared-v1，這頁只加自己的欄位：
-     tl     {日期: [{a 事項代號, s 開始, e 結束, x 忘了按停止, p 只是一個時間點}]}   s/e 是當天第幾分鐘（0～1440）
+     tl     {日期: [{a 事項代號, s 開始, e 結束, x 忘了按停止, p 只是一個時間點, n 備註}]}   s/e 是當天第幾分鐘（0～1440）
             時間點（到家、睡覺）只有 s、沒有 e；正在做的那段有 s 沒 e 也沒 p
      tlActs 事項清單，家長在單字闖關的設定頁改（要密碼）；沒有就用內建的八項
    跟成語ㄚ喵一樣：讀不到存摺就不寫，免得擋掉單字闖關的舊資料搬家。 */
@@ -263,17 +269,21 @@ const dur = m => m >= 60 ? `${Math.floor(m / 60)} 小時${m % 60 ? " " + m % 60 
 
 /* ================= 事項 =================
    兩種：一段時間（p 沒設：寫功課、家教，有開始有結束）、時間點（p:1：到家、起床、睡覺，只記幾點幾分）。
-   內建十一項。家長可以在單字闖關的設定頁加、關（tlActs）；紀錄只存代號，所以改名之後舊紀錄跟著顯示新名字。
+   nt:1 的（寫功課）開始時會問一句備註（寫什麼功課），任何一段事後也都能在清單裡補備註。
+   內建十四項。家長可以在單字闖關的設定頁加、關（tlActs）；紀錄只存代號，所以改名之後舊紀錄跟著顯示新名字。
    顏色照清單裡的位置配，清單只會往後加，所以同一項永遠同一色。 */
 const DEF_ACTS = [
   {id:"home",  em:"🏠", name:"到家", p:1},
   {id:"wc",    em:"🚽", name:"上廁所"},
   {id:"eat",   em:"🍚", name:"吃飯"},
-  {id:"hw",    em:"📝", name:"寫功課"},
+  {id:"hw",    em:"📝", name:"寫功課", nt:1},
   {id:"tutor", em:"👩‍🏫", name:"家教"},
-  {id:"piano", em:"🎹", name:"練琴"},
+  {id:"piano", em:"🎹", name:"鋼琴"},
+  {id:"violin",em:"🎻", name:"小提琴"},
+  {id:"sport", em:"🏃", name:"運動"},
   {id:"bath",  em:"🛁", name:"洗澡"},
   {id:"play",  em:"🎮", name:"玩"},
+  {id:"tv",    em:"📺", name:"看電視"},
   {id:"rest",  em:"😴", name:"休息"},
   {id:"wake",  em:"🌅", name:"起床", p:1},
   {id:"sleep", em:"🛏️", name:"睡覺", p:1}
@@ -288,6 +298,8 @@ const actById = id => acts().find(a=>a.id === id) || null;
 const colorOf = id => { const i = acts().findIndex(a=>a.id === id); return PALETTE[(i < 0 ? PALETTE.length - 1 : i) % PALETTE.length]; };
 const nameOf = id => { const a = actById(id); return a ? `${a.em || ""} ${a.name}`.trim() : "（已刪掉的事項）"; };
 const isPt = a => !!(a && a.p);
+const NOTE_MAX = 20;
+const cleanNote = s => String(s || "").replace(/[|~;:,=]/g, " ").replace(/\s+/g, " ").trim().slice(0, NOTE_MAX);   // 備份碼的分隔符不能進備註
 
 /* ================= 紀錄 ================= */
 function segsOf(k){                     // 整理過的那天：s/e 是 0～1440 的整數、e 大於 s；進行中的那段與時間點沒有 e
@@ -324,7 +336,9 @@ function start(id){
     if(now <= cur.s){ list.splice(list.indexOf(cur), 1); }   // 同一分鐘內按兩次：上一段是 0 分鐘，直接拿掉
     else cur.e = now;
   }
-  list.push(isPt(act) ? {a:id, s:Math.min(now, 1439), p:1} : {a:id, s:Math.min(now, 1439)});
+  const seg = isPt(act) ? {a:id, s:Math.min(now, 1439), p:1} : {a:id, s:Math.min(now, 1439)};
+  if(act.nt){ const n = cleanNote(prompt(`${act.name}什麼？（可留空，${NOTE_MAX} 字內）`)); if(n) seg.n = n; }
+  list.push(seg);
   setSegs(k, list); saveShared(); render();
   toast(`${isPt(act) ? "" : "開始"}${nameOf(id)} ${hm(now)}`);
 }
@@ -338,20 +352,28 @@ function stop(){
 }
 /* 改一段或補一段：不能跟同一天其他段重疊（時間只有一條線，一個人不會同時做兩件事）。時間點不算重疊。 */
 function overlaps(list, s, e, skip){ return list.some(x=>x !== skip && !x.p && x.e !== undefined && s < x.e && e > x.s); }
-function putSeg(k, seg, s, e, a){
+function putSeg(k, seg, s, e, a, note){
   const list = segsOf(k);
   const pt = seg ? !!seg.p : isPt(actById(a));
+  const n = cleanNote(note);
   if(pt){
     if(!(s >= 0 && s < 1440)){ toast("時間不對"); return false; }
     if(seg) seg.s = s; else list.push({a, s, p:1});
   }else{
     if(!(s >= 0 && e <= 1440 && e > s)){ toast("結束要在開始之後"); return false; }
     if(overlaps(list, s, e, seg)){ toast("這段時間已經有別的事了"); return false; }
-    if(seg){ seg.s = s; seg.e = e; delete seg.x; }
-    else list.push({a, s, e});
+    if(seg){ seg.s = s; seg.e = e; delete seg.x; if(n) seg.n = n; else delete seg.n; }
+    else{ const x = {a, s, e}; if(n) x.n = n; list.push(x); }
   }
   setSegs(k, list); saveShared(); render();
   return true;
+}
+/* 睡眠：前一天最後一個「睡覺」到今天第一個「起床」。兩個都是內建的時間點（代號寫死），沒有就不算 */
+const prevKey = k => { const d = new Date(k + "T12:00:00"); d.setDate(d.getDate() - 1); return dayKey(d); };
+function sleepOf(k){
+  const bed = segsOf(prevKey(k)).filter(x=>x.p && x.a === "sleep").pop();
+  const up = segsOf(k).find(x=>x.p && x.a === "wake");
+  return bed && up ? {m:1440 - bed.s + up.s, from:bed.s, to:up.s} : null;
 }
 /* 空檔：兩筆紀錄之間沒記東西的時間（上一筆結束到下一筆開始）。只算「有前有後」的，最後一筆之後不算 */
 function gapsOf(k){
@@ -395,18 +417,21 @@ function renderToday(){
   const total = spans.reduce((n, x)=>n + endOf(x, k) - x.s, 0);
   const gap = gapsOf(k).reduce((n, g)=>n + g.e - g.s, 0);
   $("todaySum").textContent = list.length ? `${spans.length} 段 · 共 ${dur(total)}${gap ? " · 空檔 " + dur(gap) : ""}` : "";
-  if(!list.length){ $("segList").innerHTML = `<div class="empty">今天還沒有紀錄。回家後點上面的格子開始。</div>`; return; }
-  $("segList").innerHTML = list.map((x, i)=>{
+  const slp = sleepOf(k);
+  const slpRow = slp ? `<div class="sleep">🛏️ 睡了 <b>${esc(dur(slp.m))}</b>（昨晚 ${hm(slp.from)} → ${hm(slp.to)}）</div>` : "";
+  if(!list.length){ $("segList").innerHTML = slpRow + `<div class="empty">今天還沒有紀錄。回家後點上面的格子開始。</div>`; return; }
+  $("segList").innerHTML = slpRow + list.map((x, i)=>{
     const open = !x.p && x.e === undefined;
     const before = i ? list[i - 1] : null, g = before ? x.s - endOf(before, k) : 0;   // 跟上一筆之間的空檔，標出來才看得到零碎時間
     const row = x.p
       ? `<summary><span class="sw"></span><span class="tm">${hm(x.s)}</span><span class="nm">${esc(nameOf(x.a))}</span><span class="du">時間點</span></summary>
          <form class="edit"><label for="es-${i}">時間<input type="time" id="es-${i}" name="s" value="${hm(x.s)}" required></label>
          <div class="btns"><button type="submit" class="btn">改好了</button><button type="button" class="btn ghost" data-del>刪掉</button></div></form>`
-      : `<summary><span class="sw"></span><span class="tm">${hm(x.s)}–${open ? "現在" : hm(x.e)}</span><span class="nm">${esc(nameOf(x.a))}</span><span class="du">${esc(dur(endOf(x, k) - x.s))}</span></summary>
+      : `<summary><span class="sw"></span><span class="tm">${hm(x.s)}–${open ? "現在" : hm(x.e)}</span><span class="nm">${esc(nameOf(x.a))}${x.n ? `<small class="note">${esc(x.n)}</small>` : ""}</span><span class="du">${esc(dur(endOf(x, k) - x.s))}</span></summary>
       ${open ? `<div class="empty">還在進行中。按上面的「停止」或點別的事就會結束。</div>` : `<form class="edit">
         <label for="es-${i}">從<input type="time" id="es-${i}" name="s" value="${hm(x.s)}" required></label>
         <label for="ee-${i}">到<input type="time" id="ee-${i}" name="e" value="${hm(Math.min(x.e, 1439))}" required></label>
+        <label for="en-${i}" class="wide">備註<input type="text" id="en-${i}" name="n" value="${esc(x.n || "")}" maxlength="${NOTE_MAX}" placeholder="例：數學習作 p.12"></label>
         <div class="btns"><button type="submit" class="btn">改好了</button><button type="button" class="btn ghost" data-del>刪掉</button></div>
       </form>`}`;
     return (g >= 1 ? `<div class="gap">空檔 ${esc(dur(g))}</div>` : "")
@@ -416,20 +441,27 @@ function renderToday(){
     const seg = list[+d.dataset.i], f = d.querySelector("form");
     if(!f) return;
     const val = n => { const el = f.querySelector(`[name="${n}"]`); return el ? parseHM(el.value) : NaN; };
-    f.onsubmit = e => { e.preventDefault(); putSeg(k, seg, val("s"), val("e")); };
+    const noteEl = f.querySelector('[name="n"]');
+    f.onsubmit = e => { e.preventDefault(); putSeg(k, seg, val("s"), val("e"), undefined, noteEl ? noteEl.value : seg.n); };
     f.querySelector("[data-del]").onclick = () => { if(confirm(`刪掉 ${hm(seg.s)}${seg.p ? "" : "–" + hm(seg.e)} ${nameOf(seg.a)}？`)) delSeg(k, seg); };
   });
 }
-/* 色帶：15:00～24:00，每天一列。跟家長頁那張是同一種畫法。 */
-const BAND_FROM = 15 * 60, BAND_TO = 24 * 60;
+/* 色帶：每天一列，到 24:00。起點跟著紀錄走：這幾天最早的一筆在幾點就從那個整點開始，最晚 15:00 ——
+   平日回家後才有紀錄，就是 15:00 起；假日整天在家，會自動拉到早上。七列共用同一個時間軸才比得出來。
+   跟家長頁那張是同一種畫法。 */
+const BAND_TO = 24 * 60;
+function bandFrom(keys){
+  const first = Math.min(15 * 60, ...keys.flatMap(k=>segsOf(k).map(x=>x.s)));
+  return Math.floor(first / 60) * 60;
+}
 function bandRows(keys){
-  const today = dayKey();
+  const today = dayKey(), BAND_FROM = bandFrom(keys);
   const pct = m => Math.max(0, Math.min(100, (m - BAND_FROM) / (BAND_TO - BAND_FROM) * 100));
   return keys.map(k=>{
     const segs = segsOf(k).map(x=>Object.assign({}, x, {e:x.p ? x.s : Math.max(x.s + 1, endOf(x, k))}))
                           .filter(x=>(x.p ? x.s >= BAND_FROM : x.e > BAND_FROM) && x.s < BAND_TO);
     const p = k.split("-");
-    return `<div class="dl${k === today ? " today" : ""}">${+p[1]}/${+p[2]}</div><div class="row" role="img" aria-label="${esc(k)}：${segs.length ? segs.map(x=>`${hm(x.s)} ${nameOf(x.a)}${x.p ? "" : " " + dur(x.e - x.s)}`).join("、") : "沒有紀錄"}">`
+    return `<div class="dl${k === today ? " today" : ""}">${+p[1]}/${+p[2]}</div><div class="row" role="img" aria-label="${esc(k)}：${segs.length ? segs.map(x=>`${hm(x.s)} ${nameOf(x.a)}${x.n ? "（" + x.n + "）" : ""}${x.p ? "" : " " + dur(x.e - x.s)}`).join("、") : "沒有紀錄"}">`
       + segs.map(x=>x.p ? `<i class="pt" style="left:${pct(x.s)}%"></i>`
                         : `<i class="${x.x ? "trunc" : ""}" style="left:${pct(x.s)}%;width:${Math.max(0.6, pct(x.e) - pct(x.s))}%;--c:${colorOf(x.a)}"></i>`).join("") + `</div>`;
   }).join("");
@@ -437,7 +469,9 @@ function bandRows(keys){
 function renderWeek(){
   const keys = [];
   for(let i = 6; i >= 0; i--){ const t = new Date(); t.setDate(t.getDate() - i); keys.push(dayKey(t)); }
-  const ticks = [15, 18, 21, 24].map(h=>`<span style="left:${(h * 60 - BAND_FROM) / (BAND_TO - BAND_FROM) * 100}%">${h}</span>`).join("");
+  const BAND_FROM = bandFrom(keys);
+  const ticks = [3, 6, 9, 12, 15, 18, 21, 24].filter(h=>h * 60 > BAND_FROM).map(h=>`<span style="left:${(h * 60 - BAND_FROM) / (BAND_TO - BAND_FROM) * 100}%">${h}</span>`).join("");
+  $("bandRange").textContent = `${hm(BAND_FROM)} ～ 24:00`;
   $("week").innerHTML = `<div class="band"><div></div><div class="ticks">${ticks}</div>${bandRows(keys)}</div>`;
   $("legend").innerHTML = legendRows(keys);
 }
@@ -457,16 +491,19 @@ function legendRows(keys){
     gap += gapsOf(k).reduce((n, g)=>n + g.e - g.s, 0);
   });
   const ids = acts().map(a=>a.id).filter(id=>tot[id]).concat(Object.keys(tot).filter(id=>!actById(id)));
-  if(!ids.length) return `<li class="gap"><span class="nm">這週還沒有紀錄</span><span></span><span></span></li>`;
+  const sl = keys.map(k=>({k, s:sleepOf(k)})).filter(x=>x.s);
+  const slRow = sl.length ? (()=>{ const min = sl.reduce((a, b)=>b.s.m < a.s.m ? b : a), avg = Math.round(sl.reduce((n, x)=>n + x.s.m, 0) / sl.length);
+    return `<li class="sleep"><span class="nm">🛏️ 睡眠</span><span class="n">平均 ${esc(dur(avg))}</span><span class="mx">最短 <b>${esc(dur(min.s.m))}</b>（${md(min.k)}）</span></li>`; })() : "";
+  if(!ids.length && !slRow) return `<li class="gap"><span class="nm">這週還沒有紀錄</span><span></span><span></span></li>`;
   return ids.map(id=>`<li style="--c:${colorOf(id)}"><span class="nm">${esc(nameOf(id))}</span><span class="n">${esc(dur(tot[id]))}</span><span class="mx">最長 <b>${esc(dur(mx[id].m))}</b>（${md(mx[id].k)}）</span></li>`).join("")
-    + `<li class="gap"><span class="nm">空檔</span><span class="n">${esc(dur(gap))}</span><span class="mx">兩筆紀錄之間沒記的時間</span></li>`;
+    + `<li class="gap"><span class="nm">空檔</span><span class="n">${esc(dur(gap))}</span><span class="mx">兩筆紀錄之間沒記的時間</span></li>` + slRow;
 }
 function render(){ renderActs(); renderNow(); renderToday(); renderWeek(); }
 
 $("btnStop").onclick = stop;
 function addKind(){                      // 補記的是時間點就只問一個時間
   const pt = isPt(actById($("addAct").value));
-  $("addELab").hidden = pt; $("addE").required = !pt;
+  $("addELab").hidden = pt; $("addE").required = !pt; $("addNLab").hidden = pt;
   $("addSLab").firstChild.textContent = pt ? "時間" : "從";
 }
 $("addAct").onchange = addKind;
@@ -475,8 +512,8 @@ $("addCancel").onclick = () => { $("addBox").hidden = true; };
 $("addBox").onsubmit = e => {
   e.preventDefault();
   if(!sharedOK){ toast("這台裝置還沒開過單字闖關，記不起來"); return; }
-  if(putSeg(dayKey(), null, parseHM($("addS").value), isPt(actById($("addAct").value)) ? NaN : parseHM($("addE").value), $("addAct").value)){
-    $("addBox").hidden = true; $("addS").value = ""; $("addE").value = "";
+  if(putSeg(dayKey(), null, parseHM($("addS").value), isPt(actById($("addAct").value)) ? NaN : parseHM($("addE").value), $("addAct").value, $("addN").value)){
+    $("addBox").hidden = true; $("addS").value = ""; $("addE").value = ""; $("addN").value = "";
   }
 };
 

@@ -157,7 +157,7 @@ const EVIL = {children:[{child:"壞資料", dev:"x", at:1, sum:{
   feed:{earned:BOOM, used:BOOM, bonus:BOOM, tickets:BOOM},
   pet:{name:BOOM, breed:BOOM, xp:BOOM, hunger:BOOM, clean:BOOM, stage:BOOM, adopted:BOOM, away:BOOM, box:BOOM, diary:[{d:BOOM, text:BOOM}]},
   idiom:{byLv:{1:{m:BOOM, total:BOOM}}, weak:[{c:BOOM, m:BOOM, x:BOOM}], streak:BOOM},
-  tl:{acts:[{id:BOOM, em:BOOM, name:BOOM, p:BOOM}], days:{[D]:[{a:BOOM, s:BOOM, e:BOOM, x:BOOM, p:BOOM}]}}}}]};
+  tl:{acts:[{id:BOOM, em:BOOM, name:BOOM, p:BOOM}], days:{[D]:[{a:BOOM, s:BOOM, e:BOOM, x:BOOM, p:BOOM, n:BOOM}]}}}}]};
 t = boot(seedConf, () => okRes(EVIL));
 await wait();
 ok(!t.w.__pwned, "小孩上傳的內容不得在家長瀏覽器裡執行");

@@ -1085,7 +1085,7 @@ a.btn{text-decoration:none}
   }
 })();
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.24-a";
+const VERSION = "2026.09.24-b";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（key 用小寫單字） =================
@@ -5084,23 +5084,26 @@ $("btnRewards").onclick = () => {
 
 /* ---- 時間紀錄（time.html）的事項清單 ----
    存在 SHARED.tlActs（{id, em, name, off, p}），p 是「時間點」（到家、睡覺：只記幾點幾分，不是一段時間）。
-   沒有就是內建十一項（跟 time.html 的 DEF_ACTS 同一份，測試會對）。
+   nt:1 的（寫功課）開始時會問備註。沒有就是內建十四項（跟 time.html 的 DEF_ACTS 同一份，測試會對）。
    改要家長密碼。只往後加、不重排：time.html 的顏色是照位置配的，重排會讓同一件事換顏色。
    還沒被任何紀錄用過的才能刪；用過的只能關掉 —— 紀錄只存代號，刪了名字就沒了。 */
 const TL_DEF_ACTS = [
   {id:"home",  em:"🏠", name:"到家", p:1},
   {id:"wc",    em:"🚽", name:"上廁所"},
   {id:"eat",   em:"🍚", name:"吃飯"},
-  {id:"hw",    em:"📝", name:"寫功課"},
+  {id:"hw",    em:"📝", name:"寫功課", nt:1},
   {id:"tutor", em:"👩‍🏫", name:"家教"},
-  {id:"piano", em:"🎹", name:"練琴"},
+  {id:"piano", em:"🎹", name:"鋼琴"},
+  {id:"violin",em:"🎻", name:"小提琴"},
+  {id:"sport", em:"🏃", name:"運動"},
   {id:"bath",  em:"🛁", name:"洗澡"},
   {id:"play",  em:"🎮", name:"玩"},
+  {id:"tv",    em:"📺", name:"看電視"},
   {id:"rest",  em:"😴", name:"休息"},
   {id:"wake",  em:"🌅", name:"起床", p:1},
   {id:"sleep", em:"🛏️", name:"睡覺", p:1}
 ];
-const TL_MAX_ACTS = 16, TL_NAME_MAX = 8;
+const TL_MAX_ACTS = 20, TL_NAME_MAX = 8;
 function tlActs(){                     // 存檔不可信：格式不對的直接不算；一個都不剩就退回內建
   const raw = Array.isArray(SHARED.tlActs) ? SHARED.tlActs : [];
   const ok = raw.filter(a=>a && typeof a.id === "string" && /^[\w-]{1,16}$/.test(a.id) && typeof a.name === "string" && a.name.trim());
@@ -5340,12 +5343,12 @@ function packDeck(o){                  // 緊湊格式，備份碼才貼得進�
   const cp = (o.coupons || []).map(c=>`${sd(c.d)}:${sd(c.on)}:${ev(c)}:${c.why||""}`).join(";");
   const rw = (Array.isArray(o.rewards) ? o.rewards : []).map(r=>`${bkId(r.id)}:${+r.m||0}:${cleanWhy(r.name)}`).join(";");   // 第 13 欄：爸媽自訂的獎勵
   // 第 14、15 欄：時間紀錄（time.html）。14 是事項清單（代號:表情:旗標:名字，旗標 1 = 關掉、p = 時間點），
-  // 15 是每天的打卡（代號.開始.結束.旗標，旗標 x = 忘了按停止、p = 時間點，時間點的結束是空的）。
+  // 15 是每天的打卡（代號.開始.結束.旗標.備註，旗標 x = 忘了按停止、p = 時間點，時間點的結束是空的；備註放最後一段，裡面的句點還原時接回來）。
   // 進行中（沒有結束）的那段不帶：備份碼是一份定格，「還在做」不是能還原的狀態。
   const ta = (Array.isArray(o.tlActs) ? o.tlActs : []).map(a=>`${bkId(a.id)}:${cleanWhy(a.em)}:${a.off ? 1 : ""}${a.p ? "p" : ""}:${cleanWhy(a.name)}`).join(";");
   const tl = Object.keys(o.tl || {}).sort().map(k=>{
     const segs = (Array.isArray(o.tl[k]) ? o.tl[k] : []).filter(x=>x && (x.p ? Number.isInteger(x.s) : Number.isInteger(x.e)))
-      .map(x=>`${bkId(x.a)}.${x.s|0}.${x.p ? "" : x.e|0}.${x.x ? "x" : ""}${x.p ? "p" : ""}`.replace(/\.$/, ""));
+      .map(x=>`${bkId(x.a)}.${x.s|0}.${x.p ? "" : x.e|0}.${x.x ? "x" : ""}${x.p ? "p" : ""}${x.n ? "." + cleanWhy(x.n) : ""}`.replace(/\.+$/, ""));
     return segs.length ? `${sd(k)}:${segs.join(",")}` : "";
   }).filter(Boolean).join(";");
   return [o.done||0, o.right||0, b.earned||0, b.used||0, b.bonus||0, st, dy, gf, cp, fd, pt, by, rw, ta, tl].join("|");
@@ -5431,6 +5434,7 @@ function unpackDeck(str, ver){
         const f = t.split("."), fl = f[3] || "", x = {a:bkId(f[0]).slice(0, 16), s:+f[1]};
         if(fl.includes("p")) x.p = 1; else x.e = +f[2];
         if(fl.includes("x")) x.x = 1;
+        if(f.length > 4 && cleanWhy(f.slice(4).join("."))) x.n = cleanWhy(f.slice(4).join("."));
         return x;
       }).filter(x=>x.a && Number.isInteger(x.s) && x.s >= 0 && x.s < 1440 && (x.p || (Number.isInteger(x.e) && x.e > x.s && x.e <= 1440)));
       if(list.length) o.tl[d] = list;
@@ -5603,7 +5607,7 @@ function syncSummary(){
       const days = {};
       Object.keys(T).sort().slice(-7).forEach(k=>{
         days[k] = (Array.isArray(T[k]) ? T[k] : []).filter(x=>x && typeof x.a === "string").map(x=>{
-          const y = {a:x.a, s:+x.s || 0}; if(Number.isInteger(x.e)) y.e = x.e; if(x.x) y.x = 1; if(x.p) y.p = 1; return y; });
+          const y = {a:x.a, s:+x.s || 0}; if(Number.isInteger(x.e)) y.e = x.e; if(x.x) y.x = 1; if(x.p) y.p = 1; if(x.n) y.n = String(x.n).slice(0, 20); return y; });
       });
       return {acts:tlActs().map(a=>{ const b = {id:a.id, em:String(a.em || "").slice(0, 8), name:String(a.name).slice(0, 8)}; if(a.p) b.p = 1; return b; }), days};
     })(),

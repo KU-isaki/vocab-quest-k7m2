@@ -112,6 +112,7 @@ input{font:inherit; width:100%; padding:11px 12px; border-radius:11px; margin:0 
 .legend .n{font-variant-numeric:tabular-nums; color:var(--ink)}
 .legend .mx{font-variant-numeric:tabular-nums; color:var(--ink-faint); font-size:11.5px}
 .legend .mx b{color:var(--no); font-weight:600}
+.legend li.sleep::before{background:var(--brand-soft); border:1px solid var(--brand)}
 </style>
 </head>
 <body>
@@ -269,7 +270,7 @@ function petSection(sum){
 /* 時間紀錄（time.html）：最近 7 天回家後的時間去哪了。色帶 15:00～24:00，顏色照事項在清單裡的位置配（跟 time.html 同一套）。
    事項名稱是小孩裝置傳上來的字串，一律 esc()；分鐘一律 num() 再夾在 0～1440；代號只拿來比對，不進 HTML。 */
 const TL_PAL = ["#7B8CDE","#F2A65A","#4FB286","#E76F8B","#8E6CC8","#3FB8C8","#D9A03D","#9CA3AF","#C46BAE","#5E9CD8","#A7B44B","#D96A4C"];
-const TL_FROM = 15 * 60, TL_TO = 24 * 60;
+const TL_TO = 24 * 60;
 function timeSection(sum){
   const T = (sum.tl && typeof sum.tl === "object") ? sum.tl : null;
   if(!T) return "";
@@ -284,21 +285,23 @@ function timeSection(sum){
   const clamp = v => Math.max(0, Math.min(1440, Math.floor(num(v))));
   const hm = m => String(Math.floor(m / 60)).padStart(2,"0") + ":" + String(m % 60).padStart(2,"0");
   const dur = m => m >= 60 ? `${Math.floor(m / 60)} 小時${m % 60 ? " " + m % 60 + " 分" : ""}` : `${m} 分`;
-  const pct = m => Math.max(0, Math.min(100, (m - TL_FROM) / (TL_TO - TL_FROM) * 100));
   // 時間點（到家、睡覺）只有 s；進行中的那段沒有 e、也沒有 p。兩者在色帶上都不是一塊，一個是細線、一個是斜線。
   // 進行中的那段畫到「上傳的那一刻」為止（sum.at）：家長看到的是一份定格，不是即時的
   const at = new Date(num(sum.at) * 1000), atK = num(sum.at) ? dk(at) : "", atM = at.getHours() * 60 + at.getMinutes();
   const segsOf = k => (Array.isArray(days[k]) ? days[k] : []).filter(x=>x && typeof x === "object" && typeof x.a === "string")
-    .map(x=>({a:x.a, s:clamp(x.s), e:x.p ? clamp(x.s) : x.e === undefined ? (k === atK ? Math.max(clamp(x.s) + 1, atM) : 1440) : clamp(x.e), x:!!x.x, p:!!x.p, open:!x.p && x.e === undefined}))
+    .map(x=>({a:x.a, s:clamp(x.s), e:x.p ? clamp(x.s) : x.e === undefined ? (k === atK ? Math.max(clamp(x.s) + 1, atM) : 1440) : clamp(x.e), x:!!x.x, p:!!x.p, open:!x.p && x.e === undefined, n:String(x.n || "").slice(0, 20)}))
     .filter(x=>x.p ? x.s < 1440 : x.e > x.s).sort((a, b)=>a.s - b.s);
   if(!keys.some(k=>segsOf(k).length)) return "";
+  // 起點跟著紀錄走：最早的一筆在幾點就從那個整點開始，最晚 15:00（假日整天在家會自動拉到早上）
+  const TL_FROM = Math.floor(Math.min(15 * 60, ...keys.flatMap(k=>segsOf(k).map(x=>x.s))) / 60) * 60;
+  const pct = m => Math.max(0, Math.min(100, (m - TL_FROM) / (TL_TO - TL_FROM) * 100));
   const rows = keys.map(k=>{
     const segs = segsOf(k).filter(x=>(x.p ? x.s >= TL_FROM : x.e > TL_FROM) && x.s < TL_TO);
     return `<div class="dl${k === today ? " today" : ""}">${esc(md(k))}</div><div class="row" role="img" aria-label="${esc(md(k))}：${esc(segs.length ? segs.map(x=>`${hm(x.s)} ${name(x.a)}${x.p ? "" : " " + (x.open ? "還在做" : dur(x.e - x.s))}`).join("、") : "沒有紀錄")}">`
       + segs.map(x=>x.p ? `<i class="pt" style="left:${pct(x.s)}%"></i>`
                         : `<i class="${x.x || x.open ? "trunc" : ""}" style="left:${pct(x.s)}%;width:${Math.max(0.6, pct(x.e) - pct(x.s))}%;--c:${color(x.a)}"></i>`).join("") + `</div>`;
   }).join("");
-  const ticks = [15, 18, 21, 24].map(h=>`<span style="left:${(h * 60 - TL_FROM) / (TL_TO - TL_FROM) * 100}%">${h}</span>`).join("");
+  const ticks = [3, 6, 9, 12, 15, 18, 21, 24].filter(h=>h * 60 > TL_FROM).map(h=>`<span style="left:${(h * 60 - TL_FROM) / (TL_TO - TL_FROM) * 100}%">${h}</span>`).join("");
   // 每一項：本週合計、最長一次（哪天）—— 要抓的是「同一件事越拖越長」。空檔 = 兩筆紀錄之間沒記的時間。
   // 進行中的那段、忘了按停止被收在午夜的那段都不算：長度不是真的，拿去當「最長」會誤導
   const tot = {}, mx = {};
@@ -314,12 +317,21 @@ function timeSection(sum){
     });
   });
   const ids = acts.map(a=>a.id).filter(id=>tot[id]).concat(Object.keys(tot).filter(id=>!acts.some(a=>a.id === id)));
+  // 睡眠：前一天最後一個「睡覺」到當天第一個「起床」（內建的兩個時間點，代號寫死）
+  const prevK = k => { const d = new Date(k + "T12:00:00"); d.setDate(d.getDate() - 1); return dk(d); };
+  const sleeps = keys.map(k=>{ const bed = segsOf(prevK(k)).filter(x=>x.p && x.a === "sleep").pop(), up = segsOf(k).find(x=>x.p && x.a === "wake");
+                               return bed && up ? {k, m:1440 - bed.s + up.s} : null; }).filter(Boolean);
+  const slRow = sleeps.length ? (()=>{ const min = sleeps.reduce((a, b)=>b.m < a.m ? b : a), avg = Math.round(sleeps.reduce((n, x)=>n + x.m, 0) / sleeps.length);
+    return `<li class="sleep"><span class="nm">🛏️ 睡眠</span><span class="n">平均 ${esc(dur(avg))}</span><span class="mx">最短 <b>${esc(dur(min.m))}</b>（${esc(md(min.k))}）</span></li>`; })() : "";
+  // 備註（寫什麼功課）：最近的幾筆，純文字
+  const notes = keys.flatMap(k=>segsOf(k).filter(x=>x.n).map(x=>`<li><span class="d2">${esc(md(k))} ${hm(x.s)}</span>${esc(name(x.a))}　${esc(x.n)}</li>`)).slice(-12);
   return `<h3>回家後的時間去哪了</h3>
-    <p class="muted">最近 7 天，15:00 到 24:00，小孩自己打卡的。細直線是時間點（到家、睡覺），斜線是忘了按停止、被收在午夜的那段。
+    <p class="muted">最近 7 天，${hm(TL_FROM)} 到 24:00（平日從 15:00 起，假日有早上的紀錄就從早上起），小孩自己打卡的。細直線是時間點（到家、睡覺），斜線是忘了按停止、被收在午夜的那段。
       空檔不一定不好，要一起看的是太碎的空檔、還有同一件事越拖越長（每一項標了最長的一次）。這份紀錄不換分鐘、不算連續。</p>
     <div class="band"><div></div><div class="ticks">${ticks}</div>${rows}</div>
     <ul class="legend">${ids.map(id=>`<li style="--c:${color(id)}"><span class="nm">${esc(name(id))}</span><span class="n">${esc(dur(tot[id]))}</span><span class="mx">最長 <b>${esc(dur(mx[id].m))}</b>（${esc(md(mx[id].k))}）</span></li>`).join("")}
-      <li class="gap"><span class="nm">空檔</span><span class="n">${esc(dur(gap))}</span><span class="mx">兩筆紀錄之間沒記的時間</span></li></ul>`;
+      <li class="gap"><span class="nm">空檔</span><span class="n">${esc(dur(gap))}</span><span class="mx">兩筆紀錄之間沒記的時間</span></li>${slRow}</ul>
+    ${notes.length ? `<h3>備註</h3><ul class="g">${notes.join("")}</ul>` : ""}`;
 }
 
 /* 分頁：總覽、單字、成語、貓、時間、獎勵。沒練成語、沒養貓、沒打卡的小孩就不給那幾頁，免得點進去一片空白。
