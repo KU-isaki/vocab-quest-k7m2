@@ -292,6 +292,7 @@ function timeSection(sum){
     .map(x=>({a:x.a, s:clamp(x.s), e:x.p ? clamp(x.s) : x.e === undefined ? (k === atK ? Math.max(clamp(x.s) + 1, atM) : 1440) : clamp(x.e), x:!!x.x, p:!!x.p, open:!x.p && x.e === undefined, n:String(x.n || "").slice(0, 20)}))
     .filter(x=>x.p ? x.s < 1440 : x.e > x.s).sort((a, b)=>a.s - b.s);
   if(!keys.some(k=>segsOf(k).length)) return "";
+  const complete = k => { const l = segsOf(k); return l.some(x=>x.p && (x.a === "home" || x.a === "wake")) && l.some(x=>x.p && x.a === "sleep") && l.some(x=>!x.p && !x.open); };
   // 起點跟著紀錄走：最早的一筆在幾點就從那個整點開始，最晚 15:00（假日整天在家會自動拉到早上）
   const TL_FROM = Math.floor(Math.min(15 * 60, ...keys.flatMap(k=>segsOf(k).map(x=>x.s))) / 60) * 60;
   const pct = m => Math.max(0, Math.min(100, (m - TL_FROM) / (TL_TO - TL_FROM) * 100));
@@ -326,8 +327,11 @@ function timeSection(sum){
   // 備註（寫什麼功課）：最近的幾筆，純文字
   const notes = keys.flatMap(k=>segsOf(k).filter(x=>x.n).map(x=>`<li><span class="d2">${esc(md(k))} ${hm(x.s)}</span>${esc(name(x.a))}　${esc(x.n)}</li>`)).slice(-12);
   return `<h3>回家後的時間去哪了</h3>
-    <p class="muted">最近 7 天，${hm(TL_FROM)} 到 24:00（平日從 15:00 起，假日有早上的紀錄就從早上起），小孩自己打卡的。細直線是時間點（到家、睡覺），斜線是忘了按停止、被收在午夜的那段。
+    <p class="muted">最近 7 天，${hm(TL_FROM)} 到 24:00（平日從 15:00 起，假日有早上的紀錄就從早上起），小孩自己打卡的；練英文、練成語那兩段是練習頁自動記的。
+      細直線是時間點（到家、睡覺），斜線是忘了按停止、被收在午夜的那段。
       空檔不一定不好，要一起看的是太碎的空檔、還有同一件事越拖越長（每一項標了最長的一次）。這份紀錄不換分鐘、不算連續。</p>
+    <p class="muted">紀錄連續 <b>${num(T.streak)}</b> 天、這週記完整 <b>${keys.filter(complete).length}</b>/7 天（有開頭、有事、有睡覺才算一天；連續 14 天／30 天各解鎖一件貓房裝飾，換不成分鐘）。
+      覺得值得鼓勵，用小孩手機設定頁的「🎁 贈送遊戲時間」，原因寫「這週紀錄完整」—— 是你看過之後給的，不是系統自動換的。</p>
     <div class="band"><div></div><div class="ticks">${ticks}</div>${rows}</div>
     <ul class="legend">${ids.map(id=>`<li style="--c:${color(id)}"><span class="nm">${esc(name(id))}</span><span class="n">${esc(dur(tot[id]))}</span><span class="mx">最長 <b>${esc(dur(mx[id].m))}</b>（${esc(md(mx[id].k))}）</span></li>`).join("")}
       <li class="gap"><span class="nm">空檔</span><span class="n">${esc(dur(gap))}</span><span class="mx">兩筆紀錄之間沒記的時間</span></li>${slRow}</ul>

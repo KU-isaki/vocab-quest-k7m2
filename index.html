@@ -1093,7 +1093,7 @@ a.btn{text-decoration:none}
   }
 })();
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.24-e";
+const VERSION = "2026.09.24-f";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（key 用小寫單字） =================
@@ -4078,6 +4078,7 @@ function startRound(useWrong, count){
     ? WORDS.filter(w=>stat(w.w).x > 0 && stat(w.w).streak < 2)
     : pool();
   if(!src.length){ alert("目前沒有錯題，先做一般練習吧！"); return; }
+  tlAuto("en");                          // 練習自動記進時間紀錄
   queue = drawRound(src, roundSize); idx = 0; roundRight = 0; missed = [];
   $("startCard").hidden = true; $("todayCard").hidden = true; $("sumCard").hidden = true; $("qCard").hidden = false;
   showQ();
@@ -4280,6 +4281,7 @@ function grade(ok){
   const mw = (day.mw === undefined ? day.n : day.mw) + LV.mul;
   day.n++; if(ok) day.r++;
   day.mw = Math.round(mw * 100) / 100;
+  tlAuto("en");
   checkGoal(day);
   save(); refreshHeader();
 
@@ -5121,7 +5123,8 @@ $("btnRewards").onclick = () => {
 
 /* ---- 時間紀錄（time.html）的事項清單 ----
    存在 SHARED.tlActs（{id, em, name, off, p}），p 是「時間點」（到家、睡覺：只記幾點幾分，不是一段時間）。
-   nt:1 的（寫功課）開始時會問備註。沒有就是內建十四項（跟 time.html 的 DEF_ACTS 同一份，測試會對）。
+   nt:1 的（寫功課）開始時會問備註；auto:1 的（練英文、練成語）由練習頁自動記、不出現在格子裡、不能關。
+   沒有就是內建十六項（跟 time.html 的 DEF_ACTS 同一份，測試會對）。
    改要家長密碼。只往後加、不重排：time.html 的顏色是照位置配的，重排會讓同一件事換顏色。
    還沒被任何紀錄用過的才能刪；用過的只能關掉 —— 紀錄只存代號，刪了名字就沒了。 */
 const TL_DEF_ACTS = [
@@ -5138,7 +5141,9 @@ const TL_DEF_ACTS = [
   {id:"tv",    em:"📺", name:"看電視"},
   {id:"rest",  em:"😴", name:"休息"},
   {id:"wake",  em:"🌅", name:"起床", p:1},
-  {id:"sleep", em:"🛏️", name:"睡覺", p:1}
+  {id:"sleep", em:"🛏️", name:"睡覺", p:1},
+  {id:"en",    em:"✏️", name:"練英文", auto:1},
+  {id:"zh",    em:"🐈", name:"練成語", auto:1}
 ];
 const TL_MAX_ACTS = 20, TL_NAME_MAX = 8;
 function tlActs(){                     // 存檔不可信：格式不對的直接不算；一個都不剩就退回內建
@@ -5146,11 +5151,38 @@ function tlActs(){                     // 存檔不可信：格式不對的直�
   const ok = raw.filter(a=>a && typeof a.id === "string" && /^[\w-]{1,16}$/.test(a.id) && typeof a.name === "string" && a.name.trim());
   return ok.length ? ok : TL_DEF_ACTS.map(a=>Object.assign({}, a));
 }
+/* 時間紀錄的「連續天數」：一天要有開頭（到家或起床）、有結尾（睡覺）、中間至少一段事，才算記完整；
+   今天還沒記完不算中斷。只拿來解鎖裝飾與鼓勵，不換分鐘、不算進練習的連續。三頁各一份，測試會對。 */
+function tlComplete(k){
+  const list = (SHARED.tl && Array.isArray(SHARED.tl[k]) ? SHARED.tl[k] : []).filter(x=>x && typeof x.a === "string");
+  return list.some(x=>x.p && (x.a === "home" || x.a === "wake")) && list.some(x=>x.p && x.a === "sleep") && list.some(x=>!x.p && Number.isInteger(x.e));
+}
+function tlStreak(){
+  let n = 0; const t = new Date();
+  if(!tlComplete(dayKey(t))) t.setDate(t.getDate() - 1);
+  while(tlComplete(dayKey(t))){ n++; t.setDate(t.getDate() - 1); }
+  return n;
+}
+/* 練習自動記進時間紀錄（代號 ID）：開始一輪記一段，正在做的手動那段在這一刻結束（點下一件上一件就結束，同一條規則）；
+   之後每答一題把結束時間往後推，所以永遠沒有「開著」的自動段，關掉 App 也不會留一段到午夜。
+   同一件事 5 分鐘內再開一輪就接在同一段後面。這是唯一「系統寫的」紀錄（au:1），時間頁不給改。 */
+function tlAuto(id){
+  const t = new Date(), now = t.getHours() * 60 + t.getMinutes(), k = dayKey();
+  const T = (SHARED.tl && typeof SHARED.tl === "object") ? SHARED.tl : (SHARED.tl = {});
+  const list = Array.isArray(T[k]) ? T[k] : (T[k] = []);
+  const cur = list.find(x=>x && !x.p && x.e === undefined);
+  if(cur){ if(now <= cur.s) list.splice(list.indexOf(cur), 1); else cur.e = now; }
+  const last = list.filter(x=>x && x.au && x.a === id).pop();
+  if(last && Number.isInteger(last.e) && now - last.e <= 5 && now >= last.s) last.e = Math.min(1440, Math.max(last.e, now, last.s + 1));
+  else list.push({a:id, s:Math.min(now, 1439), e:Math.min(now + 1, 1440), au:1});
+  list.sort((a, b)=>a.s - b.s);
+  saveShared();
+}
 const tlUsed = id => Object.keys(SHARED.tl || {}).some(k=>(Array.isArray(SHARED.tl[k]) ? SHARED.tl[k] : []).some(x=>x && x.a === id));
 $("btnTlActs").onclick = () => {
   if(!checkPin()) return;
   const as = tlActs();
-  const t = prompt("時間紀錄的事項：\n" + as.map((a, i)=>`${i + 1}. ${a.em || ""} ${a.name}${a.p ? "（時間點）" : ""}${a.off ? "（已關）" : ""}`).join("\n")
+  const t = prompt("時間紀錄的事項：\n" + as.map((a, i)=>`${i + 1}. ${a.em || ""} ${a.name}${a.p ? "（時間點）" : ""}${a.auto ? "（練習自動記）" : ""}${a.off ? "（已關）" : ""}`).join("\n")
     + "\n\n" + (as.length < TL_MAX_ACTS ? `輸入新事項的名稱（${TL_NAME_MAX} 字以內）` : `已經有 ${TL_MAX_ACTS} 項了`)
     + "，或輸入編號：用過的會關掉／打開，沒用過的可以刪掉：");
   if(t === null || !String(t).trim()) return;
@@ -5158,6 +5190,7 @@ $("btnTlActs").onclick = () => {
   if(n){
     const a = as[n - 1];
     if(!a){ toast("沒有這個編號"); return; }
+    if(a.auto){ toast(`「${a.name}」是練習時自動記的，不能關也不能刪`); return; }
     if(!tlUsed(a.id)){
       if(!confirm(`「${a.name}」還沒有任何紀錄用到。刪掉它？`)) return;
       SHARED.tlActs = as.filter(x=>x !== a); saveShared(); toast(`已刪掉「${a.name}」`); return;
@@ -5382,10 +5415,10 @@ function packDeck(o){                  // 緊湊格式，備份碼才貼得進�
   // 第 14、15 欄：時間紀錄（time.html）。14 是事項清單（代號:表情:旗標:名字，旗標 1 = 關掉、p = 時間點），
   // 15 是每天的打卡（代號.開始.結束.旗標.備註，旗標 x = 忘了按停止、p = 時間點，時間點的結束是空的；備註放最後一段，裡面的句點還原時接回來）。
   // 進行中（沒有結束）的那段不帶：備份碼是一份定格，「還在做」不是能還原的狀態。
-  const ta = (Array.isArray(o.tlActs) ? o.tlActs : []).map(a=>`${bkId(a.id)}:${cleanWhy(a.em)}:${a.off ? 1 : ""}${a.p ? "p" : ""}:${cleanWhy(a.name)}`).join(";");
+  const ta = (Array.isArray(o.tlActs) ? o.tlActs : []).map(a=>`${bkId(a.id)}:${cleanWhy(a.em)}:${a.off ? 1 : ""}${a.p ? "p" : ""}${a.auto ? "a" : ""}${a.nt ? "n" : ""}:${cleanWhy(a.name)}`).join(";");
   const tl = Object.keys(o.tl || {}).sort().map(k=>{
     const segs = (Array.isArray(o.tl[k]) ? o.tl[k] : []).filter(x=>x && (x.p ? Number.isInteger(x.s) : Number.isInteger(x.e)))
-      .map(x=>`${bkId(x.a)}.${x.s|0}.${x.p ? "" : x.e|0}.${x.x ? "x" : ""}${x.p ? "p" : ""}${x.n ? "." + cleanWhy(x.n) : ""}`.replace(/\.+$/, ""));
+      .map(x=>`${bkId(x.a)}.${x.s|0}.${x.p ? "" : x.e|0}.${x.x ? "x" : ""}${x.p ? "p" : ""}${x.au ? "a" : ""}${x.n ? "." + cleanWhy(x.n) : ""}`.replace(/\.+$/, ""));
     return segs.length ? `${sd(k)}:${segs.join(",")}` : "";
   }).filter(Boolean).join(";");
   return [o.done||0, o.right||0, b.earned||0, b.used||0, b.bonus||0, st, dy, gf, cp, fd, pt, by, rw, ta, tl].join("|");
@@ -5459,6 +5492,8 @@ function unpackDeck(str, ver){
       const a = {id:bkId(f[0]).slice(0, 16), em:cleanWhy(f[1]).slice(0, 8), name:cleanWhy(f[3]).slice(0, 8)};
       if(f[2].includes("1")) a.off = true;
       if(f[2].includes("p")) a.p = 1;
+      if(f[2].includes("a")) a.auto = 1;
+      if(f[2].includes("n")) a.nt = 1;
       o.tlActs.push(a);
     });
   }
@@ -5471,6 +5506,7 @@ function unpackDeck(str, ver){
         const f = t.split("."), fl = f[3] || "", x = {a:bkId(f[0]).slice(0, 16), s:+f[1]};
         if(fl.includes("p")) x.p = 1; else x.e = +f[2];
         if(fl.includes("x")) x.x = 1;
+        if(fl.includes("a")) x.au = 1;
         if(f.length > 4 && cleanWhy(f.slice(4).join("."))) x.n = cleanWhy(f.slice(4).join("."));
         return x;
       }).filter(x=>x.a && Number.isInteger(x.s) && x.s >= 0 && x.s < 1440 && (x.p || (Number.isInteger(x.e) && x.e > x.s && x.e <= 1440)));
@@ -5644,9 +5680,9 @@ function syncSummary(){
       const days = {};
       Object.keys(T).sort().slice(-7).forEach(k=>{
         days[k] = (Array.isArray(T[k]) ? T[k] : []).filter(x=>x && typeof x.a === "string").map(x=>{
-          const y = {a:x.a, s:+x.s || 0}; if(Number.isInteger(x.e)) y.e = x.e; if(x.x) y.x = 1; if(x.p) y.p = 1; if(x.n) y.n = String(x.n).slice(0, 20); return y; });
+          const y = {a:x.a, s:+x.s || 0}; if(Number.isInteger(x.e)) y.e = x.e; if(x.x) y.x = 1; if(x.p) y.p = 1; if(x.au) y.au = 1; if(x.n) y.n = String(x.n).slice(0, 20); return y; });
       });
-      return {acts:tlActs().map(a=>{ const b = {id:a.id, em:String(a.em || "").slice(0, 8), name:String(a.name).slice(0, 8)}; if(a.p) b.p = 1; return b; }), days};
+      return {acts:tlActs().map(a=>{ const b = {id:a.id, em:String(a.em || "").slice(0, 8), name:String(a.name).slice(0, 8)}; if(a.p) b.p = 1; return b; }), days, streak:tlStreak()};
     })(),
     decks,
     feed:SHARED.feed || null,                       // 成語ㄚ喵的飼料帳

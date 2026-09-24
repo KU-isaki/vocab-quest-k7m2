@@ -62,7 +62,7 @@ const wait = () => new Promise(r=>setTimeout(r, 60));
 {
   const t = bootTime(null, 1000);
   ok(disp(t, t.$("noShared")) !== "none", "沒開過單字闖關的裝置要講清楚記不起來");
-  ok(chips(t).length === 14, `內建十四項事項, 實得 ${chips(t).length}`);
+  ok(chips(t).length === 14 && !chip(t, "en") && !chip(t, "zh"), `內建十六項、格子裡十四項（練英文、練成語自動記，不給點）, 實得 ${chips(t).length}`);
   ok(chips(t).filter(b=>b.classList.contains("pt")).map(b=>b.dataset.act).join() === "home,wake,sleep", "到家、起床、睡覺是時間點，要畫成虛線框");
   t.click(chip(t, "wc"));
   ok(t.ls.getItem("cq-shared-v1") === null, "讀不到存摺就不得憑空造一份");
@@ -182,7 +182,7 @@ const wait = () => new Promise(r=>setTimeout(r, 60));
   ok(/寫功課/.test(t.$("legend").textContent), "關掉的事項舊紀錄照樣看得到");
   ok(/已刪掉的事項/.test(t.$("legend").textContent), "紀錄指到不存在的事項不得讓整頁壞掉");
   const t2 = bootTime(ls=>ls.setItem("cq-shared-v1", JSON.stringify(Object.assign({}, BASE, {tlActs:[{id:"bad id!", name:"x"}]}))), 1000);
-  ok(chips(t2).length === 14, "清單全壞就退回內建十四項");
+  ok(chips(t2).length === 14, "清單全壞就退回內建（格子十四項）");
   // 90 天
   const old = {}; for(let i = 1; i <= 100; i++){ old[key(new Date(Date.now() - i * 86400000))] = [{a:"hw", s:1000, e:1060}]; }
   const t3 = bootTime(ls=>ls.setItem("cq-shared-v1", JSON.stringify(Object.assign({}, BASE, {tl:old}))), 1000);
@@ -203,28 +203,90 @@ const wait = () => new Promise(r=>setTimeout(r, 60));
   a.say("0000", "游泳", "🏊"); a.click(a.$("btnTlActs"));
   ok(!a.ev("SHARED.tlActs"), "密碼錯不得動");
   a.say("1234", "游泳", "🏊"); a.click(a.$("btnTlActs"));
-  ok(a.ev("tlActs().length") === 15 && a.ev("tlActs()[14].name") === "游泳" && a.ev("tlActs()[14].em") === "🏊" && !a.ev("tlActs()[14].p") && /^c/.test(a.ev("tlActs()[14].id")), `加得了（confirm 說是一段時間）, 實得 ${JSON.stringify(a.ev("tlActs()"))}`);
-  ok(a.ev("tlActs()[0].id") === "home" && a.ev("tlActs()[1].id") === "wc", "內建十四項要一起寫進去、順序不變（顏色照位置配）");
+  ok(a.ev("tlActs().length") === 17 && a.ev("tlActs()[16].name") === "游泳" && a.ev("tlActs()[16].em") === "🏊" && !a.ev("tlActs()[16].p") && /^c/.test(a.ev("tlActs()[16].id")), `加得了（confirm 說是一段時間）, 實得 ${JSON.stringify(a.ev("tlActs()"))}`);
+  ok(a.ev("tlActs()[0].id") === "home" && a.ev("tlActs()[1].id") === "wc", "內建十六項要一起寫進去、順序不變（顏色照位置配）");
   a.w.confirm = () => false;                                  // 「取消」= 時間點
   a.say("1234", "出門", "🚌"); a.click(a.$("btnTlActs"));
-  ok(a.ev("tlActs().length") === 16 && a.ev("tlActs()[15].p") === 1, "新增時可以選成時間點");
+  ok(a.ev("tlActs().length") === 18 && a.ev("tlActs()[17].p") === 1, "新增時可以選成時間點");
   a.w.confirm = () => true;
   a.say("1234", "游泳", ""); a.click(a.$("btnTlActs"));
-  ok(a.ev("tlActs().length") === 16, "同名不得重複加");
+  ok(a.ev("tlActs().length") === 18, "同名不得重複加");
   a.say("1234", "a|b;c 很長很長很長很長的名字", ""); a.click(a.$("btnTlActs"));
-  ok(a.ev("tlActs()[16].name") === "a b c 很長", `名稱要去分隔符、限 8 字, 實得「${a.ev("tlActs()[16].name")}」`);
-  a.say("1234", "17"); a.click(a.$("btnTlActs"));            // 沒用過 → 刪
-  ok(a.ev("tlActs().length") === 16, "沒用過的事項輸入編號可以刪掉");
+  ok(a.ev("tlActs()[18].name") === "a b c 很長", `名稱要去分隔符、限 8 字, 實得「${a.ev("tlActs()[18].name")}」`);
+  a.say("1234", "19"); a.click(a.$("btnTlActs"));            // 沒用過 → 刪
+  ok(a.ev("tlActs().length") === 18, "沒用過的事項輸入編號可以刪掉");
   a.ev(`SHARED.tl = {[dayKey()]:[{a:"hw", s:1000, e:1060}]}; saveShared();`);
   a.say("1234", "4"); a.click(a.$("btnTlActs"));             // 用過 → 關
-  ok(a.ev("tlActs().length") === 16 && a.ev("tlActs()[3].off") === true, "用過的事項只能關掉，不得刪");
+  ok(a.ev("tlActs().length") === 18 && a.ev("tlActs()[3].off") === true, "用過的事項只能關掉，不得刪");
   a.say("1234", "4"); a.click(a.$("btnTlActs"));
   ok(!a.ev("tlActs()[3].off"), "再輸入一次就打開");
+  a.say("1234", "15"); a.click(a.$("btnTlActs"));
+  ok(!a.ev("tlActs()[14].off") && a.ev("tlActs().length") === 18, "練英文是自動記的，不能關也不能刪");
   for(let i = 0; i < 5; i++){ a.say("1234", "新" + i, ""); a.click(a.$("btnTlActs")); }
   ok(a.ev("tlActs().length") === 20, `最多 20 項, 實得 ${a.ev("tlActs().length")}`);
   // time.html 要吃到
   const t = boot(timeHtml, "time.html", ls=>ls.setItem("cq-shared-v1", a.ls.getItem("cq-shared-v1")), {min:1000});
-  ok(chips(t).length === 20 && /游泳/.test(t.$("actGrid").textContent) && chip(t, a.ev("tlActs()[12].id")).classList.contains("pt"), "時間紀錄那頁要看到家長改的清單，含時間點");
+  ok(chips(t).length === 18 && /游泳/.test(t.$("actGrid").textContent) && chip(t, a.ev("tlActs()[17].id")).classList.contains("pt"), "時間紀錄那頁要看到家長改的清單，含時間點");
+}
+
+// ---------- ⑥.5 連續天數、練習自動記錄、貓房裝飾解鎖 ----------
+{
+  const day = (i, full) => { const k = key(new Date(Date.now() - i * 86400000));
+    return [k, full ? [{a:"home", s:1000, p:1}, {a:"hw", s:1010, e:1060}, {a:"sleep", s:1320, p:1}] : [{a:"hw", s:1010, e:1060}]]; };
+  const mk = (n, todayFull) => { const tl = {}; for(let i = 1; i <= n; i++){ const [k, v] = day(i, true); tl[k] = v; } const [k, v] = day(0, todayFull); tl[k] = v; return tl; };
+  let t = bootTime(ls=>ls.setItem("cq-shared-v1", JSON.stringify(Object.assign({}, BASE, {tl:mk(3, false)}))), 1000);
+  ok(t.ev("tlStreak()") === 3, `今天還沒記完不算中斷：連續 3 天, 實得 ${t.ev("tlStreak()")}`);
+  ok(/○ 開頭/.test(t.$("streak").textContent) && /✓ 至少一件事/.test(t.$("streak").textContent) && /○ 睡覺/.test(t.$("streak").textContent), `今天的完整度勾勾, 實得「${t.$("streak").textContent}」`);
+  ok(/紀錄連續 3 天/.test(t.$("streak").textContent) && /連續 14 天解鎖/.test(t.$("streak").textContent), "要寫連續幾天、下一個解鎖");
+  t = bootTime(ls=>ls.setItem("cq-shared-v1", JSON.stringify(Object.assign({}, BASE, {tl:mk(3, true)}))), 1000);
+  ok(t.ev("tlStreak()") === 4, "今天記完整就算進去");
+  const gap = mk(5, true); delete gap[key(new Date(Date.now() - 2 * 86400000))];
+  t = bootTime(ls=>ls.setItem("cq-shared-v1", JSON.stringify(Object.assign({}, BASE, {tl:gap}))), 1000);
+  ok(t.ev("tlStreak()") === 2, "中間斷一天就從斷點重算");
+  const a = boot(indexHtml, "index.html", ls=>ls.setItem("cq-shared-v1", JSON.stringify(Object.assign({}, BASE, {tl:mk(14, false)}))));
+  ok(a.ev("tlStreak()") === 14 && a.ev("syncSummary().tl.streak") === 14, "單字闖關算出來一樣，摘要要帶連續天數");
+  ok(a.ev("JSON.stringify(TL_DEF_ACTS)") === bootTime().ev("JSON.stringify(DEF_ACTS)"), "內建清單（含自動項）兩頁同一份");
+  // 練習自動記：開始一輪記一段、正在做的手動那段結束；每題往後延；不給改
+  const b = boot(indexHtml, "index.html", ls=>ls.setItem("cq-shared-v1", JSON.stringify(Object.assign({}, BASE, {tl:{[today]:[{a:"hw", s:0}]}}))));
+  const at = (h, m) => b.ev(`{ const R = Date; Date = class extends R { constructor(...a){ if(a.length) super(...a); else { super(); this.setHours(${h}, ${m}, 0, 0); } } }; }`);
+  b.ev("window.RealDate = Date;");
+  at(17, 30);
+  b.click(b.$("btnStart"));
+  let L = b.ev("SHARED.tl[dayKey()]");
+  ok(L.length === 2 && L[0].a === "hw" && L[0].e === 1050 && L[1].a === "en" && L[1].s === 1050 && L[1].e === 1051 && L[1].au === 1, `開始練習：寫功課在 17:30 結束、練英文從 17:30 起, 實得 ${JSON.stringify(L)}`);
+  b.ev("Date = RealDate"); at(17, 34);
+  if(b.d.querySelector("#qBody .choice")){ b.click(b.d.querySelector("#qBody .choice")); b.click(b.$("btnCheck")); }
+  else if(b.d.querySelector("#qBody .tile")){ const ts = [...b.d.querySelectorAll("#qBody .tile")]; ts.slice(0, b.d.querySelectorAll("#qBody .slot").length).forEach(x=>b.click(x)); b.click(b.$("btnCheck")); }
+  else { b.$("typed").value = "z"; b.click(b.$("btnCheck")); }
+  L = b.ev("SHARED.tl[dayKey()]");
+  ok(L.length === 2 && L[1].e === 1054, `每答一題把結束時間推到現在（17:34）, 實得 ${JSON.stringify(L)}`);
+  b.ev("Date = RealDate"); at(17, 38); b.ev('tlAuto("en")');
+  ok(b.ev("SHARED.tl[dayKey()].length") === 2 && b.ev("SHARED.tl[dayKey()][1].e") === 1058, "5 分鐘內再開一輪接在同一段後面");
+  b.ev("Date = RealDate"); at(18, 0); b.ev('tlAuto("en")');
+  ok(b.ev("SHARED.tl[dayKey()].length") === 3 && b.ev("SHARED.tl[dayKey()][2].s") === 1080, "隔太久就是新的一段");
+  b.ev("Date = RealDate");
+  const tt = boot(timeHtml, "time.html", ls=>ls.setItem("cq-shared-v1", b.ls.getItem("cq-shared-v1")), {min:1100});
+  const auto = [...tt.d.querySelectorAll("#segList details.seg")].find(d=>/練英文/.test(d.textContent));
+  ok(auto && !auto.querySelector("form") && /自動記/.test(auto.textContent), "自動記的那段在時間頁不給改");
+  ok(/練英文/.test(tt.$("legend").textContent), "但合計要算進去");
+  const code = b.ev("exportCode()"), r = boot(indexHtml, "index.html", shared());
+  r.ev(`importCode(${JSON.stringify(code)})`);
+  ok(r.ev("SHARED.tl[dayKey()][1].au") === 1, "自動旗標往返要在");
+  // 貓房解鎖：免費、要連續 14 天
+  const idiomHtml = fs.readFileSync(path.join(ROOT, "idiom.html"), "utf8");
+  const seedPet = (tl) => ls => ls.setItem("cq-shared-v1", JSON.stringify(Object.assign({}, BASE, {tl, pet:{free:true, cats:[{id:"c1", name:"小花", breed:"white", xp:10, hunger:80, clean:80, bonus:0, adopted:today, last:0, away:null, box:false, stage:"幼貓"}], diary:[]}})));
+  let c = boot(idiomHtml, "idiom.html", seedPet(mk(5, false)));
+  c.click([...c.d.querySelectorAll(".nav button")].find(x=>x.dataset.view === "vCat"));
+  const btn = id => c.$("furnList").querySelector(`[data-furn="${id}"]`);
+  ok(btn("plant_clock") && /🔒/.test(btn("plant_clock").textContent) && /免費/.test(btn("plant_clock").textContent) && /連續 14 天/.test(btn("plant_clock").textContent), `解鎖款要列出來、鎖著、免費, 實得「${btn("plant_clock") && btn("plant_clock").textContent}」`);
+  c.click(btn("plant_clock"));
+  ok(!c.ev('owned("plant_clock")'), "沒到 14 天換不到");
+  c = boot(idiomHtml, "idiom.html", seedPet(mk(14, false)));
+  c.click([...c.d.querySelectorAll(".nav button")].find(x=>x.dataset.view === "vCat"));
+  c.click(c.$("furnList").querySelector('[data-furn="plant_clock"]'));
+  ok(c.ev('owned("plant_clock")') && c.ev("SHARED.bank.used") === 0 && c.ev("SHARED.pet.room.plant") === "plant_clock", "連續 14 天就解鎖、不扣分鐘、直接換上");
+  ok(c.ev("tlStreak()") === 14 && !c.ev('owned("win_dawn")'), "晨光窗要 30 天，還鎖著");
+  ok(c.ev("SHARED.pet.diary.slice(-1)[0].text").includes("解鎖了時鐘花盆栽"), "日記寫解鎖，不寫花了幾分鐘");
 }
 
 // ---------- ⑦ 備份碼往返、雲端摘要、回到單字闖關時補傳 ----------
@@ -294,6 +356,10 @@ const wait = () => new Promise(r=>setTimeout(r, 60));
     ok(/09:00 到 24:00/.test(s2.textContent) && />12</.test(s2.innerHTML) && s2.querySelectorAll(".band .row i").length === 1, "家長頁：假日早上的紀錄，色帶從那個整點起"); }
   ok(!/2 小時/.test(lg) && !/到家.*分/.test(lg), "進行中的那段與時間點不算進合計");
   ok(/睡眠/.test(lg) && /平均 8 小時 30 分/.test(lg), `家長頁要有睡眠, 實得「${lg}」`);
+  ok(/紀錄連續 0 天/.test(sec.textContent) && /這週記完整 0\/7 天/.test(sec.textContent) && /贈送遊戲時間/.test(sec.textContent), "家長頁要有連續天數、這週完整幾天、鼓勵的提示");
+  { const q = bootP(mk({tl:{streak:9, acts:[{id:"home", em:"🏠", name:"到家", p:1}, {id:"hw", em:"📝", name:"寫功課"}, {id:"sleep", em:"🛏️", name:"睡覺", p:1}], days:{[y1]:[{a:"home", s:1000, p:1}, {a:"hw", s:1010, e:1060}, {a:"sleep", s:1320, p:1}], [D]:[{a:"hw", s:1000, e:1030}]}}})); await wait();
+    const s3 = q.d.querySelector('[id$="-time"].sec');
+    ok(/紀錄連續 9 天/.test(s3.textContent) && /這週記完整 1\/7 天/.test(s3.textContent), `摘要的連續天數與這週完整天數, 實得「${s3.textContent.slice(0, 160)}」`); }
   ok(/備註/.test(sec.textContent) && /數學 p\.3/.test(sec.textContent), "家長頁要列備註");
   // 進行中的那段畫到上傳那一刻為止
   const at = new Date(); at.setHours(17, 30, 0, 0);

@@ -2752,6 +2752,7 @@ function startRound(useWrong){
   wrongMode = !!useWrong;
   const src = wrongMode ? IDIOMS.filter(i=>stat(i.c).x > 0 && stat(i.c).streak < 2) : pool();
   if(!src.length){ toast("目前沒有錯過的成語，先做一般練習吧！"); return; }
+  tlAuto("zh");                          // 練習自動記進時間紀錄
   queue = drawRound(src, wrongMode ? Math.min(pickN, src.length) : pickN); idx = 0; roundRight = 0; missed = [];
   $("startCard").hidden = true; $("sumCard").hidden = true; $("chainCard").hidden = true; $("qCard").hidden = false;
   showQ(); window.scrollTo(0,0);
@@ -2893,6 +2894,7 @@ function grade(ok, got){
   const di = day.i || (day.i = {n:0, r:0});
   const mw = (di.mw === undefined ? di.n : di.mw) + DIFF.mul;   // 難度倍率累加，之後除以題數才是當天平均
   di.n++; if(ok) di.r++; di.mw = Math.round(mw * 100) / 100;
+  tlAuto("zh");
   if(DIFF.id === "hard"){ di.hn = (di.hn || 0) + 1; if(ok) di.hr = (di.hr || 0) + 1; }   // 挑戰模式另外記
   checkFeed(di);
   save(); refreshHeader();
@@ -3227,6 +3229,33 @@ function enMastered(){                 // 跟單字闖關的 mastered() 同一�
     return Object.keys(st).filter(w=>(st[w].streak || 0) >= 2 && st[w].due && today < st[w].due).length;
   }catch(e){ return 0; }
 }
+/* 時間紀錄的「連續天數」：一天要有開頭（到家或起床）、有結尾（睡覺）、中間至少一段事，才算記完整；
+   今天還沒記完不算中斷。只拿來解鎖裝飾與鼓勵，不換分鐘、不算進練習的連續。三頁各一份，測試會對。 */
+function tlComplete(k){
+  const list = (SHARED.tl && Array.isArray(SHARED.tl[k]) ? SHARED.tl[k] : []).filter(x=>x && typeof x.a === "string");
+  return list.some(x=>x.p && (x.a === "home" || x.a === "wake")) && list.some(x=>x.p && x.a === "sleep") && list.some(x=>!x.p && Number.isInteger(x.e));
+}
+function tlStreak(){
+  let n = 0; const t = new Date();
+  if(!tlComplete(dayKey(t))) t.setDate(t.getDate() - 1);
+  while(tlComplete(dayKey(t))){ n++; t.setDate(t.getDate() - 1); }
+  return n;
+}
+/* 練習自動記進時間紀錄（代號 ID）：開始一輪記一段，正在做的手動那段在這一刻結束（點下一件上一件就結束，同一條規則）；
+   之後每答一題把結束時間往後推，所以永遠沒有「開著」的自動段，關掉 App 也不會留一段到午夜。
+   同一件事 5 分鐘內再開一輪就接在同一段後面。這是唯一「系統寫的」紀錄（au:1），時間頁不給改。 */
+function tlAuto(id){
+  const t = new Date(), now = t.getHours() * 60 + t.getMinutes(), k = dayKey();
+  const T = (SHARED.tl && typeof SHARED.tl === "object") ? SHARED.tl : (SHARED.tl = {});
+  const list = Array.isArray(T[k]) ? T[k] : (T[k] = []);
+  const cur = list.find(x=>x && !x.p && x.e === undefined);
+  if(cur){ if(now <= cur.s) list.splice(list.indexOf(cur), 1); else cur.e = now; }
+  const last = list.filter(x=>x && x.au && x.a === id).pop();
+  if(last && Number.isInteger(last.e) && now - last.e <= 5 && now >= last.s) last.e = Math.min(1440, Math.max(last.e, now, last.s + 1));
+  else list.push({a:id, s:Math.min(now, 1439), e:Math.min(now + 1, 1440), au:1});
+  list.sort((a, b)=>a.s - b.s);
+  saveShared();
+}
 const FURN = [
   {id:"rug_stripe", slot:"rug", name:"條紋地毯", m:15,
    svg:`<ellipse cx="70" cy="15" rx="66" ry="12" fill="#E8A598" stroke="var(--out)" stroke-width="2.4"/>
@@ -3243,6 +3272,15 @@ const FURN = [
         <rect x="11" y="4" width="12" height="24" rx="6" fill="#87B887" stroke="var(--out)" stroke-width="2.2"/>
         <circle cx="17" cy="4" r="3" fill="#F2A7B8" stroke="var(--out)" stroke-width="1.8"/>
         <path d="M8 26 h18 l-3 18 h-12 z" fill="#D98B5F" stroke="var(--out)" stroke-width="2.4" stroke-linejoin="round"/>`},
+  /* 時間紀錄的解鎖款：免費，門檻是「紀錄連續 N 天」（有開頭、有事、有睡覺才算一天）。換不成分鐘，假打卡頂多得到一張圖 */
+  {id:"plant_clock", slot:"plant", name:"時鐘花盆栽", m:0, need:{text:"時間紀錄連續 14 天", ok:()=>tlStreak() >= 14},
+   svg:`<path d="M17 27 v-7" stroke="#6FA36F" stroke-width="3" stroke-linecap="round"/>
+        <path d="M17 22 q-7 -2 -8 -8 q6 0 8 6 z M17 22 q7 -2 8 -8 q-6 0 -8 6 z" fill="#87B887" stroke="var(--out)" stroke-width="1.8" stroke-linejoin="round"/>
+        <circle cx="17" cy="11" r="9" fill="#FFF3C4" stroke="var(--out)" stroke-width="2.2"/>
+        <circle cx="17" cy="11" r="6.5" fill="#FFFFFF" stroke="#E0C98A" stroke-width="1"/>
+        <path d="M17 11 v-4.5 M17 11 h3.5" stroke="var(--out)" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="17" cy="11" r="1" fill="var(--out)"/>
+        <path d="M8 26 h18 l-3 18 h-12 z" fill="#D98B5F" stroke="var(--out)" stroke-width="2.4" stroke-linejoin="round"/>`},
   {id:"plant_grass", slot:"plant", name:"貓草盆", m:25,
    svg:`<path d="M17 28 q-8 -10 -10 -21 M17 28 q-3 -12 -3 -24 M17 28 q3 -12 4 -23 M17 28 q8 -9 11 -19" stroke="#6FA36F" stroke-width="3.2" fill="none" stroke-linecap="round"/>
         <rect x="5" y="27" width="24" height="17" rx="3" fill="#E4D5C3" stroke="var(--out)" stroke-width="2.4"/>
@@ -3258,6 +3296,12 @@ const FURN = [
         <circle cx="36" cy="24" r="13" fill="#FFE9A8" opacity=".95"/>
         <g fill="#EBCF86" opacity=".8"><circle cx="31" cy="20" r="3"/><circle cx="41" cy="28" r="2.2"/><circle cx="35" cy="31" r="1.5"/></g>
         <path d="M6 44 q10 -8 20 -2 q8 -6 16 0 q8 -5 16 1 v5 q0 3 -3 3 h-46 q-3 0 -3 -3 z" fill="#55618C" opacity=".8"/>`},
+  {id:"win_dawn", slot:"win", name:"晨光窗", m:0, need:{text:"時間紀錄連續 30 天", ok:()=>tlStreak() >= 30},
+   svg:`<rect x="3" y="3" width="58" height="48" rx="10" fill="#FFD9A0" opacity=".85"/>
+        <rect x="3" y="3" width="58" height="48" rx="10" fill="none" stroke="#D9B27A" stroke-width="1.6" opacity=".7"/>
+        <circle cx="32" cy="36" r="11" fill="#FFB347" opacity=".95"/>
+        <g stroke="#FFB347" stroke-width="1.6" opacity=".7" stroke-linecap="round"><path d="M32 18 v-6 M18 24 l-4 -4 M46 24 l4 -4 M14 36 h-6 M50 36 h6"/></g>
+        <path d="M6 44 q10 -8 20 -3 q8 -5 16 0 q8 -4 16 1 v5 q0 3 -3 3 h-46 q-3 0 -3 -3 z" fill="#8FB88A" opacity=".9"/>`},
   /* 貓塔：平台一定要在原本的位置（橢圓 cx44 cy30、寬 52）—— 貓跳上去的高度（--perch）和走位是照它算的。
      貓抓板：整張 svg 會在磨爪時左右抖，底座留在 y72～78。 */
   {id:"tower_tree", slot:"tower", name:"樹屋貓塔", m:50,
@@ -3326,10 +3370,10 @@ function pickFurn(id){
     if(!onSale(f)){ toast(`${f.name}是季節限定，現在沒有賣`); return; }
     if(f.need && !f.need.ok()){ toast(`🔒 ${f.name}要先做到：${f.need.text}`); return; }
     if(bankLeft() < f.m){ toast(`${f.name}要 ${f.m} 分鐘，存摺只有 ${bankLeft()} 分鐘`); return; }
-    if(!confirm(`用 ${f.m} 分鐘遊戲時間買「${f.name}」？
-（買了就是你的，之後可以隨時換回原本的）`)) return;
+    if(!confirm(f.m ? `用 ${f.m} 分鐘遊戲時間買「${f.name}」？
+（買了就是你的，之後可以隨時換回原本的）` : `「${f.name}」是${f.need ? f.need.text : ""}解鎖的，免費。換上？`)) return;
     spend(id, f.m);
-    diary("furn", `用 ${f.m} 分鐘買了${f.name}`);
+    diary("furn", f.m ? `用 ${f.m} 分鐘買了${f.name}` : `${f.need ? f.need.text : ""}，解鎖了${f.name}`);
   }
   p.room = p.room || {};
   if(p.room[f.slot] === id) delete p.room[f.slot]; else p.room[f.slot] = id;      // 再按一次 = 換回原本的
@@ -3350,7 +3394,7 @@ function renderShop(){
   $("furnList").innerHTML = FURN.filter(f=>owned(f.id) || onSale(f)).map(f=>{      // 限定款過了期間、又沒買過的就不列
     const has = owned(f.id), on = roomPick(f.slot) === f, lock = !has && f.need && !f.need.ok();
     return `<button class="btn quiet" data-furn="${f.id}" aria-pressed="${on}">${lock ? "🔒 " : on ? "✓ " : ""}${SLOTS[f.slot].name}：${esc(f.name)}<small>${
-      on ? "使用中 · 再按一次換回原本的" : has ? "已擁有 · 按一下換上" : `${f.m} 分鐘` + (f.sale ? ` · 🎑 限定到 ${saleEnd(f)}` : "") + (f.need ? `${lock ? "" : " ✓"} · ${esc(f.need.text)}` : "")}</small></button>`;
+      on ? "使用中 · 再按一次換回原本的" : has ? "已擁有 · 按一下換上" : (f.m ? `${f.m} 分鐘` : "免費") + (f.sale ? ` · 🎑 限定到 ${saleEnd(f)}` : "") + (f.need ? `${lock ? "" : " ✓"} · ${esc(f.need.text)}` : "")}</small></button>`;
   }).join("");
   $("furnList").querySelectorAll("[data-furn]").forEach(b=>b.onclick = ()=>pickFurn(b.dataset.furn));
   applyRoom();

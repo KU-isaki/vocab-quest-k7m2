@@ -134,6 +134,10 @@ h1{margin:4px 0 2px; font-size:22px; line-height:1.3}
 .seg .nm .note{display:block; font-weight:400; font-size:12px; color:var(--ink-soft)}
 .seg .edit label.wide, .addbox label.wide{grid-column:1 / -1}
 .sleep{padding:8px 10px; margin:0 0 6px; border-radius:9px; background:var(--brand-soft); color:var(--ink-soft); font-size:13px}
+.streak{margin:0 0 8px; font-size:12.5px; color:var(--ink-faint)}
+.streak .chk{display:flex; flex-wrap:wrap; gap:4px 12px}
+.streak .chk .on{color:var(--ok); font-weight:600}
+.streak .st{margin-top:3px; color:var(--ink-soft)} .streak .st b{color:var(--brand); font-family:var(--font-num)}
 .sleep b{color:var(--ink); font-family:var(--font-num)}
 .legend li.sleep{background:none; padding:4px 0} .legend li.sleep::before{background:var(--brand-soft); border:1px solid var(--brand)}
 .gap::before{content:""; width:1px; height:14px; border-left:1px dashed var(--ink-faint); margin-left:4px}
@@ -214,6 +218,7 @@ h1{margin:4px 0 2px; font-size:22px; line-height:1.3}
 
   <section class="card" id="todayCard">
     <div class="grouphead"><b>今天</b><span id="todaySum"></span></div>
+    <div class="streak" id="streak"></div>
     <div id="segList"></div>
     <button class="btn quiet" id="btnAdd">＋ 補記一段（忘了按的時候）</button>
     <form class="addbox" id="addBox" hidden>
@@ -252,7 +257,7 @@ h1{margin:4px 0 2px; font-size:22px; line-height:1.3}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
-const TIME_VERSION = "2026.09.24-b";
+const TIME_VERSION = "2026.09.24-f";
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function toast(msg){
@@ -297,7 +302,8 @@ const dur = m => m >= 60 ? `${Math.floor(m / 60)} 小時${m % 60 ? " " + m % 60 
 /* ================= 事項 =================
    兩種：一段時間（p 沒設：寫功課、家教，有開始有結束）、時間點（p:1：到家、起床、睡覺，只記幾點幾分）。
    nt:1 的（寫功課）開始時會問一句備註（寫什麼功課），任何一段事後也都能在清單裡補備註。
-   內建十四項。家長可以在單字闖關的設定頁加、關（tlActs）；紀錄只存代號，所以改名之後舊紀錄跟著顯示新名字。
+   auto:1 的（練英文、練成語）不出現在格子裡：練習時由那兩頁自動記（au:1），這裡只顯示、不給改。
+   內建十六項。家長可以在單字闖關的設定頁加、關（tlActs）；紀錄只存代號，所以改名之後舊紀錄跟著顯示新名字。
    顏色照清單裡的位置配，清單只會往後加，所以同一項永遠同一色。 */
 const DEF_ACTS = [
   {id:"home",  em:"🏠", name:"到家", p:1},
@@ -313,7 +319,9 @@ const DEF_ACTS = [
   {id:"tv",    em:"📺", name:"看電視"},
   {id:"rest",  em:"😴", name:"休息"},
   {id:"wake",  em:"🌅", name:"起床", p:1},
-  {id:"sleep", em:"🛏️", name:"睡覺", p:1}
+  {id:"sleep", em:"🛏️", name:"睡覺", p:1},
+  {id:"en",    em:"✏️", name:"練英文", auto:1},
+  {id:"zh",    em:"🐈", name:"練成語", auto:1}
 ];
 const PALETTE = ["#7B8CDE","#F2A65A","#4FB286","#E76F8B","#8E6CC8","#3FB8C8","#D9A03D","#9CA3AF","#C46BAE","#5E9CD8","#A7B44B","#D96A4C"];
 function acts(){                        // 存檔是小孩手機上的東西，不可信：格式不對的直接不算
@@ -325,6 +333,19 @@ const actById = id => acts().find(a=>a.id === id) || null;
 const colorOf = id => { const i = acts().findIndex(a=>a.id === id); return PALETTE[(i < 0 ? PALETTE.length - 1 : i) % PALETTE.length]; };
 const nameOf = id => { const a = actById(id); return a ? `${a.em || ""} ${a.name}`.trim() : "（已刪掉的事項）"; };
 const isPt = a => !!(a && a.p);
+const isAuto = a => !!(a && a.auto);
+/* 時間紀錄的「連續天數」：一天要有開頭（到家或起床）、有結尾（睡覺）、中間至少一段事，才算記完整；
+   今天還沒記完不算中斷。只拿來解鎖裝飾與鼓勵，不換分鐘、不算進練習的連續。三頁各一份，測試會對。 */
+function tlComplete(k){
+  const list = (SHARED.tl && Array.isArray(SHARED.tl[k]) ? SHARED.tl[k] : []).filter(x=>x && typeof x.a === "string");
+  return list.some(x=>x.p && (x.a === "home" || x.a === "wake")) && list.some(x=>x.p && x.a === "sleep") && list.some(x=>!x.p && Number.isInteger(x.e));
+}
+function tlStreak(){
+  let n = 0; const t = new Date();
+  if(!tlComplete(dayKey(t))) t.setDate(t.getDate() - 1);
+  while(tlComplete(dayKey(t))){ n++; t.setDate(t.getDate() - 1); }
+  return n;
+}
 const NOTE_MAX = 20;
 const cleanNote = s => String(s || "").replace(/[|~;:,=]/g, " ").replace(/\s+/g, " ").trim().slice(0, NOTE_MAX);   // 備份碼的分隔符不能進備註
 
@@ -353,7 +374,7 @@ function closeStale(){
    （到家、睡覺的那一刻，不會還在「玩」）。 */
 function start(id){
   if(!sharedOK){ toast("這台裝置還沒開過單字闖關，記不起來"); return; }
-  const act = actById(id); if(!act) return;
+  const act = actById(id); if(!act || isAuto(act)) return;
   const k = dayKey(), now = nowMin(), list = segsOf(k);
   const cur = list.find(x=>x.e === undefined && !x.p);
   if(isPt(act)){
@@ -432,10 +453,10 @@ function renderNow(){
 }
 function renderActs(){
   const cur = openSeg();
-  $("actGrid").innerHTML = acts().filter(a=>!a.off).map(a=>
+  $("actGrid").innerHTML = acts().filter(a=>!a.off && !isAuto(a)).map(a=>
     `<button class="chip${isPt(a) ? " pt" : ""}" data-act="${esc(a.id)}" aria-pressed="${!!cur && cur.a === a.id}" style="--c:${colorOf(a.id)}"><em aria-hidden="true">${esc(a.em || "•")}</em>${esc(a.name)}</button>`).join("");
   $("actGrid").querySelectorAll("[data-act]").forEach(b=>b.onclick = ()=>start(b.dataset.act));
-  $("addAct").innerHTML = acts().filter(a=>!a.off).map(a=>`<option value="${esc(a.id)}">${esc(a.em || "")} ${esc(a.name)}${isPt(a) ? "（時間點）" : ""}</option>`).join("");
+  $("addAct").innerHTML = acts().filter(a=>!a.off && !isAuto(a)).map(a=>`<option value="${esc(a.id)}">${esc(a.em || "")} ${esc(a.name)}${isPt(a) ? "（時間點）" : ""}</option>`).join("");
   addKind();
 }
 function renderToday(){
@@ -446,6 +467,7 @@ function renderToday(){
   $("todaySum").textContent = list.length ? `${spans.length} 段 · 共 ${dur(total)}${gap ? " · 空檔 " + dur(gap) : ""}` : "";
   const slp = sleepOf(k);
   const slpRow = slp ? `<div class="sleep">🛏️ 睡了 <b>${esc(dur(slp.m))}</b>（昨晚 ${hm(slp.from)} → ${hm(slp.to)}）</div>` : "";
+  renderStreak();
   if(!list.length){ $("segList").innerHTML = slpRow + `<div class="empty">今天還沒有紀錄。回家後點上面的格子開始。</div>`; return; }
   $("segList").innerHTML = slpRow + list.map((x, i)=>{
     const open = !x.p && x.e === undefined;
@@ -454,8 +476,8 @@ function renderToday(){
       ? `<summary><span class="sw"></span><span class="tm">${hm(x.s)}</span><span class="nm">${esc(nameOf(x.a))}</span><span class="du">時間點</span></summary>
          <form class="edit"><label for="es-${i}">時間<input type="time" id="es-${i}" name="s" value="${hm(x.s)}" required></label>
          <div class="btns"><button type="submit" class="btn">改好了</button><button type="button" class="btn ghost" data-del>刪掉</button></div></form>`
-      : `<summary><span class="sw"></span><span class="tm">${hm(x.s)}–${open ? "現在" : hm(x.e)}</span><span class="nm">${esc(nameOf(x.a))}${x.n ? `<small class="note">${esc(x.n)}</small>` : ""}</span><span class="du">${esc(dur(endOf(x, k) - x.s))}</span></summary>
-      ${open ? `<div class="empty">還在進行中。按上面的「停止」或點別的事就會結束。</div>` : `<form class="edit">
+      : `<summary><span class="sw"></span><span class="tm">${hm(x.s)}–${open ? "現在" : hm(x.e)}</span><span class="nm">${esc(nameOf(x.a))}${x.au ? `<small class="note">練習時自動記的，不能改</small>` : x.n ? `<small class="note">${esc(x.n)}</small>` : ""}</span><span class="du">${esc(dur(endOf(x, k) - x.s))}</span></summary>
+      ${x.au ? `<div class="empty">這段是練習那頁自動記的：開始一輪就記、每答一題往後延。</div>` : open ? `<div class="empty">還在進行中。按上面的「停止」或點別的事就會結束。</div>` : `<form class="edit">
         <label for="es-${i}">從<input type="time" id="es-${i}" name="s" value="${hm(x.s)}" required></label>
         <label for="ee-${i}">到<input type="time" id="ee-${i}" name="e" value="${hm(Math.min(x.e, 1439))}" required></label>
         <label for="en-${i}" class="wide">備註<input type="text" id="en-${i}" name="n" value="${esc(x.n || "")}" maxlength="${NOTE_MAX}" placeholder="例：數學習作 p.12"></label>
@@ -492,6 +514,16 @@ function bandRows(keys){
       + segs.map(x=>x.p ? `<i class="pt" style="left:${pct(x.s)}%"></i>`
                         : `<i class="${x.x ? "trunc" : ""}" style="left:${pct(x.s)}%;width:${Math.max(0.6, pct(x.e) - pct(x.s))}%;--c:${colorOf(x.a)}"></i>`).join("") + `</div>`;
   }).join("");
+}
+/* 記完整 = 有開頭、有事情、有結尾。連續天數拿來解鎖貓房的裝飾（成語ㄚ喵的時間商城），換不成分鐘 */
+const UNLOCKS = [{n:14, name:"時鐘花盆栽"}, {n:30, name:"晨光窗"}];
+function renderStreak(){
+  const k = dayKey(), list = segsOf(k);
+  const head = list.some(x=>x.p && (x.a === "home" || x.a === "wake")), body = list.some(x=>!x.p && Number.isInteger(x.e)), tail = list.some(x=>x.p && x.a === "sleep");
+  const st = tlStreak(), next = UNLOCKS.find(u=>st < u.n);
+  const chk = (v, t) => `<span class="${v ? "on" : ""}">${v ? "✓" : "○"} ${t}</span>`;
+  $("streak").innerHTML = `<div class="chk">${chk(head, "開頭（到家／起床）")}${chk(body, "至少一件事")}${chk(tail, "睡覺")}</div>
+    <div class="st">紀錄連續 <b>${st}</b> 天${next ? ` · 連續 ${next.n} 天解鎖貓房的「${next.name}」` : " · 貓房的裝飾都解鎖了"}</div>`;
 }
 function renderWeek(){
   const keys = [];
