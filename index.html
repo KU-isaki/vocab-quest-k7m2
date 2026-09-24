@@ -721,6 +721,12 @@ a.btn{text-decoration:none}
       <span class="ar">→</span>
     </a>
 
+    <a class="card idiomlink" id="timeLink" href="time.html">
+      <span class="ic">⏱️</span>
+      <span class="tx"><b>時間紀錄</b><small>回家後在做什麼、做了多久。點一下就好，不換遊戲時間，跟爸媽一起看。</small></span>
+      <span class="ar">→</span>
+    </a>
+
     <div class="card q" id="qCard" hidden>
       <div class="q-head">
         <span class="q-kind" id="qKind"></span>
@@ -952,6 +958,14 @@ a.btn{text-decoration:none}
           換了會從存摺扣分鐘、記一筆，家長頁的「這週買了什麼」看得到。最多 8 個，每個 1～600 分鐘。</div>
       </details>
     </div>
+    <div class="qrow" style="margin-top:8px">
+      <button class="btn ghost" id="btnTlActs">⏱️ 時間紀錄的事項</button>
+      <details class="info"><summary>時間紀錄的事項是什麼？</summary>
+        <div class="info-in">主畫面的「時間紀錄」讓小孩回家後點一下現在在做什麼（上廁所、吃飯、寫功課…）。
+          內建八項，這裡可以加自己的（游泳、安親班…）、把用不到的關掉。<b>改要家長密碼</b>：小孩要是能把「玩」改名成「寫功課」，那張圖就沒得討論了。<br>
+          紀錄只存事項的代號，關掉的事項舊紀錄照樣看得到；還沒被用過的才刪得掉。時間紀錄<b>不換遊戲時間、不算連續天數</b>，純粹是紀錄。</div>
+      </details>
+    </div>
 
     <div class="grouphead"><b>備份進度</b><span>換手機、被清掉時用</span></div>
     <div class="qrow">
@@ -1071,7 +1085,7 @@ a.btn{text-decoration:none}
   }
 })();
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.17-j";
+const VERSION = "2026.09.24-a";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（key 用小寫單字） =================
@@ -5068,6 +5082,65 @@ $("btnRewards").onclick = () => {
   toast(`🏆 已新增「${name}」${m} 分鐘，在「進度」頁的存摺卡`);
 };
 
+/* ---- 時間紀錄（time.html）的事項清單 ----
+   存在 SHARED.tlActs（{id, em, name, off, p}），p 是「時間點」（到家、睡覺：只記幾點幾分，不是一段時間）。
+   沒有就是內建十一項（跟 time.html 的 DEF_ACTS 同一份，測試會對）。
+   改要家長密碼。只往後加、不重排：time.html 的顏色是照位置配的，重排會讓同一件事換顏色。
+   還沒被任何紀錄用過的才能刪；用過的只能關掉 —— 紀錄只存代號，刪了名字就沒了。 */
+const TL_DEF_ACTS = [
+  {id:"home",  em:"🏠", name:"到家", p:1},
+  {id:"wc",    em:"🚽", name:"上廁所"},
+  {id:"eat",   em:"🍚", name:"吃飯"},
+  {id:"hw",    em:"📝", name:"寫功課"},
+  {id:"tutor", em:"👩‍🏫", name:"家教"},
+  {id:"piano", em:"🎹", name:"練琴"},
+  {id:"bath",  em:"🛁", name:"洗澡"},
+  {id:"play",  em:"🎮", name:"玩"},
+  {id:"rest",  em:"😴", name:"休息"},
+  {id:"wake",  em:"🌅", name:"起床", p:1},
+  {id:"sleep", em:"🛏️", name:"睡覺", p:1}
+];
+const TL_MAX_ACTS = 16, TL_NAME_MAX = 8;
+function tlActs(){                     // 存檔不可信：格式不對的直接不算；一個都不剩就退回內建
+  const raw = Array.isArray(SHARED.tlActs) ? SHARED.tlActs : [];
+  const ok = raw.filter(a=>a && typeof a.id === "string" && /^[\w-]{1,16}$/.test(a.id) && typeof a.name === "string" && a.name.trim());
+  return ok.length ? ok : TL_DEF_ACTS.map(a=>Object.assign({}, a));
+}
+const tlUsed = id => Object.keys(SHARED.tl || {}).some(k=>(Array.isArray(SHARED.tl[k]) ? SHARED.tl[k] : []).some(x=>x && x.a === id));
+$("btnTlActs").onclick = () => {
+  if(!checkPin()) return;
+  const as = tlActs();
+  const t = prompt("時間紀錄的事項：\n" + as.map((a, i)=>`${i + 1}. ${a.em || ""} ${a.name}${a.p ? "（時間點）" : ""}${a.off ? "（已關）" : ""}`).join("\n")
+    + "\n\n" + (as.length < TL_MAX_ACTS ? `輸入新事項的名稱（${TL_NAME_MAX} 字以內）` : `已經有 ${TL_MAX_ACTS} 項了`)
+    + "，或輸入編號：用過的會關掉／打開，沒用過的可以刪掉：");
+  if(t === null || !String(t).trim()) return;
+  const n = /^\d+$/.test(String(t).trim()) ? +String(t).trim() : 0;
+  if(n){
+    const a = as[n - 1];
+    if(!a){ toast("沒有這個編號"); return; }
+    if(!tlUsed(a.id)){
+      if(!confirm(`「${a.name}」還沒有任何紀錄用到。刪掉它？`)) return;
+      SHARED.tlActs = as.filter(x=>x !== a); saveShared(); toast(`已刪掉「${a.name}」`); return;
+    }
+    if(a.off) delete a.off; else a.off = true;
+    SHARED.tlActs = as; saveShared();
+    toast(a.off ? `已關掉「${a.name}」，舊紀錄照樣看得到` : `已打開「${a.name}」`);
+    return;
+  }
+  if(as.length >= TL_MAX_ACTS){ toast(`最多 ${TL_MAX_ACTS} 項，先刪掉一項`); return; }
+  const name = cleanWhy(t).slice(0, TL_NAME_MAX);
+  if(!name){ toast("名稱不能空白"); return; }
+  if(as.some(a=>a.name === name)){ toast(`已經有「${name}」了`); return; }
+  const emIn = prompt(`「${name}」用什麼表情符號？（可留空）`);
+  if(emIn === null) return;
+  const em = cleanWhy(emIn).slice(0, 8);
+  const span = confirm(`「${name}」是一段時間嗎？（有開始有結束，例如寫功課、安親班）\n\n按「取消」= 只是一個時間點（例如出門、起床）`);
+  const a = {id:"c" + nowSec().toString(36) + Math.floor(Math.random() * 1296).toString(36), em, name};
+  if(!span) a.p = 1;
+  SHARED.tlActs = as.concat([a]);
+  saveShared(); toast(`⏱️ 已新增「${em ? em + " " : ""}${name}」${span ? "" : "（時間點）"}`);
+};
+
 /* 設定頁：目前只有密碼狀態要跟著資料變，其他都是按了就生效的開關 */
 function renderSettings(){
   $("pinState").textContent = getPin() ? "🔒 已設密碼" : "未設密碼";
@@ -5266,7 +5339,16 @@ function packDeck(o){                  // 緊湊格式，備份碼才貼得進�
   const gf = (o.gifts || []).map(g=>`${sd(g.d)}:${g.kind === "feed" ? "f" : g.kind === "ticket" ? "t" : g.kind === "patch" ? "p" : ""}${+g.m||0}:${ev(g)}:${g.why||""}`).join(";");
   const cp = (o.coupons || []).map(c=>`${sd(c.d)}:${sd(c.on)}:${ev(c)}:${c.why||""}`).join(";");
   const rw = (Array.isArray(o.rewards) ? o.rewards : []).map(r=>`${bkId(r.id)}:${+r.m||0}:${cleanWhy(r.name)}`).join(";");   // 第 13 欄：爸媽自訂的獎勵
-  return [o.done||0, o.right||0, b.earned||0, b.used||0, b.bonus||0, st, dy, gf, cp, fd, pt, by, rw].join("|");
+  // 第 14、15 欄：時間紀錄（time.html）。14 是事項清單（代號:表情:旗標:名字，旗標 1 = 關掉、p = 時間點），
+  // 15 是每天的打卡（代號.開始.結束.旗標，旗標 x = 忘了按停止、p = 時間點，時間點的結束是空的）。
+  // 進行中（沒有結束）的那段不帶：備份碼是一份定格，「還在做」不是能還原的狀態。
+  const ta = (Array.isArray(o.tlActs) ? o.tlActs : []).map(a=>`${bkId(a.id)}:${cleanWhy(a.em)}:${a.off ? 1 : ""}${a.p ? "p" : ""}:${cleanWhy(a.name)}`).join(";");
+  const tl = Object.keys(o.tl || {}).sort().map(k=>{
+    const segs = (Array.isArray(o.tl[k]) ? o.tl[k] : []).filter(x=>x && (x.p ? Number.isInteger(x.s) : Number.isInteger(x.e)))
+      .map(x=>`${bkId(x.a)}.${x.s|0}.${x.p ? "" : x.e|0}.${x.x ? "x" : ""}${x.p ? "p" : ""}`.replace(/\.$/, ""));
+    return segs.length ? `${sd(k)}:${segs.join(",")}` : "";
+  }).filter(Boolean).join(";");
+  return [o.done||0, o.right||0, b.earned||0, b.used||0, b.bonus||0, st, dy, gf, cp, fd, pt, by, rw, ta, tl].join("|");
 }
 function unpackDeck(str, ver){
   const legacy = ver === 2;            // CQ2 的每天只記了「有沒有達標」，分鐘數已失傳
@@ -5327,6 +5409,31 @@ function unpackDeck(str, ver){
       const f = cut(seg, 2);
       if(!f || !f[0] || !(+f[1] > 0) || !cleanWhy(f[2])) return;
       o.rewards.push({id:bkId(f[0]), m:Math.min(600, Math.floor(+f[1])), name:cleanWhy(f[2])});
+    });
+  }
+  if(p[13]){
+    o.tlActs = [];
+    p[13].split(";").filter(Boolean).forEach(seg=>{
+      const f = cut(seg, 3);
+      if(!f || !bkId(f[0]) || !cleanWhy(f[3])) return;
+      const a = {id:bkId(f[0]).slice(0, 16), em:cleanWhy(f[1]).slice(0, 8), name:cleanWhy(f[3]).slice(0, 8)};
+      if(f[2].includes("1")) a.off = true;
+      if(f[2].includes("p")) a.p = 1;
+      o.tlActs.push(a);
+    });
+  }
+  if(p[14]){
+    o.tl = {};
+    p[14].split(";").filter(Boolean).forEach(seg=>{
+      const i = seg.indexOf(":"), d = ld(seg.slice(0, i));
+      if(i < 0 || !d) return;
+      const list = seg.slice(i + 1).split(",").filter(Boolean).map(t=>{
+        const f = t.split("."), fl = f[3] || "", x = {a:bkId(f[0]).slice(0, 16), s:+f[1]};
+        if(fl.includes("p")) x.p = 1; else x.e = +f[2];
+        if(fl.includes("x")) x.x = 1;
+        return x;
+      }).filter(x=>x.a && Number.isInteger(x.s) && x.s >= 0 && x.s < 1440 && (x.p || (Number.isInteger(x.e) && x.e > x.s && x.e <= 1440)));
+      if(list.length) o.tl[d] = list;
     });
   }
   if(p[11]){
@@ -5395,6 +5502,8 @@ function importCode(code){
         if(o.pet) SHARED.pet = o.pet;
         if(o.buys) SHARED.buys = o.buys;
         if(o.rewards) SHARED.rewards = o.rewards;
+        if(o.tlActs) SHARED.tlActs = o.tlActs;
+        if(o.tl) SHARED.tl = o.tl;
         fixStamp(SHARED.gifts, "bk"); fixStamp(SHARED.coupons, "bk");
         saveShared(); restored++; return;
       }
@@ -5489,6 +5598,15 @@ function syncSummary(){
     gifts:(SHARED.gifts || []).slice(-30),
     coupons:(SHARED.coupons || []).slice(-30),
     buys:(SHARED.buys || []).slice(-30).map(b=>({d:b.d, m:+b.m || 0, nm:String(b.nm || b.it || "").slice(0, 30)})),   // 時間商城買了什麼（名稱是成語ㄚ喵那頁寫進去的）
+    tl:(()=>{                                      // 時間紀錄（time.html）：最近 7 天的打卡加事項名稱，家長頁畫色帶用
+      const T = SHARED.tl; if(!T || typeof T !== "object") return null;
+      const days = {};
+      Object.keys(T).sort().slice(-7).forEach(k=>{
+        days[k] = (Array.isArray(T[k]) ? T[k] : []).filter(x=>x && typeof x.a === "string").map(x=>{
+          const y = {a:x.a, s:+x.s || 0}; if(Number.isInteger(x.e)) y.e = x.e; if(x.x) y.x = 1; if(x.p) y.p = 1; return y; });
+      });
+      return {acts:tlActs().map(a=>{ const b = {id:a.id, em:String(a.em || "").slice(0, 8), name:String(a.name).slice(0, 8)}; if(a.p) b.p = 1; return b; }), days};
+    })(),
     decks,
     feed:SHARED.feed || null,                       // 成語ㄚ喵的飼料帳
     pet:(()=>{                                      // 貓：只帶家長看得懂的幾個數字
@@ -5875,6 +5993,8 @@ function showUpdate(worker){
 
 /* ================= 啟動 ================= */
 loadShared();
+// 時間紀錄（time.html）存檔時會立這面旗：它自己不上傳（備份碼只有這頁組得出來），回到這頁時補傳一次
+try{ if(localStorage.getItem("cq-tl-dirty")){ localStorage.removeItem("cq-tl-dirty"); syncDirty = true; } }catch(e){}
 useDeck();
 $("heroSub").textContent = `答對 +1、答錯 -1，換遊戲時間（${TIERS[0].n} 題 ${TIERS[0].m} 分起跳，一天最多 ${REWARD} 分）`;
 $("chipListen").setAttribute("aria-pressed", listenOn && TTS);
@@ -5888,4 +6008,5 @@ $("heroVer").textContent = "版本 " + VERSION;
 renderListCats();
 refreshHeader();
 renderList();
+syncRetry();
 </script>

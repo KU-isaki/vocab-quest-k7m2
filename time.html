@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#172242">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>時間紀錄</title>
+<style>
+:root{
+  --ground:#FBFAF9;
+  --surface:#FFFFFF;
+  --surface-2:#F1EFEA;
+  --ink:#172242;
+  --ink-soft:#5A6484;
+  --ink-faint:#9AA1B8;
+  --line:#E2E0DA;
+  --brand:#1F4FA9;
+  --brand-soft:#E7EDFA;
+  --mark:#FFD84D;
+  --ok:#12855C;
+  --ok-soft:#E2F3EB;
+  --no:#C8452F;
+  --no-soft:#FBE9E5;
+  --btn-fg:#FFFFFF;
+  --shadow:0 1px 2px rgba(23,34,66,.06), 0 8px 24px -12px rgba(23,34,66,.18);
+  --r:14px;
+  --font-zh:-apple-system,system-ui,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+  --font-num:ui-rounded,"SF Pro Rounded",-apple-system,system-ui,sans-serif;
+  --scale:1;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#101623; --surface:#18202F; --surface-2:#212A3B;
+    --ink:#E9ECF4; --ink-soft:#A3ADC6; --ink-faint:#6B7793; --line:#2A3446;
+    --brand:#7FA9F0; --brand-soft:#1E2C46; --mark:#F0C33C;
+    --ok:#4FCB96; --ok-soft:#153229; --no:#F08A76; --no-soft:#38201C;
+    --btn-fg:#0E1524;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#101623; --surface:#18202F; --surface-2:#212A3B;
+  --ink:#E9ECF4; --ink-soft:#A3ADC6; --ink-faint:#6B7793; --line:#2A3446;
+  --brand:#7FA9F0; --brand-soft:#1E2C46; --mark:#F0C33C;
+  --ok:#4FCB96; --ok-soft:#153229; --no:#F08A76; --no-soft:#38201C;
+  --btn-fg:#0E1524;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html{font-size:calc(16px * var(--scale))}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:var(--font-zh); font-size:1rem; line-height:1.6;
+  -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent;
+}
+button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
+:focus-visible{outline:2px solid var(--brand); outline-offset:2px; border-radius:6px}
+.shell{max-width:520px; margin:0 auto; padding:0 16px 40px}
+.top{
+  position:sticky; top:0; z-index:20; background:var(--ground);
+  padding:14px 0 10px; border-bottom:1px solid var(--line); margin-bottom:12px;
+}
+.top-row{display:flex; align-items:center; justify-content:space-between; gap:12px}
+.brandmark{display:flex; align-items:baseline; gap:8px; min-width:0}
+.brandmark b{font-size:17px; font-weight:700; letter-spacing:.02em; white-space:nowrap}
+.back{font-size:12.5px; color:var(--ink-faint); text-decoration:none; white-space:nowrap}
+.back:hover{color:var(--ink-soft)}
+.score{font-family:var(--font-num); font-variant-numeric:tabular-nums; font-size:13px; color:var(--ink-soft); white-space:nowrap}
+.card{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+  box-shadow:var(--shadow); padding:16px; margin:0 0 12px;
+}
+.eyebrow{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint); font-weight:600}
+h1{margin:4px 0 2px; font-size:22px; line-height:1.3}
+.sub{margin:0 0 12px; color:var(--ink-soft); font-size:14px}
+.btn{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; padding:14px 16px; border-radius:12px; border:1px solid transparent;
+  background:var(--brand); color:var(--btn-fg); font-weight:600; font-size:16px;
+}
+.btn:active{transform:scale(.985); filter:brightness(.94)}
+.btn.ghost{background:var(--surface); color:var(--ink); border-color:var(--line); font-weight:500}
+.btn.quiet{background:transparent; color:var(--ink-soft); border-color:transparent; font-size:14px; padding:10px}
+.btn:disabled{background:var(--surface-2); color:var(--ink-faint); border-color:var(--line); font-weight:500; cursor:default}
+/* 現在在做什麼：一眼看到 */
+.now{text-align:center; padding:6px 0 10px}
+.now .act{font-size:30px; font-weight:700; line-height:1.3; letter-spacing:.02em}
+.now .since{color:var(--ink-soft); font-size:14px; margin-top:2px; font-family:var(--font-num); font-variant-numeric:tabular-nums}
+.now .idle{color:var(--ink-faint); font-size:15px; padding:6px 0}
+/* 事項：一格一格點，手機上不打字 */
+.acts{display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin:12px 0}
+.acts .chip{
+  padding:10px 4px 8px; border-radius:11px; border:1px solid var(--line); background:var(--surface);
+  color:var(--ink-soft); font-size:12.5px; line-height:1.3; display:flex; flex-direction:column; align-items:center; gap:3px;
+  position:relative;
+}
+.acts .chip em{font-style:normal; font-size:22px; line-height:1}
+.acts .chip[aria-pressed="true"]{background:var(--brand-soft); border-color:var(--brand); color:var(--brand); font-weight:700}
+.acts .chip::before{content:""; position:absolute; left:8px; right:8px; top:0; height:3px; border-radius:0 0 3px 3px; background:var(--c, transparent)}
+.acts .chip.pt{border-style:dashed}
+.acts .chip.pt::before{left:50%; right:auto; width:8px; margin-left:-4px; border-radius:0 0 4px 4px; background:var(--ink-faint)}
+/* 今天的一段一段 */
+.seg{border-bottom:1px solid var(--line)}
+.seg:last-of-type{border-bottom:0}
+.seg>summary{list-style:none; cursor:pointer; display:flex; align-items:center; gap:10px; padding:10px 2px}
+.seg>summary::-webkit-details-marker{display:none}
+.seg .sw{width:10px; height:26px; border-radius:4px; flex:none; background:var(--c)}
+.seg .tm{font-family:var(--font-num); font-variant-numeric:tabular-nums; font-size:13px; color:var(--ink-soft); flex:none; width:96px}
+.seg .nm{flex:1; min-width:0; font-weight:600}
+.seg .du{font-family:var(--font-num); font-variant-numeric:tabular-nums; font-size:13px; color:var(--ink-faint); flex:none}
+.seg.trunc .sw{opacity:.45; background:repeating-linear-gradient(135deg, var(--c) 0 3px, transparent 3px 6px)}
+.seg.pt .sw{height:10px; width:10px; border-radius:50%; background:var(--ink-faint)}
+.gap{display:flex; align-items:center; gap:10px; padding:3px 2px 3px 22px; font-size:12px; color:var(--ink-faint); font-family:var(--font-num); font-variant-numeric:tabular-nums}
+.gap::before{content:""; width:1px; height:14px; border-left:1px dashed var(--ink-faint); margin-left:4px}
+.seg .edit{display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:4px 2px 12px}
+.seg .edit label, .addbox label{font-size:12px; color:var(--ink-soft); display:flex; flex-direction:column; gap:3px}
+.seg .edit input, .addbox input, .addbox select{
+  font:inherit; padding:9px 10px; border-radius:9px; border:1px solid var(--line); background:var(--surface); color:var(--ink); width:100%;
+}
+.seg .edit .btns, .addbox .btns{grid-column:1 / -1; display:flex; gap:8px}
+.seg .edit .btns .btn, .addbox .btns .btn{padding:10px 12px; font-size:14px}
+.addbox{display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:6px 0 4px}
+.addbox label:first-child{grid-column:1 / -1}
+.empty{padding:14px 0; text-align:center; color:var(--ink-faint); font-size:13.5px}
+.grouphead{display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin:0 0 8px}
+.grouphead b{font-size:15.5px}
+.grouphead span{font-size:12px; color:var(--ink-faint); font-family:var(--font-num)}
+/* 這週的色帶：每天一列，15:00 到 24:00 */
+.band{display:grid; grid-template-columns:44px 1fr; gap:4px 8px; align-items:center; font-size:12px}
+.band .dl{color:var(--ink-soft); font-family:var(--font-num); font-variant-numeric:tabular-nums; text-align:right}
+.band .dl.today{color:var(--brand); font-weight:700}
+.band .row{position:relative; height:22px; background:var(--surface-2); border-radius:5px; overflow:hidden}
+.band .row i{position:absolute; top:0; bottom:0; background:var(--c); display:block}
+.band .row i.trunc{opacity:.45; background:repeating-linear-gradient(135deg, var(--c) 0 3px, transparent 3px 6px)}
+.band .row i.pt{width:2px !important; background:var(--ink); opacity:.8}
+.band .ticks{position:relative; height:14px; color:var(--ink-faint); font-size:10px; font-family:var(--font-num)}
+.band .ticks span{position:absolute; transform:translateX(-50%)}
+/* 每一項：本週合計、最長一次（哪天）。要找的是「同一件事越拖越長」，所以最長那次要標出來 */
+.legend{margin:10px 0 0; padding:0; list-style:none; font-size:12.5px}
+.legend li{display:grid; grid-template-columns:auto 1fr auto auto; gap:8px; align-items:baseline; padding:4px 0; border-bottom:1px solid var(--line)}
+.legend li:last-child{border-bottom:0}
+.legend li::before{content:""; width:9px; height:9px; border-radius:3px; background:var(--c); align-self:center}
+.legend li.gap{color:var(--ink-soft)} .legend li.gap::before{background:var(--surface-2); border:1px dashed var(--ink-faint)}
+.legend .nm{font-weight:600}
+.legend .n{font-family:var(--font-num); font-variant-numeric:tabular-nums; color:var(--ink)}
+.legend .mx{font-family:var(--font-num); font-variant-numeric:tabular-nums; color:var(--ink-faint); font-size:11.5px}
+.legend .mx b{color:var(--no); font-weight:600}
+.toast{
+  position:fixed; left:50%; bottom:28px; transform:translateX(-50%);
+  max-width:calc(100% - 40px); z-index:50;
+  padding:11px 16px; border-radius:99px; background:var(--ink); color:var(--ground);
+  font-size:13.5px; box-shadow:var(--shadow); opacity:0; pointer-events:none;
+  transition:opacity .25s ease;
+}
+.toast.on{opacity:1}
+.foot{margin-top:22px; text-align:center; font-size:11.5px; color:var(--ink-faint); line-height:1.7}
+.info{border:1px solid transparent; border-radius:11px; margin:8px 0 0}
+.info[open]{border-color:var(--line); background:var(--surface-2)}
+.info>summary{cursor:pointer; padding:8px 12px; font-size:13px; color:var(--ink-soft); list-style:none}
+.info>summary::-webkit-details-marker{display:none}
+.info .info-in{padding:0 12px 10px; font-size:12.5px; line-height:1.8; color:var(--ink-faint)}
+[hidden]{display:none !important}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="top">
+    <div class="top-row">
+      <div class="brandmark">
+        <b>時間紀錄</b><a class="back" href="./">← 單字闖關</a>
+      </div>
+      <div class="score" id="hClock"></div>
+    </div>
+  </header>
+
+  <section class="card" id="nowCard">
+    <div class="eyebrow">現在</div>
+    <h1 id="nowTitle">回家後在做什麼</h1>
+    <p class="sub">開始做一件事之前先點一下。點下一件，上一件就自動結束。虛線框的是「時間點」（到家、睡覺），只記幾點幾分。</p>
+    <div class="now" id="nowBox"></div>
+    <div class="acts" id="actGrid" role="group" aria-label="現在要做的事"></div>
+    <button class="btn ghost" id="btnStop">⏹ 停止（先不記）</button>
+    <div id="noShared" class="empty" hidden>這台裝置還沒開過單字闖關，紀錄存不下來。先回單字闖關開一次再來。</div>
+  </section>
+
+  <section class="card">
+    <div class="grouphead"><b>今天</b><span id="todaySum"></span></div>
+    <div id="segList"></div>
+    <button class="btn quiet" id="btnAdd">＋ 補記一段（忘了按的時候）</button>
+    <form class="addbox" id="addBox" hidden>
+      <label for="addAct">做了什麼<select id="addAct"></select></label>
+      <label for="addS" id="addSLab">從<input type="time" id="addS" required></label>
+      <label for="addE" id="addELab">到<input type="time" id="addE" required></label>
+      <div class="btns">
+        <button type="submit" class="btn">加進去</button>
+        <button type="button" class="btn ghost" id="addCancel">取消</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="grouphead"><b>這週</b><span>15:00 ～ 24:00</span></div>
+    <div id="week"></div>
+    <ul class="legend" id="legend"></ul>
+    <details class="info"><summary>這張圖在看什麼？</summary>
+      <div class="info-in">給你自己，也給爸媽。同一張圖也會出現在家長頁，一起看「回家後時間都去哪了」。<br>
+        <b>空檔不是壞事</b>，該休息就休息；要一起看的是太碎的空檔，還有同一件事越拖越長（今天上廁所 15 分、明天 30 分）——所以每一項都列了最長的一次。<br>
+        這裡的紀錄<b>不換遊戲時間、不算連續天數</b>，純粹是紀錄。斜線的那一段是忘了按停止、被自動收在午夜；細直線是時間點。</div>
+    </details>
+  </section>
+
+  <p class="foot" id="verline"></p>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const TIME_VERSION = "2026.09.24-a";
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg; t.classList.add("on");
+  clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove("on"), 2600);
+}
+
+/* ================= 跟單字闖關共用的紀錄 =================
+   同一把鑰匙 cq-shared-v1，這頁只加自己的欄位：
+     tl     {日期: [{a 事項代號, s 開始, e 結束, x 忘了按停止, p 只是一個時間點}]}   s/e 是當天第幾分鐘（0～1440）
+            時間點（到家、睡覺）只有 s、沒有 e；正在做的那段有 s 沒 e 也沒 p
+     tlActs 事項清單，家長在單字闖關的設定頁改（要密碼）；沒有就用內建的八項
+   跟成語ㄚ喵一樣：讀不到存摺就不寫，免得擋掉單字闖關的舊資料搬家。 */
+const SHARED_KEY = "cq-shared-v1";
+let SHARED = {days:{}, bank:{earned:0, used:0, bonus:0}, gifts:[], coupons:[]};
+let sharedOK = false;
+function loadShared(){
+  try{
+    const r = JSON.parse(localStorage.getItem(SHARED_KEY));
+    if(r && r.days){ SHARED = Object.assign(SHARED, r); sharedOK = true; }
+  }catch(e){}
+}
+const KEEP_DAYS = 90;                  // 只留 90 天：備份碼要貼得進 LINE，而且更久以前的安排也沒什麼好討論的
+function saveShared(){
+  if(!sharedOK) return;
+  const keys = Object.keys(SHARED.tl || {}).sort();
+  keys.slice(0, Math.max(0, keys.length - KEEP_DAYS)).forEach(k=>delete SHARED.tl[k]);
+  try{
+    localStorage.setItem(SHARED_KEY, JSON.stringify(SHARED));
+    localStorage.setItem("cq-tl-dirty", "1");   // 回到單字闖關時它會把這份傳到雲端（有開雲端備份的話）
+  }catch(e){}
+}
+function dayKey(dt){
+  const t = dt || new Date();
+  return t.getFullYear() + "-" + String(t.getMonth()+1).padStart(2,"0") + "-" + String(t.getDate()).padStart(2,"0");
+}
+function nowMin(){ const t = new Date(); return t.getHours() * 60 + t.getMinutes(); }   // 測試會把它換掉來固定時間
+const hm = m => String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+const dur = m => m >= 60 ? `${Math.floor(m / 60)} 小時${m % 60 ? " " + m % 60 + " 分" : ""}` : `${m} 分`;
+
+/* ================= 事項 =================
+   兩種：一段時間（p 沒設：寫功課、家教，有開始有結束）、時間點（p:1：到家、起床、睡覺，只記幾點幾分）。
+   內建十一項。家長可以在單字闖關的設定頁加、關（tlActs）；紀錄只存代號，所以改名之後舊紀錄跟著顯示新名字。
+   顏色照清單裡的位置配，清單只會往後加，所以同一項永遠同一色。 */
+const DEF_ACTS = [
+  {id:"home",  em:"🏠", name:"到家", p:1},
+  {id:"wc",    em:"🚽", name:"上廁所"},
+  {id:"eat",   em:"🍚", name:"吃飯"},
+  {id:"hw",    em:"📝", name:"寫功課"},
+  {id:"tutor", em:"👩‍🏫", name:"家教"},
+  {id:"piano", em:"🎹", name:"練琴"},
+  {id:"bath",  em:"🛁", name:"洗澡"},
+  {id:"play",  em:"🎮", name:"玩"},
+  {id:"rest",  em:"😴", name:"休息"},
+  {id:"wake",  em:"🌅", name:"起床", p:1},
+  {id:"sleep", em:"🛏️", name:"睡覺", p:1}
+];
+const PALETTE = ["#7B8CDE","#F2A65A","#4FB286","#E76F8B","#8E6CC8","#3FB8C8","#D9A03D","#9CA3AF","#C46BAE","#5E9CD8","#A7B44B","#D96A4C"];
+function acts(){                        // 存檔是小孩手機上的東西，不可信：格式不對的直接不算
+  const raw = Array.isArray(SHARED.tlActs) ? SHARED.tlActs : [];
+  const ok = raw.filter(a=>a && typeof a.id === "string" && /^[\w-]{1,16}$/.test(a.id) && typeof a.name === "string" && a.name.trim());
+  return ok.length ? ok : DEF_ACTS;
+}
+const actById = id => acts().find(a=>a.id === id) || null;
+const colorOf = id => { const i = acts().findIndex(a=>a.id === id); return PALETTE[(i < 0 ? PALETTE.length - 1 : i) % PALETTE.length]; };
+const nameOf = id => { const a = actById(id); return a ? `${a.em || ""} ${a.name}`.trim() : "（已刪掉的事項）"; };
+const isPt = a => !!(a && a.p);
+
+/* ================= 紀錄 ================= */
+function segsOf(k){                     // 整理過的那天：s/e 是 0～1440 的整數、e 大於 s；進行中的那段與時間點沒有 e
+  const list = SHARED.tl && Array.isArray(SHARED.tl[k]) ? SHARED.tl[k] : [];
+  return list.filter(x=>x && typeof x.a === "string" && Number.isInteger(x.s) && x.s >= 0 && x.s < 1440
+                       && (x.p ? x.e === undefined : (x.e === undefined || (Number.isInteger(x.e) && x.e > x.s && x.e <= 1440))));
+}
+function setSegs(k, list){ (SHARED.tl = SHARED.tl || {})[k] = list.slice().sort((a, b)=>a.s - b.s); }
+const openSeg = () => segsOf(dayKey()).find(x=>x.e === undefined && !x.p) || null;
+const endOf = (x, k) => x.p ? x.s : x.e !== undefined ? x.e : (k === dayKey() ? Math.max(x.s, nowMin()) : 1440);   // 這筆到幾點為止
+
+/* 忘了按停止：隔天打開時，前幾天還開著的那段一律收在午夜，並且標記（畫面上是斜線）。
+   不假裝它剛好結束在某個時間 —— 那是沒發生過的事。 */
+function closeStale(){
+  const today = dayKey();
+  let n = 0;
+  Object.keys(SHARED.tl || {}).forEach(k=>{
+    if(k >= today) return;
+    (SHARED.tl[k] || []).forEach(x=>{ if(x && !x.p && x.e === undefined){ x.e = 1440; x.x = 1; n++; } });
+  });
+  if(n) saveShared();
+}
+/* 點一下：一段時間 → 上一段結束、這段開始；時間點 → 記一筆，正在做的那段也在這一刻結束
+   （到家、睡覺的那一刻，不會還在「玩」）。 */
+function start(id){
+  if(!sharedOK){ toast("這台裝置還沒開過單字闖關，記不起來"); return; }
+  const act = actById(id); if(!act) return;
+  const k = dayKey(), now = nowMin(), list = segsOf(k);
+  const cur = list.find(x=>x.e === undefined && !x.p);
+  if(isPt(act)){
+    if(list.some(x=>x.p && x.a === id && x.s === now)){ toast(`已經記過${nameOf(id)}了`); return; }
+  }else if(cur && cur.a === id){ toast(`已經在${nameOf(id)}了`); return; }
+  if(cur){
+    if(now <= cur.s){ list.splice(list.indexOf(cur), 1); }   // 同一分鐘內按兩次：上一段是 0 分鐘，直接拿掉
+    else cur.e = now;
+  }
+  list.push(isPt(act) ? {a:id, s:Math.min(now, 1439), p:1} : {a:id, s:Math.min(now, 1439)});
+  setSegs(k, list); saveShared(); render();
+  toast(`${isPt(act) ? "" : "開始"}${nameOf(id)} ${hm(now)}`);
+}
+function stop(){
+  const k = dayKey(), now = nowMin(), list = segsOf(k);
+  const cur = list.find(x=>x.e === undefined && !x.p);
+  if(!cur){ toast("現在沒有在記錄"); return; }
+  if(now <= cur.s) list.splice(list.indexOf(cur), 1); else cur.e = now;
+  setSegs(k, list); saveShared(); render();
+  toast(`停止 ${hm(now)}`);
+}
+/* 改一段或補一段：不能跟同一天其他段重疊（時間只有一條線，一個人不會同時做兩件事）。時間點不算重疊。 */
+function overlaps(list, s, e, skip){ return list.some(x=>x !== skip && !x.p && x.e !== undefined && s < x.e && e > x.s); }
+function putSeg(k, seg, s, e, a){
+  const list = segsOf(k);
+  const pt = seg ? !!seg.p : isPt(actById(a));
+  if(pt){
+    if(!(s >= 0 && s < 1440)){ toast("時間不對"); return false; }
+    if(seg) seg.s = s; else list.push({a, s, p:1});
+  }else{
+    if(!(s >= 0 && e <= 1440 && e > s)){ toast("結束要在開始之後"); return false; }
+    if(overlaps(list, s, e, seg)){ toast("這段時間已經有別的事了"); return false; }
+    if(seg){ seg.s = s; seg.e = e; delete seg.x; }
+    else list.push({a, s, e});
+  }
+  setSegs(k, list); saveShared(); render();
+  return true;
+}
+/* 空檔：兩筆紀錄之間沒記東西的時間（上一筆結束到下一筆開始）。只算「有前有後」的，最後一筆之後不算 */
+function gapsOf(k){
+  const list = segsOf(k), out = [];
+  for(let i = 1; i < list.length; i++){
+    const g = list[i].s - endOf(list[i - 1], k);
+    if(g >= 1) out.push({s:endOf(list[i - 1], k), e:list[i].s});
+  }
+  return out;
+}
+function delSeg(k, seg){
+  const list = segsOf(k); const i = list.indexOf(seg);
+  if(i < 0) return;
+  list.splice(i, 1); setSegs(k, list); saveShared(); render();
+}
+const parseHM = v => { const m = /^(\d\d):(\d\d)$/.exec(String(v || "")); return m ? +m[1] * 60 + +m[2] : NaN; };
+
+/* ================= 畫面 ================= */
+function renderNow(){
+  const cur = openSeg();
+  const box = $("nowBox");
+  if(cur){
+    const min = Math.max(0, nowMin() - cur.s);
+    box.innerHTML = `<div class="act">${esc(nameOf(cur.a))}</div><div class="since">${hm(cur.s)} 開始 · 已經 ${esc(dur(min))}</div>`;
+  }else box.innerHTML = `<div class="idle">現在沒有在記錄</div>`;
+  $("btnStop").disabled = !cur;
+  $("actGrid").querySelectorAll("[data-act]").forEach(b=>b.setAttribute("aria-pressed", !!cur && cur.a === b.dataset.act));
+  $("hClock").textContent = hm(nowMin());
+}
+function renderActs(){
+  const cur = openSeg();
+  $("actGrid").innerHTML = acts().filter(a=>!a.off).map(a=>
+    `<button class="chip${isPt(a) ? " pt" : ""}" data-act="${esc(a.id)}" aria-pressed="${!!cur && cur.a === a.id}" style="--c:${colorOf(a.id)}"><em aria-hidden="true">${esc(a.em || "•")}</em>${esc(a.name)}</button>`).join("");
+  $("actGrid").querySelectorAll("[data-act]").forEach(b=>b.onclick = ()=>start(b.dataset.act));
+  $("addAct").innerHTML = acts().filter(a=>!a.off).map(a=>`<option value="${esc(a.id)}">${esc(a.em || "")} ${esc(a.name)}${isPt(a) ? "（時間點）" : ""}</option>`).join("");
+  addKind();
+}
+function renderToday(){
+  const k = dayKey(), list = segsOf(k);
+  const spans = list.filter(x=>!x.p);
+  const total = spans.reduce((n, x)=>n + endOf(x, k) - x.s, 0);
+  const gap = gapsOf(k).reduce((n, g)=>n + g.e - g.s, 0);
+  $("todaySum").textContent = list.length ? `${spans.length} 段 · 共 ${dur(total)}${gap ? " · 空檔 " + dur(gap) : ""}` : "";
+  if(!list.length){ $("segList").innerHTML = `<div class="empty">今天還沒有紀錄。回家後點上面的格子開始。</div>`; return; }
+  $("segList").innerHTML = list.map((x, i)=>{
+    const open = !x.p && x.e === undefined;
+    const before = i ? list[i - 1] : null, g = before ? x.s - endOf(before, k) : 0;   // 跟上一筆之間的空檔，標出來才看得到零碎時間
+    const row = x.p
+      ? `<summary><span class="sw"></span><span class="tm">${hm(x.s)}</span><span class="nm">${esc(nameOf(x.a))}</span><span class="du">時間點</span></summary>
+         <form class="edit"><label for="es-${i}">時間<input type="time" id="es-${i}" name="s" value="${hm(x.s)}" required></label>
+         <div class="btns"><button type="submit" class="btn">改好了</button><button type="button" class="btn ghost" data-del>刪掉</button></div></form>`
+      : `<summary><span class="sw"></span><span class="tm">${hm(x.s)}–${open ? "現在" : hm(x.e)}</span><span class="nm">${esc(nameOf(x.a))}</span><span class="du">${esc(dur(endOf(x, k) - x.s))}</span></summary>
+      ${open ? `<div class="empty">還在進行中。按上面的「停止」或點別的事就會結束。</div>` : `<form class="edit">
+        <label for="es-${i}">從<input type="time" id="es-${i}" name="s" value="${hm(x.s)}" required></label>
+        <label for="ee-${i}">到<input type="time" id="ee-${i}" name="e" value="${hm(Math.min(x.e, 1439))}" required></label>
+        <div class="btns"><button type="submit" class="btn">改好了</button><button type="button" class="btn ghost" data-del>刪掉</button></div>
+      </form>`}`;
+    return (g >= 1 ? `<div class="gap">空檔 ${esc(dur(g))}</div>` : "")
+      + `<details class="seg${x.x ? " trunc" : ""}${x.p ? " pt" : ""}" data-i="${i}" style="--c:${colorOf(x.a)}">${row}</details>`;
+  }).join("");
+  $("segList").querySelectorAll("details.seg").forEach(d=>{
+    const seg = list[+d.dataset.i], f = d.querySelector("form");
+    if(!f) return;
+    const val = n => { const el = f.querySelector(`[name="${n}"]`); return el ? parseHM(el.value) : NaN; };
+    f.onsubmit = e => { e.preventDefault(); putSeg(k, seg, val("s"), val("e")); };
+    f.querySelector("[data-del]").onclick = () => { if(confirm(`刪掉 ${hm(seg.s)}${seg.p ? "" : "–" + hm(seg.e)} ${nameOf(seg.a)}？`)) delSeg(k, seg); };
+  });
+}
+/* 色帶：15:00～24:00，每天一列。跟家長頁那張是同一種畫法。 */
+const BAND_FROM = 15 * 60, BAND_TO = 24 * 60;
+function bandRows(keys){
+  const today = dayKey();
+  const pct = m => Math.max(0, Math.min(100, (m - BAND_FROM) / (BAND_TO - BAND_FROM) * 100));
+  return keys.map(k=>{
+    const segs = segsOf(k).map(x=>Object.assign({}, x, {e:x.p ? x.s : Math.max(x.s + 1, endOf(x, k))}))
+                          .filter(x=>(x.p ? x.s >= BAND_FROM : x.e > BAND_FROM) && x.s < BAND_TO);
+    const p = k.split("-");
+    return `<div class="dl${k === today ? " today" : ""}">${+p[1]}/${+p[2]}</div><div class="row" role="img" aria-label="${esc(k)}：${segs.length ? segs.map(x=>`${hm(x.s)} ${nameOf(x.a)}${x.p ? "" : " " + dur(x.e - x.s)}`).join("、") : "沒有紀錄"}">`
+      + segs.map(x=>x.p ? `<i class="pt" style="left:${pct(x.s)}%"></i>`
+                        : `<i class="${x.x ? "trunc" : ""}" style="left:${pct(x.s)}%;width:${Math.max(0.6, pct(x.e) - pct(x.s))}%;--c:${colorOf(x.a)}"></i>`).join("") + `</div>`;
+  }).join("");
+}
+function renderWeek(){
+  const keys = [];
+  for(let i = 6; i >= 0; i--){ const t = new Date(); t.setDate(t.getDate() - i); keys.push(dayKey(t)); }
+  const ticks = [15, 18, 21, 24].map(h=>`<span style="left:${(h * 60 - BAND_FROM) / (BAND_TO - BAND_FROM) * 100}%">${h}</span>`).join("");
+  $("week").innerHTML = `<div class="band"><div></div><div class="ticks">${ticks}</div>${bandRows(keys)}</div>`;
+  $("legend").innerHTML = legendRows(keys);
+}
+/* 每一項：本週合計、最長一次（哪天）；最後一列是空檔合計。
+   進行中的那段、忘了按停止被收在午夜的那段都不算 —— 長度不是真的，拿去當「最長」會誤導 */
+const md = k => { const p = k.split("-"); return +p[1] + "/" + +p[2]; };
+function legendRows(keys){
+  const tot = {}, mx = {};
+  let gap = 0;
+  keys.forEach(k=>{
+    segsOf(k).forEach(x=>{
+      if(x.p || x.e === undefined || x.x) return;
+      const m = x.e - x.s;
+      tot[x.a] = (tot[x.a] || 0) + m;
+      if(!mx[x.a] || m > mx[x.a].m) mx[x.a] = {m, k};
+    });
+    gap += gapsOf(k).reduce((n, g)=>n + g.e - g.s, 0);
+  });
+  const ids = acts().map(a=>a.id).filter(id=>tot[id]).concat(Object.keys(tot).filter(id=>!actById(id)));
+  if(!ids.length) return `<li class="gap"><span class="nm">這週還沒有紀錄</span><span></span><span></span></li>`;
+  return ids.map(id=>`<li style="--c:${colorOf(id)}"><span class="nm">${esc(nameOf(id))}</span><span class="n">${esc(dur(tot[id]))}</span><span class="mx">最長 <b>${esc(dur(mx[id].m))}</b>（${md(mx[id].k)}）</span></li>`).join("")
+    + `<li class="gap"><span class="nm">空檔</span><span class="n">${esc(dur(gap))}</span><span class="mx">兩筆紀錄之間沒記的時間</span></li>`;
+}
+function render(){ renderActs(); renderNow(); renderToday(); renderWeek(); }
+
+$("btnStop").onclick = stop;
+function addKind(){                      // 補記的是時間點就只問一個時間
+  const pt = isPt(actById($("addAct").value));
+  $("addELab").hidden = pt; $("addE").required = !pt;
+  $("addSLab").firstChild.textContent = pt ? "時間" : "從";
+}
+$("addAct").onchange = addKind;
+$("btnAdd").onclick = () => { $("addBox").hidden = !$("addBox").hidden; if(!$("addBox").hidden) $("addAct").focus(); };
+$("addCancel").onclick = () => { $("addBox").hidden = true; };
+$("addBox").onsubmit = e => {
+  e.preventDefault();
+  if(!sharedOK){ toast("這台裝置還沒開過單字闖關，記不起來"); return; }
+  if(putSeg(dayKey(), null, parseHM($("addS").value), isPt(actById($("addAct").value)) ? NaN : parseHM($("addE").value), $("addAct").value)){
+    $("addBox").hidden = true; $("addS").value = ""; $("addE").value = "";
+  }
+};
+
+/* ================= 顯示設定：跟單字闖關讀同一組鑰匙 ================= */
+(function initDisplay(){
+  let s = "1", t = "auto";
+  try{ s = localStorage.getItem("cq-scale") || "1"; t = localStorage.getItem("cq-theme") || "auto"; }catch(e){}
+  document.documentElement.style.setProperty("--scale", s);
+  if(t === "auto") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", t);
+})();
+
+/* ================= 啟動 ================= */
+loadShared(); closeStale();
+$("noShared").hidden = sharedOK;
+$("verline").textContent = "時間紀錄 · 版本 " + TIME_VERSION;
+render();
+setInterval(()=>{ renderNow(); if(openSeg()) renderToday(); }, 30000);   // 「已經幾分鐘」要會動
+document.addEventListener("visibilitychange", () => { if(!document.hidden){ loadShared(); closeStale(); render(); } });
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+}
+</script>
+</body>
+</html>
