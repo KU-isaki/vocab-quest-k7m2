@@ -1,6 +1,6 @@
 {
-  "name": "單字闖關",
-  "short_name": "單字闖關",
+  "name": "KU 學習小站",
+  "short_name": "KU 學習小站",
   "description": "國中英語單字練習：拼字、聽力、例句挖空，練習可換遊戲時間",
   "lang": "zh-TW",
   "start_url": "./",

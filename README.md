@@ -1,8 +1,9 @@
-# 單字闖關
+# KU 學習小站
 
 [![測試](https://github.com/KU-isaki/vocab-quest-k7m2/actions/workflows/test.yml/badge.svg)](https://github.com/KU-isaki/vocab-quest-k7m2/actions/workflows/test.yml)
 
-國中英語單字的手機練習網頁。**單一 HTML 檔、無後端、無安裝、離線可用**，打開就能練。
+給小孩用的手機學習網頁，三個模組共用一本存摺與日曆：**單字闖關**（國中英語單字）、**成語ㄚ喵**（成語＋養貓）、**時間紀錄**（回家後打卡）。
+**單一 HTML 檔、無後端、無安裝、離線可用**，打開就能用。App 原本只有單字闖關，名字 2026-09-24 改成「KU 學習小站」，單字闖關降為英文模組的名字。
 
 給自己家小孩做的家庭學習小工具，開源出來給有需要的人。
 

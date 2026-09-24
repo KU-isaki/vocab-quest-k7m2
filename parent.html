@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<title>單字闖關 · 家長檢視</title>
+<title>KU 學習小站 · 家長檢視</title>
 <style>
 :root{
   --ground:#FBFAF9; --surface:#FFFFFF; --surface-2:#F1EFEA;
@@ -117,7 +117,7 @@ input{font:inherit; width:100%; padding:11px 12px; border-radius:11px; margin:0 
 </head>
 <body>
 <div class="wrap">
-  <h1>單字闖關 · 家長檢視<span class="ro">唯讀</span></h1>
+  <h1>KU 學習小站 · 家長檢視<span class="ro">唯讀</span></h1>
   <p class="sub" id="sub">看兩個小孩練得怎麼樣。這頁只能看，改不了任何東西。</p>
   <div id="app"></div>
 </div>
@@ -485,7 +485,7 @@ function bindGrab(){
         };
         box.querySelector('[data-act="save"]').onclick = () => {
           const d = new Date(), p2 = x => String(x).padStart(2, "0");
-          const name = `單字闖關-${child}-${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}.txt`;
+          const name = `KU學習小站-${child}-${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}.txt`;
           const url = URL.createObjectURL(new Blob([code], {type:"text/plain;charset=utf-8"}));
           const a = document.createElement("a");
           a.href = url; a.download = name; a.click();
