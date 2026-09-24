@@ -334,6 +334,26 @@ function timeSection(sum){
     ${notes.length ? `<h3>備註</h3><ul class="g">${notes.join("")}</ul>` : ""}`;
 }
 
+/* 總覽裡的一行時間紀錄：昨晚睡幾小時、幾點到家、現在在做什麼。家長最常看總覽，不一定會點到「時間」分頁。 */
+function tlBrief(sum){
+  const T = (sum.tl && typeof sum.tl === "object") ? sum.tl : null;
+  if(!T) return "";
+  const acts = (Array.isArray(T.acts) ? T.acts : []).filter(a=>a && typeof a === "object" && typeof a.id === "string");
+  const days = (T.days && typeof T.days === "object") ? T.days : {};
+  const dk = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+  const t0 = new Date(); t0.setHours(0,0,0,0); const y = new Date(t0); y.setDate(y.getDate() - 1);
+  const segs = k => (Array.isArray(days[k]) ? days[k] : []).filter(x=>x && typeof x === "object" && typeof x.a === "string" && Number.isFinite(+x.s));
+  const clamp = v => Math.max(0, Math.min(1440, Math.floor(num(v))));
+  const hm = m => String(Math.floor(m / 60)).padStart(2,"0") + ":" + String(m % 60).padStart(2,"0");
+  const name = id => { const a = acts.find(x=>x.id === id); return a ? `${String(a.em || "").slice(0, 8)} ${String(a.name || "").slice(0, 8)}`.trim() : "？"; };
+  const today = segs(dk(t0)), parts = [];
+  const bed = segs(dk(y)).filter(x=>x.p && x.a === "sleep").pop(), up = today.find(x=>x.p && x.a === "wake");
+  if(bed && up){ const m = 1440 - clamp(bed.s) + clamp(up.s); parts.push(`昨晚睡 ${Math.floor(m / 60)} 小時${m % 60 ? " " + m % 60 + " 分" : ""}`); }
+  const home = today.find(x=>x.p && x.a === "home"); if(home) parts.push(`${hm(clamp(home.s))} 到家`);
+  const cur = today.find(x=>!x.p && x.e === undefined); if(cur) parts.push(`上傳時在：${name(cur.a)}`);
+  return parts.length ? `<p class="muted" style="margin:10px 0 0">⏱️ ${esc(parts.join(" · "))}</p>` : "";
+}
+
 /* 分頁：總覽、單字、成語、貓、時間、獎勵。沒練成語、沒養貓、沒打卡的小孩就不給那幾頁，免得點進去一片空白。
    選的小孩（用名字記，順序變了也不會跳錯人）和分頁存在這兩個變數，按「重新整理」不會跳回第一頁。 */
 const SECS = [["sum","總覽"], ["words","單字"], ["idiom","成語"], ["cat","貓"], ["time","時間"], ["gift","獎勵"]];
@@ -353,7 +373,8 @@ function card(c, i){
         <div class="stat"><b>${num(sum.streak)}</b><span>連續天數</span></div>
         <div class="stat"><b>${week}</b><span>近 7 天題數</span></div>
         <div class="stat"><b>${num(b.left)}</b><span>存摺剩餘（分）</span></div>
-      </div>`,
+      </div>
+      ${tlBrief(sum)}`,
     words: `<h3>哪幾個字一直錯</h3>${weakList(sum)}`,
     idiom: idiomSection(sum),
     cat: petSection(sum),

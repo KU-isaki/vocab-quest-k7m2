@@ -126,16 +126,21 @@ a.btn{text-decoration:none}
 }
 .btn:disabled:active{transform:none; filter:none}
 
-/* ---------- deck picker ---------- */
-.idiomlink{
-  display:flex; align-items:center; gap:12px; margin-top:12px; padding:13px 15px;
-  text-decoration:none; color:inherit; border-color:color-mix(in srgb, var(--mark) 55%, var(--line));
+/* ---------- 首頁「今天」總覽：三個模組的入口，各帶一行今天的狀態 ---------- */
+.card.today{margin-top:12px; padding:12px 15px 4px}
+.today-head{display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding-bottom:6px}
+.today-head .bank{font-family:var(--font-num); font-variant-numeric:tabular-nums; font-size:13px; color:var(--ink-soft)}
+.today-head .bank b{color:var(--ink); font-size:15px}
+.entry{
+  display:flex; align-items:center; gap:12px; padding:11px 0;
+  text-decoration:none; color:inherit; border-top:1px solid var(--line);
 }
-.idiomlink .ic{font-size:26px; line-height:1}
-.idiomlink .tx{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px}
-.idiomlink .tx b{font-size:15.5px}
-.idiomlink .tx small{font-size:12px; color:var(--ink-faint); line-height:1.5}
-.idiomlink .ar{color:var(--ink-faint); font-size:18px}
+.entry .ic{font-size:24px; line-height:1; width:30px; text-align:center}
+.entry .tx{flex:1; min-width:0; display:flex; flex-direction:column; gap:1px}
+.entry .tx b{font-size:15px}
+.entry .tx small{font-size:12px; color:var(--ink-soft); line-height:1.5; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.entry .ar{color:var(--ink-faint); font-size:18px}
+.entry:focus-visible{outline:2px solid var(--brand); outline-offset:-2px; border-radius:8px}
 
 .chipbox{max-height:186px; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:2px}
 .todaybox{margin:16px 0 14px; text-align:left}
@@ -690,6 +695,13 @@ a.btn{text-decoration:none}
   <!-- ============ 練習 ============ -->
   <section class="view on" id="vQuiz">
 
+    <section class="card today" id="todayCard" aria-label="今天">
+      <div class="today-head"><span class="eyebrow">今天</span><span class="bank" id="todayBank"></span></div>
+      <a class="entry" id="englishLink" href="#startCard"><span class="ic" aria-hidden="true">✏️</span><span class="tx"><b>單字闖關</b><small id="todayEn"></small></span><span class="ar" aria-hidden="true">↓</span></a>
+      <a class="entry" id="idiomLink" href="idiom.html"><span class="ic" aria-hidden="true">🐈</span><span class="tx"><b>成語ㄚ喵</b><small id="todayZh"></small></span><span class="ar" aria-hidden="true">→</span></a>
+      <a class="entry" id="timeLink" href="time.html"><span class="ic" aria-hidden="true">⏱️</span><span class="tx"><b>時間紀錄</b><small id="todayTl"></small></span><span class="ar" aria-hidden="true">→</span></a>
+    </section>
+
     <div class="card hero" id="startCard">
       <div class="eyebrow" id="heroVer">100 題循環測驗</div>
       <h1>看中文<span class="mark">拼英文</span><br>看英文<span class="mark">說中文</span></h1>
@@ -714,18 +726,6 @@ a.btn{text-decoration:none}
       <button class="btn" id="btnStart">開始練習</button>
       <button class="btn quiet" id="btnWrongOnly">只考錯過的字（<span id="wrongCount">0</span>）</button>
     </div>
-
-    <a class="card idiomlink" id="idiomLink" href="idiom.html">
-      <span class="ic">🐈</span>
-      <span class="tx"><b>成語ㄚ喵</b><small>練成語賺飼料、養一隻會長大的貓。跟這裡共用存摺與日曆。</small></span>
-      <span class="ar">→</span>
-    </a>
-
-    <a class="card idiomlink" id="timeLink" href="time.html">
-      <span class="ic">⏱️</span>
-      <span class="tx"><b>時間紀錄</b><small>回家後在做什麼、做了多久。點一下就好，不換遊戲時間，跟爸媽一起看。</small></span>
-      <span class="ar">→</span>
-    </a>
 
     <div class="card q" id="qCard" hidden>
       <div class="q-head">
@@ -1046,7 +1046,7 @@ a.btn{text-decoration:none}
   <div class="nav-in">
     <button data-view="vQuiz" aria-current="true"><em>✏️</em>練習</button>
     <button data-view="vList"><em>📖</em>單字表</button>
-    <button data-view="vStats"><em>📊</em>進度</button>
+    <button data-view="vStats"><em>📊</em>存摺</button>
     <button data-view="vSet"><em>⚙️</em>設定</button>
   </div>
 </nav>
@@ -1085,7 +1085,7 @@ a.btn{text-decoration:none}
   }
 })();
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.24-b";
+const VERSION = "2026.09.24-c";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（key 用小寫單字） =================
@@ -4071,7 +4071,7 @@ function startRound(useWrong, count){
     : pool();
   if(!src.length){ alert("目前沒有錯題，先做一般練習吧！"); return; }
   queue = drawRound(src, roundSize); idx = 0; roundRight = 0; missed = [];
-  $("startCard").hidden = true; $("sumCard").hidden = true; $("qCard").hidden = false;
+  $("startCard").hidden = true; $("todayCard").hidden = true; $("sumCard").hidden = true; $("qCard").hidden = false;
   showQ();
   window.scrollTo(0,0);
 }
@@ -4119,7 +4119,7 @@ $("btnQuit").onclick = () => {
   endRound();
 };
 $("btnAgain").onclick = () => startRound(wrongMode, roundSize);
-$("btnBackHome").onclick = () => { $("sumCard").hidden = true; $("startCard").hidden = false; refreshHeader(); };
+$("btnBackHome").onclick = () => { $("sumCard").hidden = true; $("startCard").hidden = false; $("todayCard").hidden = false; refreshHeader(); };
 
 const KIND_LABEL = {en2zh:"看英文 · 說中文", spell:"看中文 · 拼英文", type:"進階 · 打出英文", listen:"🔊 只聽發音", cloze:"看句子 · 填單字", senlisten:"🔊 聽例句 · 選中文", zh2en:"看中文 · 選英文句"};
 
@@ -4706,6 +4706,35 @@ function refreshHeader(){
     `已賺 ${got} 分鐘`);
   $("heroReward").textContent = next ? `再答對 ${next.k} 題 → ${next.m} 分鐘` : "今日上限已滿 ✓";
   $("heroBar").style.width = Math.min(100, net / FULLGOAL * 100) + "%";
+  renderToday();
+}
+/* 首頁「今天」總覽：三個模組各一行今天的狀態。這個工具已經不只是單字闖關，首頁要先讓人看到全部，
+   英文的出題設定往下放。狀態只讀 SHARED（成語那天的題數在 days[k].i、貓在 pet、打卡在 tl），不碰各頁自己的東西。 */
+function renderToday(){
+  const k = dayKey(), d = SHARED.days[k] || {n:0, r:0};
+  $("todayBank").innerHTML = `存摺 <b>${bankLeft()}</b> 分鐘`;
+  const next = nextStep(d, netOf(d), couponMul(k));
+  $("todayEn").textContent = (d.n ? `今天 ${d.n} 題、答對 ${d.r || 0}` : "今天還沒練") + " · " + (next ? `再答對 ${next.k} 題 → ${next.m} 分鐘` : "今日上限已滿 ✓");
+  const c = SHARED.pet && Array.isArray(SHARED.pet.cats) && SHARED.pet.cats[0];
+  $("todayZh").textContent = (d.i && d.i.n ? `今天 ${d.i.n} 題、答對 ${d.i.r || 0}` : "今天還沒練")
+    + (c ? (c.away ? " · 貓離家了" : c.box ? " · 貓餓到躲進紙箱" : Math.round(+c.hunger || 0) < 30 ? " · 貓餓了" : "") : " · 還沒養貓");
+  $("todayTl").textContent = tlStatus();
+}
+function tlStatus(){
+  const k = dayKey(), T = SHARED.tl && typeof SHARED.tl === "object" ? SHARED.tl : {};
+  const segs = key => (Array.isArray(T[key]) ? T[key] : []).filter(x=>x && typeof x.a === "string" && Number.isInteger(x.s));
+  const list = segs(k);
+  const nm = id => { const a = tlActs().find(a=>a.id === id); return a ? `${a.em || ""} ${a.name}`.trim() : "？"; };
+  const hm = m => String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+  const cur = list.find(x=>!x.p && x.e === undefined);
+  if(cur){ const t = new Date(), m = Math.max(0, t.getHours() * 60 + t.getMinutes() - cur.s); return `現在：${nm(cur.a)}，${hm(cur.s)} 開始、已經 ${m} 分`; }
+  const y = new Date(); y.setDate(y.getDate() - 1);
+  const bed = segs(dayKey(y)).filter(x=>x.p && x.a === "sleep").pop(), up = list.find(x=>x.p && x.a === "wake");
+  const parts = [];
+  if(bed && up){ const m = 1440 - bed.s + up.s; parts.push(`昨晚睡 ${Math.floor(m / 60)} 小時${m % 60 ? " " + m % 60 + " 分" : ""}`); }
+  const home = list.find(x=>x.p && x.a === "home"); if(home) parts.push(`${hm(home.s)} 到家`);
+  const n = list.filter(x=>!x.p).length; if(n) parts.push(`今天記了 ${n} 段`);
+  return parts.length ? parts.join(" · ") : "今天還沒打卡";
 }
 
 /* ================= 單字表 ================= */
