@@ -416,7 +416,10 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 .st-loaf .legs{transform:scaleY(calc(var(--legs,1) * .32))} .st-loaf .cat{transform:translateY(calc(var(--legs,1) * 18px))}
 .st-loaf .eye{animation:none; transform:scaleY(.4)} .st-loaf .ctail{animation-duration:4.5s}
 .st-eat .chead{animation:chew .55s ease-in-out infinite} .st-eat .bowl{opacity:1} .st-eat .mouth-open{opacity:1} .st-eat .mouth{opacity:0}
-.st-sleep .eye{animation:none; transform:scaleY(.08)} .st-sleep .zzz{opacity:1} .st-sleep .box{opacity:1} .st-sleep .ctail{animation-duration:5s} .st-sleep .cat{transform:translateY(26px)}
+.st-sleep .eye{animation:none; transform:scaleY(.08)} .st-sleep .zzz{opacity:1} .st-sleep .box{opacity:1} .st-sleep .ctail{opacity:0} .st-sleep .cat{transform:translateY(26px)}
+/* 躲紙箱：貓往下沉 26，但箱子只到 y=146，長大後身體和腳會從箱底露出來、尾巴也從箱子左邊伸出去（老練貓整隻比箱子大）。
+   箱底以下用 clipPath 切掉、尾巴收起來，露在外面的就只有頭。clip 掛在 .flip 而不是 .cat：.cat 自己有 translateY，clip 會跟著跑。 */
+.st-sleep .flip{clip-path:url(#sleepClip)}
 .st-happy .cat{animation:jump .8s ease-in-out infinite} .st-happy .hearts{opacity:1} .st-happy .mouth-open{opacity:1} .st-happy .mouth{opacity:0}
 .st-hungry .earL{animation:none; transform:rotate(-32deg)} .st-hungry .earR{transform:rotate(32deg)} .st-hungry .mouth{opacity:0} .st-hungry .mouth-sad{opacity:1} .st-hungry .ctail{animation-duration:4.5s} .st-hungry .eye{transform:scaleY(.75)}
 .st-dirty .flies{opacity:1} .st-dirty .mouth{opacity:0} .st-dirty .mouth-sad{opacity:1} .st-dirty .earR{transform:rotate(20deg)}
@@ -673,6 +676,7 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
             <radialGradient id="floorSh" cx="50%" cy="50%" r="50%">
               <stop offset="0" stop-color="#2A2118" stop-opacity=".30"/><stop offset="1" stop-color="#2A2118" stop-opacity="0"/>
             </radialGradient>
+            <clipPath id="sleepClip"><rect x="-40" y="-60" width="300" height="205"/></clipPath>   <!-- 躲紙箱時只留箱底（y=146）以上 -->
           </defs>
           <ellipse class="floorsh" cx="112" cy="144" rx="56" ry="8" fill="url(#floorSh)"/>
           <g class="bowl"><ellipse cx="190" cy="140" rx="18" ry="6" fill="#8FB2E0"/><ellipse cx="190" cy="136" rx="14" ry="4" fill="#C97A22"/></g>
@@ -2523,7 +2527,9 @@ function loadS(){
   try{ const r = JSON.parse(localStorage.getItem(KEY)); if(r && r.stats) S = r; }catch(e){}
 }
 const stat = c => S.stats[c] || {r:0, x:0, streak:0};
-const mastered = c => (stat(c).streak || 0) >= 2 && !(stat(c).due && stat(c).due <= dayKey());
+/* 熟練不過期（2026-09-25）：連對 2 次就算，之後複習日過了也不掉。以前還要「沒到複習日」，
+   小孩幾天沒練，145 條熟練會掉到剩 1，家長看起來像紀錄不見了。到期只影響出題（dueList 先出），不影響這個數字。 */
+const mastered = c => (stat(c).streak || 0) >= 2;
 
 /* ================= 分頁 ================= */
 document.querySelectorAll(".nav button").forEach(b=>{
@@ -3740,7 +3746,7 @@ function renderStats(){
   $("stFeed").textContent = feedLeft();
   $("stStreak").textContent = streakDays();
   $("stMastered").textContent = IDIOMS.filter(i=>mastered(i.c)).length;
-  // 「已熟練」只算還沒到複習日的，所以會掉。把掉去哪裡講出來，才不會看起來像紀錄不見了
+  // 熟練不會掉了，但到期的下一輪會先出，還是講一下有幾條
   const dueN = dueList(IDIOMS).length;
   $("stDue").textContent = `連對 2 次算熟練` + (dueN ? ` · 待複習 ${dueN} 條（下一輪會先出）` : "");
   $("lvBars").innerHTML = SCOPES.map(z=>{

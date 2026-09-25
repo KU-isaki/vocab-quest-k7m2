@@ -39,7 +39,7 @@ const names = firstN(60);
   ok(d.length === 40 && oldestFirst, "拖最久的排最前面");
   t.ev("renderStats()");
   ok(/待複習 40 條/.test(t.d.getElementById("stDue").textContent), `進度頁要講有幾條待複習, 實得 ${t.d.getElementById("stDue").textContent}`);
-  ok(t.d.getElementById("stMastered").textContent === "0", "到期的不算已熟練（數字不虛胖）");
+  ok(t.d.getElementById("stMastered").textContent === "40", "到期的照樣算已熟練（熟練不過期，2026-09-25）");
 }
 { // 還沒到期的不得被硬排進來；複習也不得把整輪佔滿
   const t = boot(()=>{ const o = {}; names.slice(0, 40).forEach(c=>{ o[c] = {r:2, x:0, streak:2, due:daysAgo(-5)}; }); return o; });
