@@ -416,10 +416,10 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
 .st-loaf .legs{transform:scaleY(calc(var(--legs,1) * .32))} .st-loaf .cat{transform:translateY(calc(var(--legs,1) * 18px))}
 .st-loaf .eye{animation:none; transform:scaleY(.4)} .st-loaf .ctail{animation-duration:4.5s}
 .st-eat .chead{animation:chew .55s ease-in-out infinite} .st-eat .bowl{opacity:1} .st-eat .mouth-open{opacity:1} .st-eat .mouth{opacity:0}
-.st-sleep .eye{animation:none; transform:scaleY(.08)} .st-sleep .zzz{opacity:1} .st-sleep .box{opacity:1} .st-sleep .ctail{opacity:0} .st-sleep .cat{transform:translateY(26px)}
-/* 躲紙箱：貓往下沉 26，但箱子只到 y=146，長大後身體和腳會從箱底露出來、尾巴也從箱子左邊伸出去（老練貓整隻比箱子大）。
-   箱底以下用 clipPath 切掉、尾巴收起來，露在外面的就只有頭。clip 掛在 .flip 而不是 .cat：.cat 自己有 translateY，clip 會跟著跑。 */
-.st-sleep .flip{clip-path:url(#sleepClip)}
+.st-sleep .eye{animation:none; transform:scaleY(.08)} .st-sleep .zzz{opacity:1} .st-sleep .box{opacity:1} .st-sleep .cat{transform:translateY(26px)}
+/* 躲紙箱：只畫頭和箱子。貓往下沉 26 之後箱子只遮得住幼貓，老練貓的身體、腳會從箱底露出來、尾巴伸到箱外；
+   先試過用 clipPath 切箱底以下，手機上還是露出來，索性把頭以外的都藏起來（2026-09-25）。 */
+.st-sleep .bodywrap,.st-sleep .legs,.st-sleep .ctail,.st-sleep .scarf{opacity:0}
 .st-happy .cat{animation:jump .8s ease-in-out infinite} .st-happy .hearts{opacity:1} .st-happy .mouth-open{opacity:1} .st-happy .mouth{opacity:0}
 .st-hungry .earL{animation:none; transform:rotate(-32deg)} .st-hungry .earR{transform:rotate(32deg)} .st-hungry .mouth{opacity:0} .st-hungry .mouth-sad{opacity:1} .st-hungry .ctail{animation-duration:4.5s} .st-hungry .eye{transform:scaleY(.75)}
 .st-dirty .flies{opacity:1} .st-dirty .mouth{opacity:0} .st-dirty .mouth-sad{opacity:1} .st-dirty .earR{transform:rotate(20deg)}
@@ -676,7 +676,6 @@ details.irow .in .r .why{color:var(--ink-soft); font-size:12.5px}
             <radialGradient id="floorSh" cx="50%" cy="50%" r="50%">
               <stop offset="0" stop-color="#2A2118" stop-opacity=".30"/><stop offset="1" stop-color="#2A2118" stop-opacity="0"/>
             </radialGradient>
-            <clipPath id="sleepClip"><rect x="-40" y="-60" width="300" height="205"/></clipPath>   <!-- 躲紙箱時只留箱底（y=146）以上 -->
           </defs>
           <ellipse class="floorsh" cx="112" cy="144" rx="56" ry="8" fill="url(#floorSh)"/>
           <g class="bowl"><ellipse cx="190" cy="140" rx="18" ry="6" fill="#8FB2E0"/><ellipse cx="190" cy="136" rx="14" ry="4" fill="#C97A22"/></g>
