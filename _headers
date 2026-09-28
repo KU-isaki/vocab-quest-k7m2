@@ -30,3 +30,9 @@
 
 /idiom.html
   Cache-Control: no-cache
+
+/time
+  Cache-Control: no-cache
+
+/time.html
+  Cache-Control: no-cache
