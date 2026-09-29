@@ -10,7 +10,7 @@
 
    CACHE 的版本號每次改版都要換，舊快取才會被清掉。 */
 
-const CACHE = "vocab-quest-v59";
+const CACHE = "vocab-quest-v60";
 const ASSETS = [
   "./",
   "./index.html",
@@ -35,6 +35,13 @@ self.addEventListener("activate", e => {
   );
 });
 
+/* Cloudflare Pages 會把 idiom.html 308 轉到 /idiom。跟著轉址抓回來的 Response 帶著 redirected 記號，
+   拿它回給整頁導覽，瀏覽器會拒絕（"Response served by service worker has redirections"），
+   成語和時間頁就整頁打不開（2026-09-29）。所以存進快取、交給頁面之前都換成不帶記號的複本。 */
+const clean = res => res && res.redirected
+  ? new Response(res.body, { status: res.status, statusText: res.statusText, headers: res.headers })
+  : res;
+
 self.addEventListener("fetch", e => {
   const req = e.request;
   if(req.method !== "GET") return;
@@ -48,12 +55,12 @@ self.addEventListener("fetch", e => {
     const cache = await caches.open(CACHE);
     const cached = await cache.match(req, { ignoreSearch: true });
     const network = fetch(req, isPage ? { cache: "no-store" } : undefined).then(res => {
-      if(res && res.status === 200) cache.put(req, res.clone()).catch(() => {});
-      return res;
+      if(res && res.status === 200) cache.put(req, clean(res.clone())).catch(() => {});
+      return clean(res);
     }).catch(() => null);
-    if(cached){ e.waitUntil(network); return cached; }
+    if(cached){ e.waitUntil(network); return clean(cached); }
     return (await network)
-      || (isPage && await cache.match("./index.html"))
+      || (isPage && clean(await cache.match("./index.html")))
       || new Response(isPage ? "離線中，而且還沒存過這個頁面" : "", {
            status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } });
   })());
