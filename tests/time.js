@@ -22,7 +22,8 @@ function boot(html, file, seed, opts){
     beforeParse(win){
       win.speechSynthesis = {speak(){}, cancel(){}, getVoices:()=>[{lang:"en-US", name:"S"}], addEventListener(){}};
       win.SpeechSynthesisUtterance = function(t){ this.text = t; };
-      win.fetch = (u, o) => { calls.push({url:String(u), opt:o || {}}); return Promise.resolve({ok:true, status:200}); };
+      win.fetch = (u, o) => { if(String(u).includes("tutor-bot")) return new Promise(()=>{});   // 家教單字另有 tutor.js 測
+      calls.push({url:String(u), opt:o || {}}); return Promise.resolve({ok:true, status:200}); };
       if(seed) seed(win.localStorage);
     }});
   const w = dom.window;

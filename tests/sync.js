@@ -14,7 +14,8 @@ function boot(seed, res){
       win.speechSynthesis = {speak(){}, cancel(){}, getVoices:()=>[{lang:"en-US",name:"S"}], addEventListener(){}};
       win.SpeechSynthesisUtterance = function(t){ this.text = t; };
       if(seed) seed(win.localStorage);
-      win.fetch = (u, o) => { calls.push({url:String(u), opt:o || {}});
+      win.fetch = (u, o) => { if(String(u).includes("tutor-bot")) return new Promise(()=>{});   // 家教單字另有 tutor.js 測
+      calls.push({url:String(u), opt:o || {}});
                               return Promise.resolve(res ? res() : {ok:true, status:200}); };
     }});
   const w = dom.window;

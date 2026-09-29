@@ -1093,7 +1093,7 @@ a.btn{text-decoration:none}
   }
 })();
 /* 版本標示：每次改版都更新，方便確認手機上開到的是不是新版 */
-const VERSION = "2026.09.29-a";
+const VERSION = "2026.09.29-b";
 document.documentElement.lang = "zh-TW";
 
 /* ================= 用法解釋（key 用小寫單字） =================
@@ -3995,17 +3995,54 @@ function renderDecks(){
   $("btnReset").textContent = "清除單字的答題紀錄";
 }
 
+/* ================= 家教單字 =================
+   英文家教每堂要背的字，由 tutor-bot（另一個 repo：KU_Family/TutorBot）從 Notion「家教紀錄」
+   最近一堂的「單字」欄讀出來。只挑 1200 裡有的字；抓不到（離線、API 掛了）就用上次存的，
+   都沒有就不顯示這顆按鈕，其他功能照常。
+   跟雲端同步同一條規矩：沒開雲端的裝置一個請求都不發，所以只有設了同步碼才去抓。
+   API 放在 App 之外的子網域，不會掉進 service worker 的快取。 */
+const TUTOR_API = "https://tutor-bot.ku-ai.cc/words";
+const TUTOR_KEY = "cq-tutor-words-v1";
+let tutor = {lesson:"", words:[]}, tutorMode = false;
+try{ const t = JSON.parse(localStorage.getItem(TUTOR_KEY)); if(t && Array.isArray(t.words)) tutor = t; }catch(e){}
+function tutorWords(){
+  const set = new Set(tutor.words.map(x=>String(x).toLowerCase()));
+  return WORDS.filter(w=>set.has(w.w.toLowerCase()));
+}
+function loadTutor(){
+  if(typeof fetch !== "function" || !syncConf()) return;
+  const ac = typeof AbortController === "function" ? new AbortController() : null;
+  const timer = ac && setTimeout(()=>ac.abort(), 5000);
+  fetch(TUTOR_API, ac ? {signal:ac.signal} : {})
+    .then(r=>r.ok ? r.json() : Promise.reject(r.status))
+    .then(j=>{
+      if(!j || !Array.isArray(j.words)) return;
+      tutor = {lesson:String(j.lesson || ""), words:j.words.map(String)};
+      try{ localStorage.setItem(TUTOR_KEY, JSON.stringify(tutor)); }catch(e){}
+      if(tutorMode && !tutorWords().length) tutorMode = false;
+      renderChips();
+    })
+    .catch(()=>{})
+    .finally(()=>{ if(timer) clearTimeout(timer); });
+}
+
 /* ================= 範圍選擇 ================= */
 function renderChips(){
+  const tw = tutorWords();
+  if(!tw.length) tutorMode = false;
   $("catChips").innerHTML =
-    `<button class="chip" data-cat="all" aria-pressed="${pickedCats.size===CATS.length}">全部 ${WORDS.length} 字</button>` +
+    (tw.length ? `<button class="chip" data-cat="tutor" aria-pressed="${tutorMode}"` +
+      ` title="${esc(tutor.lesson)}" aria-label="家教單字 ${tw.length} 字${tutor.lesson ? "，" + esc(tutor.lesson) : ""}">家教單字 ${tw.length}</button>` : "") +
+    `<button class="chip" data-cat="all" aria-pressed="${!tutorMode && pickedCats.size===CATS.length}">全部 ${WORDS.length} 字</button>` +
     CATS.map(c=>{
       const n = WORDS.filter(w=>w.cats.includes(c.id)).length;
-      return `<button class="chip" data-cat="${c.id}" aria-pressed="${pickedCats.has(c.id)&&pickedCats.size<CATS.length}">${c.name} ${n}</button>`;
+      return `<button class="chip" data-cat="${c.id}" aria-pressed="${!tutorMode&&pickedCats.has(c.id)&&pickedCats.size<CATS.length}">${c.name} ${n}</button>`;
     }).join("");
   $("catChips").querySelectorAll(".chip").forEach(b=>{
     b.onclick = () => {
       const c = b.dataset.cat;
+      if(c === "tutor"){ tutorMode = !tutorMode; renderChips(); return; }
+      if(tutorMode){ tutorMode = false; pickedCats = new Set(CATS.map(x=>x.id)); }   // 從家教單字切回分類：從頭選
       if(c === "all") pickedCats = new Set(CATS.map(x=>x.id));
       else{
         if(pickedCats.size === CATS.length) pickedCats = new Set([c]);
@@ -4022,6 +4059,7 @@ const ROUND = 30;              // 一輪幾題（改這個數字就好，畫面�
 let queue = [], idx = 0, roundRight = 0, missed = [], answered = false, wrongMode = false, roundSize = ROUND;
 
 function pool(){
+  if(tutorMode){ const tw = tutorWords(); if(tw.length) return tw; }
   const ws = WORDS.filter(w=>w.cats.some(c=>pickedCats.has(c)));
   return ws.length ? ws : WORDS;
 }
@@ -6080,6 +6118,7 @@ renderMatrix();
 renderSettings();
 renderDecks();
 renderChips();
+loadTutor();
 $("verline").textContent = "版本 " + VERSION;
 $("heroVer").textContent = "版本 " + VERSION;
 renderListCats();
